@@ -1,0 +1,7 @@
+ext_inputs 830 670
+J 450 -138.6 67.2 -90.6 
+Tsyn 3.0 2.0 3.0 2.0 
+ext_inputs 1660 830 % original mato 
+works but not balanced :
+ext_inputs 830 700
+J 533.3 -138.6 67.2 -90.6 

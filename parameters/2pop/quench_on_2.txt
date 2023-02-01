@@ -1,0 +1,9 @@
+ext_inputs 775 530
+J 875 -140 120 -90
+Tsyn 3.0 2.0 3.0 2.0
+sigma_ff 0 0
+ext_inputs 768.75 543.25
+ext_inputs 760 530
+ext_inputs 775 547.67
+ext_inputs 760 530
+J 850 -140 120 -90

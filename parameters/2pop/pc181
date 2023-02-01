@@ -1,0 +1,717 @@
+(base) alexandre.mahrach@pcneurophys182:~/IDIBAPS/cpp/model/parameters/2pop$ 
+(base) alexandre.mahrach@pcneurophys182:~/IDIBAPS/cpp/model/parameters/2pop$ pc181
+Welcome to Ubuntu 14.04.6 LTS (GNU/Linux 4.4.0-31-generic x86_64)
+
+#########################################################################
+simulation parameters:
+n_pop 2 n_neurons 40000 K 2000 albert_on_2 trial 9 phi 0.9 ini 10
+#########################################################################
+g++ temp_main_16853.cpp -Ofast -s -std=c++11 -o temp_16853_a.out -lgsl -lblas
+#########################################################################
+mem_usage 52.0626 % MEM_USAGE > 50.0, sleeping for a while ...
+ cpu_usage 10.7143 %
+#########################################################################
+simulation parameters:
+n_pop 2 n_neurons 40000 K 2000 albert_on_2 trial 10 phi 1.0 ini 10
+#########################################################################
+g++ temp_main_16853.cpp -Ofast -s -std=c++11 -o temp_16853_a.out -lgsl -lblas
+(base) alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ ./loop_phi.sh 2 4 2000 on_3 10 10               
+#########################################################################
+mem_usage 7.08619 % cpu_usage 1.78571 %
+#########################################################################
+simulation parameters:
+n_pop 2 n_neurons 40000 K 2000 on_3 trial 1 phi 0.1 ini 1
+#########################################################################
+g++ temp_main_21430.cpp -Ofast -s -std=c++11 -o temp_21430_a.out -lgsl -lblas
+mean field rates: 0 0
+50%  t 250.1 ms | m0 0.001 rates: 11.550 19.860 m1 9.595 0.005 phase -0.142 -0.151%  t 500.200 ms | m0 0.001 rates: 11.623 19.950 m1 9.460 0.005 phase -0.143 -053%  t 750.300 ms | m0 0.001 rates: 11.702 20.059 m1 9.387 0.005 phase -0.138 -054%  t 1000.400 ms | m0 0.001 rates: 11.751 20.116 m1 8.988 0.005 phase -0.146 -55%  t 1250.500 ms | m0 0.001 rates: 11.823 20.212 m1 8.862 0.005 phase -0.139 -56%  t 1500.600 ms | m0 0.001 rates: 11.883 20.301 m1 8.594 0.005 phase -0.142 -58%  t 1750.700 ms | m0 0.001 rates: 11.896 20.324 m1 8.332 0.004 phase -0.154 -59%  t 2000.800 ms | m0 0.001 rates: 12.000 20.423 m1 8.282 0.004 phase -0.132 -60%  t 2250.900 ms | m0 0.001 rates: 15.310 24.950 m1 6.129 0.003 phase 0.299 0.61%  t 2501.000 ms | m0 0.001 rates: 15.726 25.558 m1 6.112 0.003 phase 0.528 0.62%  t 2751.100 ms | m0 0.001 rates: 16.109 26.097 m1 6.829 0.004 phase 0.660 0.64%  t 3001.200 ms | m0 0.001 rates: 16.290 26.375 m1 7.609 0.004 phase 0.737 0.65%  t 3251.300 ms | m0 0.001 rates: 13.472 22.500 m1 4.560 0.002 phase 0.586 0.66%  t 3501.400 ms | m0 0.001 rates: 13.515 22.524 m1 4.489 0.002 phase 0.606 0.67%  t 3751.500 ms | m0 0.001 rates: 13.258 22.177 m1 4.345 0.002 phase 0.599 0.69%  t 4001.600 ms | m0 0.001 rates: 13.117 21.974 m1 3.997 0.002 phase 0.582 0.70%  t 4251.700 ms | m0 0.001 rates: 13.005 21.832 m1 3.960 0.002 phase 0.592 0.71%  t 472% 800 ms | m0 0.001 rates: 12.945 21.747 m1 3.845 0.002 phase 0.567 0.71% 
+[detached from 46725.2_pop_on_3_N_4_K_2000_trial_3_ini_1]
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        47143.2_pop_on_3_N_4_K_2000_trial_6_ini_1       (22/06/2022 15:15:14)   (Detached)
+        47004.2_pop_on_3_N_4_K_2000_trial_5_ini_1       (22/06/2022 15:14:49)   (Detached)
+        46859.2_pop_on_3_N_4_K_2000_trial_4_ini_1       (22/06/2022 15:14:24)   (Detached)
+        46725.2_pop_on_3_N_4_K_2000_trial_3_ini_1       (22/06/2022 15:13:59)   (Detached)
+        46598.2_pop_on_3_N_4_K_2000_trial_2_ini_1       (22/06/2022 15:13:33)   (Detached)
+        46470.2_pop_on_3_N_4_K_2000_trial_1_ini_1       (22/06/2022 15:13:08)   (Detached)
+        36305.loop      (22/06/2022 05:49:21)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        47143.2_pop_on_3_N_4_K_2000_trial_6_ini_1       (22/06/2022 15:15:14)   (Detached)
+        47004.2_pop_on_3_N_4_K_2000_trial_5_ini_1       (22/06/2022 15:14:49)   (Detached)
+        46859.2_pop_on_3_N_4_K_2000_trial_4_ini_1       (22/06/2022 15:14:24)   (Detached)
+        46725.2_pop_on_3_N_4_K_2000_trial_3_ini_1       (22/06/2022 15:13:59)   (Detached)
+        46598.2_pop_on_3_N_4_K_2000_trial_2_ini_1       (22/06/2022 15:13:33)   (Detached)
+        46470.2_pop_on_3_N_4_K_2000_trial_1_ini_1       (22/06/2022 15:13:08)   (Detached)
+        36305.loop      (22/06/2022 05:49:21)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+(base) alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ ./loop_phi.sh 2 4 2000 on_3 10 10               
+#########################################################################
+mem_usage 5.62816 % cpu_usage 1.78571 %
+#########################################################################
+simulation parameters:
+n_pop 2 n_neurons 40000 K 2000 on_3 trial 1 phi 0.1 ini 1
+#########################################################################
+g++ temp_main_7774.cpp -Ofast -s -std=c++11 -o temp_7774_a.out -lgsl -lblas
+
+
+
+
+
+
+
+
+reading parameters from : ../parameters/2pop/on_3.txt
+ext_inputs
+937.5 675
+J
+900 -140
+120 -90
+Tsyn
+3 2
+3 2
+cum_n_per_pop= 0 32000 40000
+###############################################
+ERROR BALANCE CONDITIONS INVALID: Ie/Jei < Ii/Jii
+###############################################
+/homecentral/alexandre.mahrach/IDIBAPS/connectivity/2pop/NE_32_NI_8/K2000/ring/kappa_0.25
+/homecentral/alexandre.mahrach/IDIBAPS/connectivity/2pop/NE_32_NI_8/K2000/ring/kappa_0.25
+
+
+
+
+
+
+
+
+reading parameters from : ../parameters/2pop/on_3.txt
+ext_inputs
+937.5 675
+J
+900 -140
+120 -90
+Tsyn
+3 2
+3 2
+cum_n_per_pop= 0 32000 40000
+###############################################
+ERROR BALANCE CONDITIONS INVALID: Ie/Jei < Ii/Jii
+###############################################
+/homecentral/alexandre.mahrach/IDIBAPS/connectivity/2pop/NE_32_NI_8/K2000/ring/kappa_0.25
+/homecentral/alexandre.mahrach/IDIBAPS/connectivity/2pop/NE_32_NI_8/K2000/ring/kappa_0.25
+created directory: /homecentral/alexandre.mahrach/IDIBAPS/connectivity/2pop/NE_32_NI_8/K2000/ring/kappa_0.25
+generate probability of connection: 0.05 0.05
+ring: kappa, 0.25
+theta: 0 0.00019635 0.000392699 0.000589049 0.000785398 0.000981748 0.0011781 0.00137445 0.0015708 0.00176715
+generate connectivity vector
+generate sparse representation
+total_n_post 80004986
+average number of postsynaptic connections per pop: 00 1600 01 400 10 1600 11 400
+total number of postsynaptic connections per neuron:
+0 2027 2026 2006 2026 2004 1992 1956 1956 1971 2029
+1 1972 1977 2031 2039 1967 2023 2078 2027 1961 1997
+../simulations/lif/2pop/on_3/NE_32_NI_8/K2000/STP/Tf_450_Tr_200_U_0.03/ring/kappa_0.25/trial_1/ini_cond_1
+Created directory : ../simulations/lif/2pop/on_3/NE_32_NI_8/K2000/STP/Tf_450_Tr_200_U_0.03/ring/kappa_0.25/trial_1/ini_cond_1
+###############################################
+ERROR BALANCE CONDITIONS INVALID: Ie/Jei < Ii/Jii
+sqrt(K) 44.7214
+Scaling ext_inputs ...
+raw 937.5 scaled 37.5 raw 675 scaled 27
+1/sqrt(K) 0.0223607
+Scaling J ...
+pre 0 post 0 Jij 900 Jij_scaled 7.25412 PSP 67.591
+pre 1 post 0 Jij -140 Jij_scaled -6.65861 PSP -85.9992
+pre 0 post 1 Jij 120 Jij_scaled 0.967216 PSP 5.40124
+pre 1 post 1 Jij -90 Jij_scaled -4.28053 PSP -32.0044
+Scaling J_nmda ...
+pre 0 post 0 Jij 900 Jij_nmda 0.449101 PSP 4.18455
+pre 1 post 0 Jij -140 Jij_nmda -0.349126 PSP -4.50914
+pre 0 post 1 Jij 120 Jij_nmda 0.0598801 PSP 0.334389
+pre 1 post 1 Jij -90 Jij_nmda -0.224438 PSP -1.67807
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+LIF model with EULER integration and STP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+path: ../simulations/lif/2pop/on_3/NE_32_NI_8/K2000/STP/Tf_450_Tr_200_U_0.03/ring/kappa_0.25/trial_1/ini_cond_1
+Main loop : duration 10000 ms | DT 0.1 ms | TIME_STEADY 10000 ms | TIME_WINDOW 250 ms | TIME_REC 60000 ms | TIME_REC_SPIKES 0
+mean field rates: 0 0
+99%  t 10004.000 ms | m0 0.001 rates: 11.175 19.341 m1 9.763 0.005 phase 0.278 
+0.278 
+
+[screen is terminating]
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        12038.2_pop_on_3_N_4_K_2000_trial_8_ini_2       (22/06/2022 16:34:13)  
+ (Detached)
+        11891.2_pop_on_3_N_4_K_2000_trial_7_ini_2       (22/06/2022 16:33:48)  
+ (Detached)
+        11747.2_pop_on_3_N_4_K_2000_trial_6_ini_2       (22/06/2022 16:33:22)  
+ (Detached)
+        11603.2_pop_on_3_N_4_K_2000_trial_5_ini_2       (22/06/2022 16:32:57)  
+ (Detached)
+        11460.2_pop_on_3_N_4_K_2000_trial_4_ini_2       (22/06/2022 16:32:32)  
+ (Detached)
+        11318.2_pop_on_3_N_4_K_2000_trial_3_ini_2       (22/06/2022 16:32:07)  
+ (Detached)
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        12038.2_pop_on_3_N_4_K_2000_trial_8_ini_2       (22/06/2022 16:34:12) (
+Detached)                                                                     
+        11891.2_pop_on_3_N_4_K_2000_trial_7_ini_2       (22/06/2022 16:33:47) (
+Detached)                                                                     
+        11747.2_pop_on_3_N_4_K_2000_trial_6_ini_2       (22/06/2022 16:33:21) (
+Detached)                                                                     
+        11603.2_pop_on_3_N_4_K_2000_trial_5_ini_2       (22/06/2022 16:32:56) (
+Detached)                                                                     
+        11460.2_pop_on_3_N_4_K_2000_trial_4_ini_2       (22/06/2022 16:32:31) (
+Detached)                                                                     
+        11318.2_pop_on_3_N_4_K_2000_trial_3_ini_2       (22/06/2022 16:32:06) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        12038.2_pop_on_3_N_4_K_2000_trial_8_ini_2       (22/06/2022 16:34:12) (
+Detached)                                                                     
+        11891.2_pop_on_3_N_4_K_2000_trial_7_ini_2       (22/06/2022 16:33:47) (
+Detached)                                                                     
+        11747.2_pop_on_3_N_4_K_2000_trial_6_ini_2       (22/06/2022 16:33:21) (
+Detached)                                                                     
+        11603.2_pop_on_3_N_4_K_2000_trial_5_ini_2       (22/06/2022 16:32:56) (
+Detached)                                                                     
+        11460.2_pop_on_3_N_4_K_2000_trial_4_ini_2       (22/06/2022 16:32:31) (
+Detached)                                                                     
+        11318.2_pop_on_3_N_4_K_2000_trial_3_ini_2       (22/06/2022 16:32:06) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        12038.2_pop_on_3_N_4_K_2000_trial_8_ini_2       (22/06/2022 16:34:13) (
+Detached)                                                                     
+        11891.2_pop_on_3_N_4_K_2000_trial_7_ini_2       (22/06/2022 16:33:48) (
+Detached)                                                                     
+        11747.2_pop_on_3_N_4_K_2000_trial_6_ini_2       (22/06/2022 16:33:22) (
+Detached)                                                                     
+        11603.2_pop_on_3_N_4_K_2000_trial_5_ini_2       (22/06/2022 16:32:57) (
+Detached)                                                                     
+        11460.2_pop_on_3_N_4_K_2000_trial_4_ini_2       (22/06/2022 16:32:32) (
+Detached)                                                                     
+        11318.2_pop_on_3_N_4_K_2000_trial_3_ini_2       (22/06/2022 16:32:07) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        12038.2_pop_on_3_N_4_K_2000_trial_8_ini_2       (22/06/2022 16:34:13) (
+Detached)                                                                     
+        11891.2_pop_on_3_N_4_K_2000_trial_7_ini_2       (22/06/2022 16:33:48) (
+Detached)                                                                     
+        11747.2_pop_on_3_N_4_K_2000_trial_6_ini_2       (22/06/2022 16:33:22) (
+Detached)                                                                     
+        11603.2_pop_on_3_N_4_K_2000_trial_5_ini_2       (22/06/2022 16:32:57) (
+Detached)                                                                     
+        11460.2_pop_on_3_N_4_K_2000_trial_4_ini_2       (22/06/2022 16:32:32) (
+Detached)                                                                     
+        11318.2_pop_on_3_N_4_K_2000_trial_3_ini_2       (22/06/2022 16:32:07) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:44) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:19) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:53) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:28) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:03) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:38) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        14463.2_pop_on_3_N_4_K_2000_trial_4_ini_3       (22/06/2022 16:44:45) (
+Detached)                                                                     
+        14366.2_pop_on_3_N_4_K_2000_trial_3_ini_3       (22/06/2022 16:44:20) (
+Detached)                                                                     
+        14268.2_pop_on_3_N_4_K_2000_trial_2_ini_3       (22/06/2022 16:43:54) (
+Detached)                                                                     
+        14171.2_pop_on_3_N_4_K_2000_trial_1_ini_3       (22/06/2022 16:43:29) (
+Detached)                                                                     
+        14071.2_pop_on_3_N_4_K_2000_trial_10_ini_2      (22/06/2022 16:43:04) (
+Detached)                                                                     
+        13975.2_pop_on_3_N_4_K_2000_trial_9_ini_2       (22/06/2022 16:42:39) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:20) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:54) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:29) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:04) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:39) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:14) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:19) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:53) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:28) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:03) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:38) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:13) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:20) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:54) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:29) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:04) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:39) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:14) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:19) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:53) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:28) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:03) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:38) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:13) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:19) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:53) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:28) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:03) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:38) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:13) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:20) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:54) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:29) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:04) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:39) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:14) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        17429.2_pop_on_3_N_4_K_2000_trial_2_ini_5       (22/06/2022 17:16:20) (
+Detached)                                                                     
+        17295.2_pop_on_3_N_4_K_2000_trial_1_ini_5       (22/06/2022 17:15:54) (
+Detached)                                                                     
+        17247.2_pop_on_3_N_4_K_2000_trial_10_ini_4      (22/06/2022 17:15:29) (
+Detached)                                                                     
+        17202.2_pop_on_3_N_4_K_2000_trial_9_ini_4       (22/06/2022 17:15:04) (
+Detached)                                                                     
+        17156.2_pop_on_3_N_4_K_2000_trial_8_ini_4       (22/06/2022 17:14:39) (
+Detached)                                                                     
+        17112.2_pop_on_3_N_4_K_2000_trial_7_ini_4       (22/06/2022 17:14:14) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        18214.2_pop_on_3_N_4_K_2000_trial_8_ini_5       (22/06/2022 17:27:10) (
+Detached)                                                                     
+        18119.2_pop_on_3_N_4_K_2000_trial_7_ini_5       (22/06/2022 17:26:45) (
+Detached)                                                                     
+        18026.2_pop_on_3_N_4_K_2000_trial_6_ini_5       (22/06/2022 17:26:20) (
+Detached)                                                                     
+        17934.2_pop_on_3_N_4_K_2000_trial_5_ini_5       (22/06/2022 17:25:55) (
+Detached)                                                                     
+        17854.2_pop_on_3_N_4_K_2000_trial_4_ini_5       (22/06/2022 17:25:29) (
+Detached)                                                                     
+        17810.2_pop_on_3_N_4_K_2000_trial_3_ini_5       (22/06/2022 17:25:04) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        18214.2_pop_on_3_N_4_K_2000_trial_8_ini_5       (22/06/2022 17:27:10) (
+Detached)                                                                     
+        18119.2_pop_on_3_N_4_K_2000_trial_7_ini_5       (22/06/2022 17:26:45) (
+Detached)                                                                     
+        18026.2_pop_on_3_N_4_K_2000_trial_6_ini_5       (22/06/2022 17:26:20) (
+Detached)                                                                     
+        17934.2_pop_on_3_N_4_K_2000_trial_5_ini_5       (22/06/2022 17:25:55) (
+Detached)                                                                     
+        17854.2_pop_on_3_N_4_K_2000_trial_4_ini_5       (22/06/2022 17:25:29) (
+Detached)                                                                     
+        17810.2_pop_on_3_N_4_K_2000_trial_3_ini_5       (22/06/2022 17:25:04) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        18214.2_pop_on_3_N_4_K_2000_trial_8_ini_5       (22/06/2022 17:27:11) (
+Detached)                                                                     
+        18119.2_pop_on_3_N_4_K_2000_trial_7_ini_5       (22/06/2022 17:26:46) (
+Detached)                                                                     
+        18026.2_pop_on_3_N_4_K_2000_trial_6_ini_5       (22/06/2022 17:26:21) (
+Detached)                                                                     
+        17934.2_pop_on_3_N_4_K_2000_trial_5_ini_5       (22/06/2022 17:25:56) (
+Detached)                                                                     
+        17854.2_pop_on_3_N_4_K_2000_trial_4_ini_5       (22/06/2022 17:25:30) (
+Detached)                                                                     
+        17810.2_pop_on_3_N_4_K_2000_trial_3_ini_5       (22/06/2022 17:25:05) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        18214.2_pop_on_3_N_4_K_2000_trial_8_ini_5       (22/06/2022 17:27:10) (
+Detached)                                                                     
+        18119.2_pop_on_3_N_4_K_2000_trial_7_ini_5       (22/06/2022 17:26:45) (
+Detached)                                                                     
+        18026.2_pop_on_3_N_4_K_2000_trial_6_ini_5       (22/06/2022 17:26:20) (
+Detached)                                                                     
+        17934.2_pop_on_3_N_4_K_2000_trial_5_ini_5       (22/06/2022 17:25:55) (
+Detached)                                                                     
+        17854.2_pop_on_3_N_4_K_2000_trial_4_ini_5       (22/06/2022 17:25:29) (
+Detached)                                                                     
+        17810.2_pop_on_3_N_4_K_2000_trial_3_ini_5       (22/06/2022 17:25:04) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        18214.2_pop_on_3_N_4_K_2000_trial_8_ini_5       (22/06/2022 17:27:11) (
+Detached)                                                                     
+        18119.2_pop_on_3_N_4_K_2000_trial_7_ini_5       (22/06/2022 17:26:46) (
+Detached)                                                                     
+        18026.2_pop_on_3_N_4_K_2000_trial_6_ini_5       (22/06/2022 17:26:21) (
+Detached)                                                                     
+        17934.2_pop_on_3_N_4_K_2000_trial_5_ini_5       (22/06/2022 17:25:56) (
+Detached)                                                                     
+        17854.2_pop_on_3_N_4_K_2000_trial_4_ini_5       (22/06/2022 17:25:30) (
+Detached)                                                                     
+        17810.2_pop_on_3_N_4_K_2000_trial_3_ini_5       (22/06/2022 17:25:05) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        20076.2_pop_on_3_N_4_K_2000_trial_10_ini_6      (22/06/2022 17:48:35) (
+Detached)                                                                     
+        19982.2_pop_on_3_N_4_K_2000_trial_9_ini_6       (22/06/2022 17:48:10) (
+Detached)                                                                     
+        19888.2_pop_on_3_N_4_K_2000_trial_8_ini_6       (22/06/2022 17:47:44) (
+Detached)                                                                     
+        19812.2_pop_on_3_N_4_K_2000_trial_7_ini_6       (22/06/2022 17:47:19) (
+Detached)                                                                     
+        19767.2_pop_on_3_N_4_K_2000_trial_6_ini_6       (22/06/2022 17:46:54) (
+Detached)                                                                     
+        19723.2_pop_on_3_N_4_K_2000_trial_5_ini_6       (22/06/2022 17:46:28) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        20076.2_pop_on_3_N_4_K_2000_trial_10_ini_6      (22/06/2022 17:48:35) (
+Detached)                                                                     
+        19982.2_pop_on_3_N_4_K_2000_trial_9_ini_6       (22/06/2022 17:48:10) (
+Detached)                                                                     
+        19888.2_pop_on_3_N_4_K_2000_trial_8_ini_6       (22/06/2022 17:47:44) (
+Detached)                                                                     
+        19812.2_pop_on_3_N_4_K_2000_trial_7_ini_6       (22/06/2022 17:47:19) (
+Detached)                                                                     
+        19767.2_pop_on_3_N_4_K_2000_trial_6_ini_6       (22/06/2022 17:46:54) (
+Detached)                                                                     
+        19723.2_pop_on_3_N_4_K_2000_trial_5_ini_6       (22/06/2022 17:46:28) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:33)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        20076.2_pop_on_3_N_4_K_2000_trial_10_ini_6      (22/06/2022 17:48:36) (
+Detached)                                                                     
+        19982.2_pop_on_3_N_4_K_2000_trial_9_ini_6       (22/06/2022 17:48:11) (
+Detached)                                                                     
+        19888.2_pop_on_3_N_4_K_2000_trial_8_ini_6       (22/06/2022 17:47:45) (
+Detached)                                                                     
+        19812.2_pop_on_3_N_4_K_2000_trial_7_ini_6       (22/06/2022 17:47:20) (
+Detached)                                                                     
+        19767.2_pop_on_3_N_4_K_2000_trial_6_ini_6       (22/06/2022 17:46:55) (
+Detached)                                                                     
+        19723.2_pop_on_3_N_4_K_2000_trial_5_ini_6       (22/06/2022 17:46:29) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        20076.2_pop_on_3_N_4_K_2000_trial_10_ini_6      (22/06/2022 17:48:36) (
+Detached)                                                                     
+        19982.2_pop_on_3_N_4_K_2000_trial_9_ini_6       (22/06/2022 17:48:11) (
+Detached)                                                                     
+        19888.2_pop_on_3_N_4_K_2000_trial_8_ini_6       (22/06/2022 17:47:45) (
+Detached)                                                                     
+        19812.2_pop_on_3_N_4_K_2000_trial_7_ini_6       (22/06/2022 17:47:20) (
+Detached)                                                                     
+        19767.2_pop_on_3_N_4_K_2000_trial_6_ini_6       (22/06/2022 17:46:55) (
+Detached)                                                                     
+        19723.2_pop_on_3_N_4_K_2000_trial_5_ini_6       (22/06/2022 17:46:29) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ screen -r 
+There are several suitable screens on:
+        20076.2_pop_on_3_N_4_K_2000_trial_10_ini_6      (22/06/2022 17:48:36) (
+Detached)                                                                     
+        19982.2_pop_on_3_N_4_K_2000_trial_9_ini_6       (22/06/2022 17:48:11) (
+Detached)                                                                     
+        19888.2_pop_on_3_N_4_K_2000_trial_8_ini_6       (22/06/2022 17:47:45) (
+Detached)                                                                     
+        19812.2_pop_on_3_N_4_K_2000_trial_7_ini_6       (22/06/2022 17:47:20) (
+Detached)                                                                     
+        19767.2_pop_on_3_N_4_K_2000_trial_6_ini_6       (22/06/2022 17:46:55) (
+Detached)                                                                     
+        5357.loop       (22/06/2022 16:10:34)   (Detached)
+Type "screen [-d] -r [pid.]tty.host" to resume one of them.
+alexandre.mahrach@pcneurophys181:~/IDIBAPS/cpp/model/code$ 

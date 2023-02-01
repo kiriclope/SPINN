@@ -1,0 +1,8 @@
+ext_inputs 710 530
+J 900 -140 120 -90 
+Tsyn 3.0 2.0 3.0 2.0 
+sigma_ff 0 0
+ext_inputs 745 530
+J 900 -140 120 -90
+Tsyn 3.0 2.0 3.0 2.0 
+sigma_ff 0 0
