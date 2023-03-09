@@ -26,7 +26,7 @@ void init_con_globals() {
   for(i=0;i<n_pop;i++)
     for(j=0; j<n_neurons; j++)
       if(j>=cum_n_per_pop[i] && j<cum_n_per_pop[i+1])
-  	which_pop[j] = i ;
+		which_pop[j] = i ;
 
   K_over_Na = new float [n_pop]() ; 
   
@@ -62,7 +62,6 @@ void delete_con_globals() {
     delete [] prefactor ; 
     delete [] X ; 
   }
-  
 }
 
 ////////////
@@ -151,35 +150,35 @@ void func_con_prob() {
       cout << "kappa, " << KAPPA ;
       
       if(KAPPA > 0.5) {
-	cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
-	cout << "ERROR: KAPPA TOO LARGE" << endl ; 
-	cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+		cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+		cout << "ERROR: KAPPA TOO LARGE" << endl ;
+		cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
       }            
       
       for(j=0; j<n_neurons; j++) { //pre
-	pre_pop = which_pop[j] ; 
+		pre_pop = which_pop[j] ;
 	
-	kappa_K_N = K_over_Na[pre_pop] * kappa ; 
+		kappa_K_N = K_over_Na[pre_pop] * kappa ;
 	
-	for(i=0; i<n_neurons; i++) { // post
-	  post_pop = which_pop[i] ; 
+		for(i=0; i<n_neurons; i++) { // post
+		  post_pop = which_pop[i] ;
 	  
-	  con_prob[j + i * n_neurons] += K_over_Na[pre_pop] ; 
+		  con_prob[j + i * n_neurons] += K_over_Na[pre_pop] ;
 	  
-	  if(IS_STRUCT_SYN[pre_pop + post_pop * n_pop]) { 
-	    cos_D_theta = cos(theta[i]-theta[j]) ;	    
-	    con_prob[j + i * n_neurons] += kappa_K_N * cos_D_theta ;
+		  if(IS_STRUCT_SYN[pre_pop + post_pop * n_pop]) {
+			cos_D_theta = cos(theta[i]-theta[j]) ;
+			con_prob[j + i * n_neurons] += kappa_K_N * cos_D_theta ;
 	    
-	    /* if(RANK==2)  */
-	    /*   con_prob[idx_perm[j] + idx_perm[i] * n_neurons] += kappa_1_K_N * cos_D_theta ;  */
+			/* if(RANK==2)  */
+			/*   con_prob[idx_perm[j] + idx_perm[i] * n_neurons] += kappa_1_K_N * cos_D_theta ;  */
 
-	    if(con_prob[j + i * n_neurons]<=0 || con_prob[j + i * n_neurons]>=1) {
-	      cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
-	      cout << "error con_prob>1 or <0"  << endl ;
-	      cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
-	    }
-	  }	  
-	} 
+			if(con_prob[j + i * n_neurons]<=0 || con_prob[j + i * n_neurons]>=1) {
+			  cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+			  cout << "error con_prob>1 or <0"  << endl ;
+			  cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+			}
+		  }
+		}
       } 
     } //endif ring/spec 
     
@@ -196,28 +195,28 @@ void func_con_prob() {
       init_theta() ;
       
       for(i=0; i<n_neurons; i++) { // post, need loop over post before pre to compute prefactor
-	post_pop = which_pop[i] ; 
+		post_pop = which_pop[i] ;
 	
-	for(j=0; j<n_neurons; j++) { // pre, Jij: j (pre) to i (post)
-	  pre_pop = which_pop[j] ;
+		for(j=0; j<n_neurons; j++) { // pre, Jij: j (pre) to i (post)
+		  pre_pop = which_pop[j] ;
 	  
-	  con_prob[j + i * n_neurons] = Gaussian1D(theta[i]-theta[j], SIGMA[pre_pop+post_pop*n_pop]) ; 
-	  // Pij = Zb Cij with Zb = K / sum_j Cij then sum_j Pij = K 
-	  prefactor[i + pre_pop*n_neurons] += con_prob[j + i * n_neurons] ;
-	  // sum over presynaptic neurons j
-	}
+		  con_prob[j + i * n_neurons] = Gaussian1D(theta[i]-theta[j], SIGMA[pre_pop+post_pop*n_pop]) ;
+		  // Pij = Zb Cij with Zb = K / sum_j Cij then sum_j Pij = K
+		  prefactor[i + pre_pop*n_neurons] += con_prob[j + i * n_neurons] ;
+		  // sum over presynaptic neurons j
+		}
 
-	for(j=0; j<n_neurons; j++) {
-	  pre_pop = which_pop[j] ; 
-	  con_prob[j + i * n_neurons] *= Ka[pre_pop] / prefactor[i+pre_pop*n_neurons] ;
+		for(j=0; j<n_neurons; j++) {
+		  pre_pop = which_pop[j] ;
+		  con_prob[j + i * n_neurons] *= Ka[pre_pop] / prefactor[i+pre_pop*n_neurons] ;
 	  
-	  if(con_prob[j + i * n_neurons]<=0 || con_prob[j + i * n_neurons]>=1) {
-	    cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
-	    cout << "error con_prob>1 or <0"  << endl ; 
-	    cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
-	  }
-	}
-	/* prefactor[pre_pop+post_pop*n_pop] = 0.0 ; // reinit prefactor for each post  */
+		  if(con_prob[j + i * n_neurons]<=0 || con_prob[j + i * n_neurons]>=1) {
+			cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+			cout << "error con_prob>1 or <0"  << endl ;
+			cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+		  }
+		}
+		/* prefactor[pre_pop+post_pop*n_pop] = 0.0 ; // reinit prefactor for each post  */
 	 
       } // end loop post
       
@@ -227,31 +226,31 @@ void func_con_prob() {
       cout << "random network with low-rank specific connections: rank, " << RANK << ", " ; 
       
       for(j=0; j<n_neurons; j++) { // pre
-	pre_pop = which_pop[j] ;
+		pre_pop = which_pop[j] ;
 
-	kappa_K_N = K_over_Na[pre_pop] * kappa ;
-	if(RANK==2)
-	  kappa_1_K_N = K_over_Na[pre_pop] * kappa_1 ; 
+		kappa_K_N = K_over_Na[pre_pop] * kappa ;
+		if(RANK==2)
+		  kappa_1_K_N = K_over_Na[pre_pop] * kappa_1 ;
     
-	for(i=0; i<n_neurons; i++) { // post
-	  post_pop = which_pop[i] ;
-	  con_prob[j + i * n_neurons] += K_over_Na[pre_pop] ;
+		for(i=0; i<n_neurons; i++) { // post
+		  post_pop = which_pop[i] ;
+		  con_prob[j + i * n_neurons] += K_over_Na[pre_pop] ;
 
-	  if(pre_pop==0 && post_pop==0) 
-	    if(IS_STRUCT_SYN[pre_pop + post_pop * n_pop]) {
-	      con_prob[j + i * n_neurons] += kappa_K_N * ksi[i] * ksi[j] ;
-	      if(RANK==2)
-		con_prob[j + i * n_neurons] += kappa_1_K_N * ksi_1[i] * ksi_1[j] ;
-	      con_prob[j + i * n_neurons] = cut_LR(con_prob[j + i * n_neurons]) ;
-	    }
+		  if(pre_pop==0 && post_pop==0)
+			if(IS_STRUCT_SYN[pre_pop + post_pop * n_pop]) {
+			  con_prob[j + i * n_neurons] += kappa_K_N * ksi[i] * ksi[j] ;
+			  if(RANK==2)
+				con_prob[j + i * n_neurons] += kappa_1_K_N * ksi_1[i] * ksi_1[j] ;
+			  con_prob[j + i * n_neurons] = cut_LR(con_prob[j + i * n_neurons]) ;
+			}
 	  
-	  if(con_prob[j + i * n_neurons]<0 || con_prob[j + i * n_neurons]>1) { 
-	    cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ; 
-	    cout << "error con_prob>1 or <0"  << endl ; 
-	    cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ; 
-	  }
+		  if(con_prob[j + i * n_neurons]<0 || con_prob[j + i * n_neurons]>1) {
+			cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+			cout << "error con_prob>1 or <0"  << endl ;
+			cout << " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl ;
+		  }
 
-	}
+		}
 
       }
       
@@ -264,7 +263,7 @@ void func_con_prob() {
     for(j=0; j<n_neurons; j++) { // Pij -> j (cols, pre) to i (rows, post) 
       pre_pop = which_pop[j] ; 
       for(i=0; i<n_neurons; i++) 
-	con_prob[j + i * n_neurons] = K_over_Na[pre_pop] ; // Pij -> P[j + i * n_cols] (index = indexX * arrayWidth + indexY) ; 
+		con_prob[j + i * n_neurons] = K_over_Na[pre_pop] ; // Pij -> P[j + i * n_cols] (index = indexX * arrayWidth + indexY) ;
     } 
   } 
   
@@ -281,8 +280,8 @@ void func_con_vec() {
   for(i=0; i<n_neurons; i++) { 
     for(j=0; j<n_neurons; j++) { // Jij -> j (cols, pre) to i (rows, post) 
       if(con_prob[j + i * n_neurons] >= unif(con_gen) ) { 
-  	con_vec[j + i * n_neurons] = 1 ; 
-  	total_n_post++ ; 
+		con_vec[j + i * n_neurons] = 1 ;
+		total_n_post++ ;
       } 
     } 
   } 
@@ -322,11 +321,11 @@ void func_con_sparse_rep() {
       post_pop = which_pop[i] ;
       
       if(con_vec[j + i * n_neurons]) { // j->i = 1 with proba Kj/Nj 
-	id_post[counter] = i ; 
-	n_post[j]++ ; // Kb to post pop a, K/N * N = K 
-	/* n_pre[pre_pop][i]++ ; // Ka from pre pop a, K/N * Nj = Kj */ 
-	avg_n_post[pre_pop + post_pop*n_pop]++ ; 
-	counter++ ; 
+		id_post[counter] = i ;
+		n_post[j]++ ; // Kb to post pop a, K/N * N = K
+		/* n_pre[pre_pop][i]++ ; // Ka from pre pop a, K/N * Nj = Kj */
+		avg_n_post[pre_pop + post_pop*n_pop]++ ;
+		counter++ ;
       } 
     } 
   } 
@@ -429,15 +428,15 @@ void create_con_dir() {
   str_IE << fixed << setprecision(0) << SIGMA[2] ; 
   str_II << fixed << setprecision(0) << SIGMA[3] ; 
 
-if(IF_LOW_RANK) { 
-  ostringstream str_seed_ksi ; 
-  str_seed_ksi << fixed << setprecision(0) << SEED_KSI ; 
+  if(IF_LOW_RANK) {
+	ostringstream str_seed_ksi ;
+	str_seed_ksi << fixed << setprecision(0) << SEED_KSI ;
 
-  con_path += "/low_rank/rank_" + to_string(RANK) ; 
+	con_path += "/low_rank/rank_" + to_string(RANK) ;
  
-  if(FIX_KSI_SEED) 
-    con_path += "/seed_ksi_" + str_seed_ksi.str() ; 
-}
+	if(FIX_KSI_SEED)
+	  con_path += "/seed_ksi_" + str_seed_ksi.str() ;
+  }
   if(IF_RING)
     con_path += "/ring/kappa_" + str_kappa.str() ; 
     
@@ -446,28 +445,30 @@ if(IF_LOW_RANK) {
     if(RANK==2) {
       con_path += "_kappa_1_" + str_kappa_1.str() ; 
       if(FIX_MAP_SEED) 
-	con_path += "/seed_" + str_map_seed.str() ; 
+		con_path += "/seed_" + str_map_seed.str() ;
     }
 
   }
 
   if(IF_GAUSS) {
-      con_path += "/gauss/EE_" + str_EE.str() ;
-      con_path += "EI_" + str_EI.str() ;
-      con_path += "IE_" + str_IE.str() ;
-      con_path += "II_" + str_II.str() ;
-  }    
-    
-    /* if(IF_INI_COND)  */
-    /*   con_path += "/ini_cond_" + to_string( (int) INI_COND_ID ) ;  */
-    
-    /* if(IF_TRIALS)  */
-    /*   con_path += "/trial_" + to_string( (int) TRIAL_ID ) ;  */
+	con_path += "/gauss/EE_" + str_EE.str() ;
+	con_path += "EI_" + str_EI.str() ;
+	con_path += "IE_" + str_IE.str() ;
+	con_path += "II_" + str_II.str() ;
+  }
 
-    make_dir(con_path) ; 
-    cout << "created directory: " ; 
-    cout << con_path << endl ; 
+  /* if(IF_INI_COND)  */
+  /*   con_path += "/ini_cond_" + to_string( (int) INI_COND_ID ) ;  */
+    
+  /* if(IF_TRIALS)  */
+  /*   con_path += "/trial_" + to_string( (int) TRIAL_ID ) ;  */
 
+  if(IF_NO_QUENCH)
+	con_path += "/no_quench" ;
+
+  make_dir(con_path) ;
+  cout << "created directory: " ;
+  cout << con_path << endl ;
 }
 
 void save_to_con_file() {
@@ -479,5 +480,30 @@ void save_to_con_file() {
   write_to_file(con_path, "n_post", n_post, n_neurons) ; 
   
 }
+
+/* int *sampling_without_replacement(int K, int N) { */
+
+/*   vector<int> array(K);   // or reserve space for N elements up front */
+/*   ranges::sample(views::iota(0, N), */
+/* 				 array.begin(), */
+/* 				 K, */
+/* 				 rand_gen) ; */
+
+/*   return array.data() ; */
+/* } */
+
+/* void gen_con_without_quench() { */
+
+/*   int *sample ; */
+
+/*   con_vec = new int [n_neurons*n_neurons]() ; */
+
+/*   for(i=0; i<n_neurons; i++) { //post neurons */
+/* 	*sample = sampling_without_replacement(K, n_neurons) ; // presynaptic */
+
+/* 	for(k=0; k<K; k++) */
+/* 	  con_vec[sample[k] + i * n_neurons] = 1 ; */
+/*   } */
+/* } */
 
 #endif

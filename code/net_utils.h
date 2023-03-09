@@ -55,6 +55,8 @@ int read_params() {
 }
 
 void print_sim_info() {
+  cout << fixed << setprecision(2) ;
+
   cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% " << endl ; 
 
   if(IF_LIF)
@@ -182,8 +184,7 @@ void init_globals() {
   EPS_ERASE[0] = EPS_ERASE_E ;
   if(n_pop==2)
     EPS_ERASE[1] = EPS_ERASE_I ;
-  
-  
+
   which_pop = (int *) malloc( (unsigned long) n_neurons * sizeof(int) ) ; 
   
   for(i=0;i<n_pop;i++) 
@@ -199,6 +200,7 @@ void init_globals() {
     for(j=0; j<n_neurons; j++)
       filter_ff_inputs[j] = 0 ;
   }
+
   // ISI = new float [n_neurons]() ; // temporal averaged over TIME_WINDOW 
   
   // h^(ab)_i=h^b_i, inputs from presynaptic population b to postsynaptic neuron (i,a)
@@ -267,8 +269,8 @@ void init_globals() {
   
   if(IF_GAUSS)
     prefactor = new float [n_pop*n_neurons]() ;   
-  
 }
+
 
 void delete_globals() { 
   delete [] mean_rates ; 
@@ -487,8 +489,7 @@ float cut_LR(float x) {
 }
 
 void create_dir() { 
-  
-  path += "simulations/" ; 
+  path += "simulations/" ;
   
   if(IF_LIF) 
     path += "lif/" ; 
@@ -498,7 +499,7 @@ void create_dir() {
   ostringstream str_I0, str_J0 ;
   str_I0 << fixed << setprecision(2) << I0 ;
   str_J0 << fixed << setprecision(2) << abs(J0) ;
-  
+
   if(n_pop==1)
     dir = "I0_" + str_I0.str()  + "_J0_" + str_J0.str() ;
   
@@ -642,7 +643,7 @@ void read_from_file(string path, string file_name, T * &array, size_t array_size
   
   if (stat (file_path.c_str(), &buffer) == 0) { 
     file = fopen(file_path.c_str(), "rb") ; 
-    dum = fread(&array[0], sizeof array[0], array_size, file) ; 
+    dum = fread(&array[0], sizeof(array[0]), array_size, file) ;
     fclose(file) ; 
   } 
   else { 
@@ -664,7 +665,7 @@ void write_to_file(string path, string file_name, T * &array, size_t array_size)
   FILE *file ; 
   
   file = fopen(file_path.c_str(), "wb") ; 
-  dum = fwrite(&array[0], sizeof array[0], array_size, file) ; 
+  dum = fwrite(&array[0], sizeof array[0], array_size, file) ;
   fclose(file) ;
   
 }

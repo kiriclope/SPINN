@@ -1,4 +1,4 @@
-ext_inputs 770 530
-J 875 -140 120 -90
+ext_inputs 200 118.5
+J 850 -140 120 -90
 Tsyn 3.0 2.0 3.0 2.0
-sigma_ff 0 0
+sigma_ff .010 0.0
