@@ -6,9 +6,27 @@
 
 #include "utils.hpp"
 
+template<typename T>
+void saveArrayToFile(const std::string& filename, const T& arr, const size_t len) {
+    std::ofstream outFile(filename, std::ios::app);
+
+    if (!outFile.good()) {
+      std::cerr << "Error: could not write to file " << filename << std::endl;
+      outFile.close();
+      return;
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        outFile << arr[i] << " ";
+    }
+
+    outFile << std::endl;
+    outFile.close();
+}
+
 // template <typename T>
 // void writeVectorToFile(const std::vector<T>& v, const std::string& filename, bool append = false)
-// {h
+// {
 //   static std::ofstream file;
 //   if (!file.is_open() || file.good() == false || file.rdstate()) {
 //     // Open the file in the appropriate mode

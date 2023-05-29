@@ -190,7 +190,7 @@ void init_globals() {
   for(i=0;i<n_pop;i++) 
     for(j=0; j<n_neurons; j++)
       if(j>=cum_n_per_pop[i] && j<cum_n_per_pop[i+1])
-	which_pop[j] = i ; 
+        which_pop[j] = i ;
   
   mean_rates = new int [n_pop]() ; // population averaged rate also averaged over TIME_WINDOW  
   filter_rates = new int [n_neurons]() ; // temporal averaged over TIME_WINDOW

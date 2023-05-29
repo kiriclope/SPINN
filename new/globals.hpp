@@ -1,23 +1,55 @@
-#include <cmath>
+#ifndef GLOBALS_HPP
+#define GLOBALS_HPP
+#include <vector>
+#include <string>
 
-#define N (int) 1000
-#define N_POP (int) 1
-#define K (float) 1.0
+// Declare all variables as extern
+extern int VERBOSE;
+extern int N;
+extern int N_POP;
+extern float K;
 
-#define I0 (float) 10.0
-#define J0 (float) -2.0
-#define J1 (float) 0.4
+extern std::vector<float> FRAC;
+extern int* Na ;
+extern int* cNa ;
+extern float* Ka ;
+extern int* which_pop ;
 
-#define DT (float) 0.0005
-#define DURATION (float) 10.0
-#define T_WINDOW (float) 0.05
+extern float GAIN;
+extern std::vector<float> Iext ;
+extern std::vector<float> Jab ;
 
-#define THRESH (float) 1.0
+extern float DT;
+extern float DURATION;
+extern float T_WINDOW;
 
-#define TAU_SYN (float) 0.002
-#define DT_TAU_SYN (float) DT / TAU_SYN
-#define EXP_DT_TAU_SYN (float) exp(-DT / TAU_SYN)
+extern std::vector<float> TAU_SYN;
+extern float* DT_TAU_SYN;
+extern float* EXP_DT_TAU_SYN;
 
-#define TAU_RATE (float) 0.020
-#define DT_TAU_RATE (float) DT / TAU_RATE
-#define EXP_DT_TAU_RATE (float) exp(-DT / TAU_RATE)
+extern float V_THRESH;
+extern float V_REST;
+extern float V_LEAK;
+
+extern std::vector<float> TAU_MEM;
+extern float* DT_TAU_MEM;
+extern float* EXP_DT_TAU_MEM;
+
+extern std::string PROBA;
+extern std::vector<float> KAPPA;
+
+extern int IF_STP;
+extern std::vector<float> TAU_REC;
+extern std::vector<float> TAU_FAC;
+extern std::vector<float> USE;
+
+extern std::vector<float> T_STIM ;
+extern std::vector<float> A_STIM ;
+extern std::vector<float> PHI_STIM ;
+extern std::vector<float> KAPPA_STIM ;
+
+extern int IF_FF_NOISE;
+extern std::vector<float> VAR_FF;
+
+void loadConfig(std::string configname);
+#endif
