@@ -13,11 +13,18 @@ void LifNetwork::initNetwork() {
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
     for(int j=0; j < N_POP; j++)
+      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / sqrt(K);
       Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
+
+  if(IF_NMDA)
+    for(int i=0; i < N_POP; i++)
+      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / sqrt(K);
+      Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(K);
 
   // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
 
   for(int i=0; i < N_POP; i++)
+    // Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) ;
     Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) * (V_THRESH - V_REST);
 
   for(int i=0; i<N; i++)
@@ -75,21 +82,38 @@ void LifNetwork::updateVolts(){
 
 }
 
-void LifNetwork::updateInputs(){
+void LifNetwork::updateRecInputs(){
   int pres_pop=0, post_pop=0;
 
   for (int j = 0; j < N; ++j) // presynaptic
     if (spikes[j] == 1) {
       pres_pop = which_pop[j];
 
-      for(unsigned long i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
+      for (unsigned long i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
         post_pop = which_pop[indices[i]];
-        if (IF_STP && pres_pop==0 && post_pop==0)
+        if (IF_STP && pres_pop == 0 && post_pop == 0)
           inputs[pres_pop][indices[i]] += A_stp[j] * Jab_scaled[pres_pop + N_POP * post_pop];
         else
           inputs[pres_pop][indices[i]] += Jab_scaled[pres_pop + N_POP * post_pop];
       }
     }
+
+  if (IF_NMDA) {
+    for (int j = 0; j < Na[0]; ++j) // presynaptic
+      if (spikes[j] == 1) {
+        for (unsigned long i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
+          post_pop = which_pop[indices[i]];
+          if (IF_STP && post_pop == 0)
+            inputs_NMDA[indices[i]] += A_stp[j] * Jab_NMDA[post_pop];
+          else
+            inputs_NMDA[indices[i]] += Jab_NMDA[post_pop];
+        }
+      }
+  }
+}
+
+void LifNetwork::updateNetInputs(){
+  int pres_pop=0, post_pop=0;
 
   for(int i = 0; i < N; ++i)
     net_inputs[i] = ff_inputs[i];
@@ -100,6 +124,12 @@ void LifNetwork::updateInputs(){
       inputs[i][j] *= EXP_DT_TAU_SYN[i];
     }
   }
+  if (IF_NMDA) {
+    for (int j = 0; j < N; ++j) {
+      net_inputs[j] += inputs_NMDA[j];
+      inputs_NMDA[j] *= EXP_DT_TAU_NMDA[which_pop[j]];
+    }
+  }
 }
 
 void LifNetwork::updateSpikes(int step){
@@ -108,8 +138,14 @@ void LifNetwork::updateSpikes(int step){
       volts[i] = V_REST;
       spikes[i] = 1.0;
 
-      if(IF_STP)
-        updateStp(i, step);
+      // if (IF_RK2) {
+      //   dt2 = DT * (V_THRESH - vold[i]) / (volts[i] - vold[i] );
+      //   volts[i] = (volts[i] - V_THRESH)
+      //     * (1.0 + DT_TAU_MEM[pop] * (vold[i] - V_REST)
+      //        / (volts[i] - vold[i])) + V_REST;
+      // }
+
+      if (IF_STP && i < Na[0]) updateStp(i, step);
 
     } else {
       spikes[i] = 0.0;
@@ -126,13 +162,9 @@ void LifNetwork::updateStp(int i, int step){
 
   int pre_pop = which_pop[i];
 
-  u_stp[i] =
-      u_stp[i] * exp(- ISI / TAU_FAC[pre_pop]) +
-      USE[pre_pop] * (1.0 - u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]));
+  u_stp[i] = u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]));
 
-  x_stp[i] =
-      x_stp[i] * (1.0 - u_stp[i]) * exp(-ISI / TAU_REC[pre_pop]) +
-      1.0 - exp(- ISI / TAU_REC[pre_pop]);
+  x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-ISI / TAU_REC[pre_pop]) + 1.0 - exp(-ISI / TAU_REC[pre_pop]);
 
   A_stp[i] = u_stp[i] * x_stp[i];
 }
@@ -193,21 +225,30 @@ void LifNetwork::runSimul(){
 
   printParam();
 
-  std::ofstream ratesFile("rates.txt");
-  std::ofstream spikesFile("spikes.txt");
-  std::ofstream inputsEfile("inputsE.txt");
-  std::ofstream inputsIfile("inputsI.txt");
-  std::ofstream voltsFile("volts.txt");
+  std::ofstream ratesFile("./simul/rates.txt");
+  std::ofstream spikesFile("./simul/spikes.txt");
+  std::ofstream inputsEfile("./simul/inputsE.txt");
+  std::ofstream inputsIfile("./simul/inputsI.txt");
+  std::ofstream voltsFile("./simul/volts.txt");
+
+  std::ofstream xstpFile("./simul/x_stp.txt");
+  std::ofstream ustpFile("./simul/u_stp.txt");
+  std::ofstream AstpFile("./simul/A_stp.txt");
+
+  int N_STEPS = (int) (DURATION/DT);
+  int N_STEADY = (int) T_STEADY / DT;
+  int N_WINDOW = (int) T_WINDOW / DT;
 
   std::cout << "Running Simulation" << std::endl;
-  for(int step = 0; step < DURATION/DT; step += 1) {
+  for(int step = 0; step < N_STEPS; step += 1) {
 
     updateVolts();
-    updateSpikes(step); // must come before updateInputs in this implementation
-    updateFFinputs(step);
-    updateInputs();
+    updateSpikes(step); // must come before updateRecInputs in this implementation
+    updateFFinputs(step); // must come before updateNetInputs in this implementation
+    updateRecInputs(); // must come before updateNetInputs in this implementation
+    updateNetInputs();
 
-    if(step % (int) (T_WINDOW / DT) == 0) {
+    if(step % N_WINDOW == 0 && step >= N_STEADY) {
       for(int i=0; i<N; ++i)
         rates[i] *= dum;
 
@@ -233,6 +274,12 @@ void LifNetwork::runSimul(){
         saveArrayToFile(inputsEfile, inputs[0], N);
         saveArrayToFile(inputsIfile, inputs[1], N);
 
+        if (IF_STP) {
+          saveArrayToFile(xstpFile, x_stp, Na[0]);
+          saveArrayToFile(ustpFile, u_stp, Na[0]);
+          saveArrayToFile(AstpFile, A_stp, Na[0]);
+        }
+
         for(int i=0; i<N; ++i)
           rates[i] = 0.0 ;
       }
@@ -245,6 +292,10 @@ void LifNetwork::runSimul(){
   inputsEfile.close();
   inputsIfile.close();
   voltsFile.close();
+
+  xstpFile.close();
+  ustpFile.close();
+  AstpFile.close();
 
   std::cout << "Done" << std::endl;
 }

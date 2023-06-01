@@ -22,6 +22,7 @@ extern std::vector<float> Jab ;
 extern float DT;
 extern float DURATION;
 extern float T_WINDOW;
+extern float T_STEADY;
 
 extern std::vector<float> TAU_SYN;
 extern float* DT_TAU_SYN;
@@ -37,6 +38,10 @@ extern float* EXP_DT_TAU_MEM;
 
 extern std::string PROBA;
 extern std::vector<float> KAPPA;
+
+extern int IF_NMDA;
+extern std::vector<float> TAU_NMDA;
+extern float* EXP_DT_TAU_NMDA;
 
 extern int IF_STP;
 extern std::vector<float> TAU_REC;

@@ -23,6 +23,7 @@ std::vector<float> Iext ;
 float DT;
 float DURATION;
 float T_WINDOW;
+float T_STEADY;
 
 std::vector<float> TAU_SYN;
 float* DT_TAU_SYN;
@@ -38,6 +39,10 @@ float* EXP_DT_TAU_MEM;
 
 std::string PROBA;
 std::vector<float> KAPPA;
+
+int IF_NMDA;
+std::vector<float> TAU_NMDA;
+float* EXP_DT_TAU_NMDA;
 
 int IF_STP;
 std::vector<float> TAU_REC;
@@ -91,6 +96,7 @@ void loadConfig(std::string configname){
   DT = config["DT"].as<float>();
   DURATION = config["DURATION"].as<float>();
   T_WINDOW = config["T_WINDOW"].as<float>();
+  T_STEADY = config["T_STEADY"].as<float>();
 
   TAU_SYN = config["TAU_SYN"].as<std::vector<float>>();
 
@@ -118,6 +124,13 @@ void loadConfig(std::string configname){
 
   PROBA = config["PROBA"].as<std::string>();
   KAPPA = config["KAPPA"].as<std::vector<float>>();
+
+  IF_NMDA = config["IF_NMDA"].as<int>();
+  TAU_NMDA = config["TAU_NMDA"].as<std::vector<float>>();
+
+  EXP_DT_TAU_NMDA = new float[N_POP]();
+  for(int i=0; i<N_POP; ++i)
+    EXP_DT_TAU_NMDA[i] = std::exp(-DT / TAU_NMDA[i]);
 
   IF_STP = config["IF_STP"].as<int>();
   TAU_REC = config["TAU_REC"].as<std::vector<float>>();
