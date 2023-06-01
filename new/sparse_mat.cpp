@@ -13,12 +13,12 @@ float genConProb(int i, int j) {
   float theta_i = (2.0 * M_PI * i) / (float) Na[post_pop];
   float theta_j = (2.0 * M_PI * j) / (float) Na[pres_pop];
 
-  float proba = K / Na[pres_pop];
+  float proba = Ka[pres_pop] / Na[pres_pop];
 
   if (PROBA == "cos")
     proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] * cos(theta_i - theta_j));
   else if (PROBA == "spec")
-    proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] / sqrt(K) * cos(theta_i - theta_j));
+    proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] / sqrt(Ka[pres_pop]) * cos(theta_i - theta_j));
 
   return proba;
 }

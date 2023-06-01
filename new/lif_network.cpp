@@ -9,23 +9,24 @@
 #include "lif_network.hpp"
 
 void LifNetwork::initNetwork() {
+  // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
     for(int j=0; j < N_POP; j++)
-      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / sqrt(K);
-      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
+      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / Ka[j] * sqrt(Ka[0]);
+      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
 
   if(IF_NMDA)
     for(int i=0; i < N_POP; i++)
-      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / sqrt(K);
-      Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(K);
+      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
+      Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
 
-  // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
+  // Jab_NMDA[0] *= 0.92;
 
   for(int i=0; i < N_POP; i++)
-    // Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) ;
-    Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) * (V_THRESH - V_REST);
+    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
+    // Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) * (V_THRESH - V_REST);
 
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
@@ -41,7 +42,7 @@ void LifNetwork::updateFFinputs(int step) {
       theta_i = (2.0 * M_PI * i) / (float) Na[which_pop[i]];
 
       ff_inputs[i] = Iext_scaled[which_pop[i]]
-        + A_STIM[which_pop[i]] * sqrt(K)
+        + A_STIM[which_pop[i]] * sqrt(Ka[0])
         * (1.0 + KAPPA_STIM[which_pop[i]] *
            cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
     }
@@ -58,7 +59,7 @@ void LifNetwork::updateFFinputs(int step) {
     std::mt19937 gen(rd());
     std::normal_distribution<float> dist(0.0, 1.0);
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += dist(gen) * sqrt(K);
+      ff_inputs[i] += dist(gen) * sqrt(Ka[0]);
   }
 }
 
