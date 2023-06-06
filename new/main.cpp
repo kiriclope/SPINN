@@ -16,8 +16,9 @@ int main(int argc , char** argv) {
   std::string configname = argv[1] ;
   loadConfig(configname);
 
-  LifNetwork net;
-  net.runSimul();
+  init_lif();
+  runSimul();
+  free_lif();
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();

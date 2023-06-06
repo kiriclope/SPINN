@@ -76,7 +76,8 @@ void loadConfig(std::string configname){
 
   for(int i=0; i<N_POP; ++i) {
     Na[i] = (int) (FRAC[i] * N);
-    Ka[i] = FRAC[i] * K;
+    Ka[i] = K;
+    // Ka[i] = FRAC[i] * K;
   }
 
   cNa[0] = 0;
@@ -146,3 +147,4 @@ void loadConfig(std::string configname){
   VAR_FF = config["VAR_FF"].as<std::vector<float>>();
 
 }
+

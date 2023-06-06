@@ -8,31 +8,122 @@
 #include "sparse_mat.hpp"
 #include "lif_network.hpp"
 
-void LifNetwork::initNetwork() {
+float *rates;
+float *volts;
+float *spikes;
+float *spike_times;
+
+float *ff_inputs;
+float **inputs;
+float *inputs_NMDA;
+float *net_inputs;
+
+float *Jab_scaled;
+float *Jab_NMDA;
+
+float *Iext_scaled;
+
+unsigned long *colptr;
+int *indices;
+
+float *x_stp;
+float *u_stp;
+float *A_stp;
+
+void init_lif() {
+  rates = new float[N]();
+  volts = new float[N]();
+  spikes = new float[N]();
+  spike_times= new float[N]();
+
+  ff_inputs = new float[N]();
+  inputs = new float*[N_POP]();
+  net_inputs = new float[N]();
+
+  Jab_scaled = new float[N_POP * N_POP]();
+  Iext_scaled = new float[N_POP]();
+
+  colptr = new unsigned long[N+1]();
+  indices = new int[(unsigned long) (N * 5.0 * K)]();
+
+  for (int i = 0; i < N_POP; i++)
+    inputs[i] = new float[N]();
+
+  if (IF_NMDA) {
+    Jab_NMDA = new float[N_POP]();
+    inputs_NMDA = new float[N]();
+  }
+
+  if(IF_STP) {
+    x_stp = new float[N] {1.0};
+      u_stp = new float[N] {USE[0]};
+      A_stp = new float[N] {USE[0]};
+  }
+}
+
+// Destructor to free memory
+void free_lif() {
+  delete[] rates;
+  delete[] volts;
+  delete[] spikes;
+  delete[] spike_times;
+
+  delete[] ff_inputs;
+
+  for (int i = 0; i < N_POP; i++) {
+    delete[] inputs[i];
+  }
+  delete[] inputs;
+
+  if (IF_NMDA) {
+    delete[] Jab_NMDA;
+    delete[] inputs_NMDA;
+  }
+
+  delete[] net_inputs;
+  delete[] Jab_scaled;
+  delete[] Iext_scaled;
+
+  delete[] colptr;
+  delete[] indices;
+
+  if (IF_STP) {
+    delete[] x_stp;
+    delete[] u_stp;
+    delete[] A_stp;
+  }
+}
+
+void initNetwork() {
   // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
     for(int j=0; j < N_POP; j++)
+      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP];
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / Ka[j] * sqrt(Ka[0]);
       Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
+      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
 
   if(IF_NMDA)
     for(int i=0; i < N_POP; i++)
+      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] ;
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
       Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
 
-  // Jab_NMDA[0] *= 0.92;
+  Jab_NMDA[0] *= 0.9;
+  Jab_NMDA[1] *= 0.9;
 
   for(int i=0; i < N_POP; i++)
-    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
-    // Iext_scaled[i] = GAIN * Iext[i] * sqrt(K) * (V_THRESH - V_REST);
+    // Iext_scaled[i] = GAIN * Iext[i] ;
+    // // Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
+    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
 
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
 }
 
-void LifNetwork::updateFFinputs(int step) {
+void updateFFinputs(int step) {
 
   float theta_i = 0;
 
@@ -63,7 +154,7 @@ void LifNetwork::updateFFinputs(int step) {
   }
 }
 
-void LifNetwork::updateVolts(){
+void updateVolts(){
   int pres_pop=0;
 
   for (int i = 0; i < N; ++i) {
@@ -83,7 +174,7 @@ void LifNetwork::updateVolts(){
 
 }
 
-void LifNetwork::updateRecInputs(){
+void updateRecInputs(){
   int pres_pop=0, post_pop=0;
 
   for (int j = 0; j < N; ++j) // presynaptic
@@ -113,7 +204,7 @@ void LifNetwork::updateRecInputs(){
   }
 }
 
-void LifNetwork::updateNetInputs(){
+void updateNetInputs(){
   int pres_pop=0, post_pop=0;
 
   for(int i = 0; i < N; ++i)
@@ -133,7 +224,7 @@ void LifNetwork::updateNetInputs(){
   }
 }
 
-void LifNetwork::updateSpikes(int step){
+void updateSpikes(int step){
   for (int i = 0; i < N; ++i)
     if (volts[i] >= V_THRESH) {
       volts[i] = V_REST;
@@ -156,21 +247,34 @@ void LifNetwork::updateSpikes(int step){
     rates[i] += spikes[i];
 }
 
-void LifNetwork::updateStp(int i, int step){
+void updateStp(int i, int step){
   // This is the Mato & Hansel stp model
   float ISI = step * DT - spike_times[i];
   spike_times[i] = step * DT;
 
   int pre_pop = which_pop[i];
 
+  A_stp[i] = u_stp[i] * x_stp[i];
   u_stp[i] = u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]));
-
   x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-ISI / TAU_REC[pre_pop]) + 1.0 - exp(-ISI / TAU_REC[pre_pop]);
 
-  A_stp[i] = u_stp[i] * x_stp[i];
+  // // This is the Mongillo et al. 2012 model
+  // if (dist(gen) < U) { // calcium binding with proba U
+  //   u_stp[i] = 1.0;
+  //   if (x_stp[i] == 1.0) { // neurotransmitter release if available
+  //     A_stp[i] = 1.0; // spike
+  //     x_stp[i] = 0.0;
+  //   }
+  // }
+
+  // // In between spikes
+  // if (u_stp[i]==1.0 && dist(gen) < 1.0 / TAU_FAC[pre_pop])  // calcium unbinds with proba 1/TAU_FAC
+  //   u_stp[i] = 0.0;
+  // if (x_stp[i]==0.0 && dist(gen) < 1.0 / TAU_FAC[pre_pop])  // neurotransmitter refill with proba 1/TAU_REC
+  //   x_stp[i] = 1.0;
 }
 
-void LifNetwork::printParam(){
+void printParam(){
   std::cout << "LIF NETWORK ";
   std::cout << "N_POP " << N_POP << std::endl;
 
@@ -212,9 +316,9 @@ void LifNetwork::printParam(){
   std::cout << std::endl;
 }
 
-void LifNetwork::runSimul(){
+void runSimul(){
 
-  const float dum = 1.0 / T_WINDOW;
+  const float dum = 1000.0 / T_WINDOW;
 
   std::cout << "Initializing Network";
   initNetwork();
@@ -263,7 +367,7 @@ void LifNetwork::runSimul(){
 
         std::cout << "| Spike count ";
         for (int i = 0; i < N_POP; ++i)
-          std::cout << popMean(spikes, cNa[i], cNa[i + 1]) / DT << " ";
+          std::cout << popMean(spikes, cNa[i], cNa[i + 1]) * 1000.0 / DT << " ";
         std::cout << std::flush;
         std::cout << "\r";
 
