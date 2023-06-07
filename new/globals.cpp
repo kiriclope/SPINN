@@ -44,6 +44,7 @@ std::vector<float> KAPPA;
 
 int IF_NMDA;
 std::vector<float> TAU_NMDA;
+std::vector<float> R_NMDA;
 float* EXP_DT_TAU_NMDA;
 
 int IF_STP;
@@ -132,6 +133,7 @@ void loadConfig(std::string configname){
 
   IF_NMDA = config["IF_NMDA"].as<int>();
   TAU_NMDA = config["TAU_NMDA"].as<std::vector<float>>();
+  R_NMDA = config["R_NMDA"].as<std::vector<float>>();
 
   EXP_DT_TAU_NMDA = new float[N_POP]();
   for(int i=0; i<N_POP; ++i)

@@ -13,8 +13,8 @@ float genConProb(int i, int j) {
   int pres_pop = which_pop[j];
   int post_pop = which_pop[i];
 
-  float theta_i = (2.0 * M_PI * i) / (float) Na[post_pop];
-  float theta_j = (2.0 * M_PI * j) / (float) Na[pres_pop];
+  float theta_i = (2.0 * M_PI * (i - cNa[post_pop])) / (float) Na[post_pop];
+  float theta_j = (2.0 * M_PI * (j - cNa[pres_pop])) / (float) Na[pres_pop];
 
   float proba = Ka[pres_pop] / Na[pres_pop];
 
@@ -24,38 +24,6 @@ float genConProb(int i, int j) {
     proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] / sqrt(Ka[pres_pop]) * cos(theta_i - theta_j));
 
   return proba;
-}
-
-void getSparseMatCSC(size_t *&colptr, int *&indices) {
-
-  std::cout << "Loading Sparse Matrix" ;
-
-  std::ifstream inFile("./matrix/colptr.txt");
-  loadArrayFromFile(inFile, colptr, N+1);
-  inFile.close();
-
-  std::ifstream inFile2("./matrix/indices.txt");
-  loadArrayFromFile(inFile2, indices, colptr[N+1]);
-  inFile2.close();
-
-  std::cout << " Done" << std::endl;
-
-}
-
-void saveSparseMatCSC(size_t* colptr, int* indices){
-
-  std::cout << "Saving Sparse Matrix" ;
-
-  std::ofstream colptrFile("./matrix/colptr.txt");
-  saveArrayToFile(colptrFile, colptr, (size_t) N+1);
-  colptrFile.close();
-
-  std::ofstream indicesFile("./matrix/indices.txt");
-  saveArrayToFile(indicesFile, indices, colptr[N+1]);
-  indicesFile.close();
-
-  std::cout << " Done" << std::endl;
-
 }
 
 void genSparseMatCSC(size_t*& colptr, int*& indices) {
@@ -83,9 +51,41 @@ void genSparseMatCSC(size_t*& colptr, int*& indices) {
   }
 
   if (IF_SAVE_MAT)
-    saveSparseMatCSC(colptr, indices);
+    saveSparseMatCSC(colptr, indices, nnz);
 
   std::cout << " Done" << std::endl;
+}
+
+void getSparseMatCSC(size_t *&colptr, int *&indices) {
+
+  std::cout << "Loading Sparse Matrix" ;
+
+  std::ifstream colptrFile("./matrix/colptr.txt");
+  loadArrayFromFile(colptrFile, colptr, N+1);
+  colptrFile.close();
+
+  std::ifstream indicesFile("./matrix/indices.txt");
+  loadArrayFromFile(indicesFile, indices, colptr[N+1]);
+  indicesFile.close();
+
+  std::cout << " Done" << std::endl;
+
+}
+
+void saveSparseMatCSC(size_t* colptr, int* indices, size_t len){
+
+  std::cout << "Saving Sparse Matrix" ;
+
+  std::ofstream colptrFile("./matrix/colptr.txt");
+  saveArrayToFile(colptrFile, colptr, (size_t) N+1);
+  colptrFile.close();
+
+  std::ofstream indicesFile("./matrix/indices.txt");
+  saveArrayToFile(indicesFile, indices, len);
+  indicesFile.close();
+
+  std::cout << " Done" << std::endl;
+
 }
 
 void cscToDense(size_t* colptr, int* indices, int** dense) {

@@ -1,4 +1,5 @@
 #include <fstream>
+#include "globals.hpp"
 
 template <typename T>
 float popSum(T*& v, size_t start_idx = 0, size_t end_idx = 0)
@@ -41,6 +42,8 @@ void saveArrayToFile(std::ofstream& outFile, T& arr, size_t len) {
     std::cerr << "Error: could not write to file" << std::endl;
     return;
   }
+
+  std::cout << len << std::endl;
 
   for (size_t i = 0; i < len; ++i)
     outFile << arr[i] << " ";

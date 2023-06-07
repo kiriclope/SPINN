@@ -115,8 +115,8 @@ void initNetwork() {
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
       Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
 
-  Jab_NMDA[0] *= 0.9;
-  Jab_NMDA[1] *= 0.9;
+  Jab_NMDA[0] *= (1.0 - R_NMDA[0]) / R_NMDA[0];
+  Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
 
   for(int i=0; i < N_POP; i++)
     // Iext_scaled[i] = GAIN * Iext[i] ;
@@ -136,7 +136,7 @@ void updateFFinputs(int step) {
   if (step == (int) (T_STIM[0] / DT)) {
     std::cout << " STIM ON" << std::endl;
     for (int i = 0; i < N; i++) {
-      theta_i = (2.0 * M_PI * i) / (float) Na[which_pop[i]];
+      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
 
       ff_inputs[i] = Iext_scaled[which_pop[i]]
         + A_STIM[which_pop[i]] * sqrt(Ka[0])
@@ -153,7 +153,7 @@ void updateFFinputs(int step) {
 
   if (IF_FF_NOISE) {
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]]) * white(gen);
+      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]]) * white(gen) / 1000.0 ;
   }
 }
 

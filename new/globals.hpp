@@ -43,6 +43,7 @@ extern std::vector<float> KAPPA;
 
 extern int IF_NMDA;
 extern std::vector<float> TAU_NMDA;
+extern std::vector<float> R_NMDA;
 extern float* EXP_DT_TAU_NMDA;
 
 extern int IF_STP;
