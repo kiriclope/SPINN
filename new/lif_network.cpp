@@ -299,7 +299,7 @@ void printParam(){
   for(int i=0; i < N_POP; i++)
     for(int j=0; j < N_POP; j++)
       std::cout << Jab[j + i * N_POP] << " ";
-  std::cout << std::endl;
+  // std::cout << std::endl;
 
   std::cout << "Iext ";
   for(int i=0; i < N_POP; i++)
@@ -310,7 +310,7 @@ void printParam(){
   for (int i = 0; i < N_POP; i++) {
     std::cout << Iext_scaled[i] << " ";
   }
-  std::cout << std::endl;
+  // std::cout << std::endl;
 
   std::cout << "Jab_scaled ";
   for(int i=0; i < N_POP; i++)

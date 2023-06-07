@@ -114,21 +114,52 @@ This function takes as input the row pointers =rowptr=, column indices =indices=
         # Show the plot
         plt.show()
 
-  plotAverageHistogram('./simul/rates.txt')
+  plotAverageHistogram('./simul/A_stp.txt')
 
 #+end_src
 
 #+RESULTS:
 : None
 
-#+begin_src ipython :results drawer :session mysession
+#+begin_src python
+
+  import numpy as np
+  import matplotlib.pyplot as plt
+
+  def plotAverageHistogram(filename):
+        # Load rate data from file
+        data = np.loadtxt(filename)
+
+        # print(data.shape)
+        # data = data.reshape(int(data.shape[0] / 5000), 5000)
+        # Compute mean rate over population (i.e., average over time axis)
+        pop_mean = np.mean(data[1:,:int(data.shape[1] * .75)], axis=1)
+        time_mean = np.mean(data[250:,:int(data.shape[1] * .75)], axis=0)
+
+        # Create two subplots: one for the mean rate over time, the other for the histogram of mean rates
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=3)
+
+        # Plot the mean rate over time in the top subplot
+        ax0.plot(pop_mean)
+        # ax0.imshow(data.T, origin='lower', aspect='auto', cmap='jet')
+        ax0.set_xlabel('Time')
+        ax0.set_ylabel('Pop Rate (Hz)')
+
+        # Plot the histogram of mean rates in the bottom subplot
+        ax1.hist(time_mean, bins='auto')
+        ax1.set_xlabel('Mean Rates (Hz)')
+        ax1.set_ylabel('Count')
+
+        ax2.plot(time_mean)
+        ax2.set_xlabel('Neuron')
+        ax2.set_ylabel('Mean Rates')
+
+        # Show the plot
+        plt.show()
 
   plotAverageHistogram('./simul/A_stp.txt')
 
 #+end_src
 
 #+RESULTS:
-:results:
-# Out[11]:
-[[file:./obipy-resources/Px7eGb.png]]
-:end:
+: None

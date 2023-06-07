@@ -1,4 +1,6 @@
+#include <iostream>
 #include <fstream>
+
 #include "globals.hpp"
 
 template <typename T>
@@ -42,8 +44,6 @@ void saveArrayToFile(std::ofstream& outFile, T& arr, size_t len) {
     std::cerr << "Error: could not write to file" << std::endl;
     return;
   }
-
-  std::cout << len << std::endl;
 
   for (size_t i = 0; i < len; ++i)
     outFile << arr[i] << " ";
