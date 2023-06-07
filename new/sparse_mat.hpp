@@ -1,9 +1,9 @@
 #ifndef SPARSE_HPP
 #define SPARSE_HPP
 
-void getSparseMatCSC(unsigned long *&colptr, int *&indices);
-void genSparseMatCSC(unsigned long*& colptr, int*& indices);
-void saveSparseMatCSC(unsigned long* colptr, int* indices);
-void cscToDense(unsigned long* colptr, int* indices, int** dense);
+void getSparseMatCSC(size_t *&colptr, int *&indices);
+void genSparseMatCSC(size_t*& colptr, int*& indices);
+void saveSparseMatCSC(size_t* colptr, int* indices);
+void cscToDense(size_t* colptr, int* indices, int** dense);
 
 #endif

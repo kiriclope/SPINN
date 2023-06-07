@@ -23,12 +23,15 @@ float *Jab_NMDA;
 
 float *Iext_scaled;
 
-unsigned long *colptr;
+size_t *colptr;
 int *indices;
 
 float *x_stp;
 float *u_stp;
 float *A_stp;
+
+std::mt19937 gen;
+std::normal_distribution<float> white(0.0, 1.0);
 
 void init_lif() {
   rates = new float[N]();
@@ -43,10 +46,10 @@ void init_lif() {
   Jab_scaled = new float[N_POP * N_POP]();
   Iext_scaled = new float[N_POP]();
 
-  colptr = new unsigned long[N+1]();
-  indices = new int[(unsigned long) (N * 5.0 * K)]();
+  colptr = new size_t[N+1]();
+  indices = new int[(size_t) (N * 5.0 * K)]();
 
-  for (int i = 0; i < N_POP; i++)
+  for (size_t i = 0; i < N_POP; i++)
     inputs[i] = new float[N]();
 
   if (IF_NMDA) {
@@ -149,11 +152,8 @@ void updateFFinputs(int step) {
   }
 
   if (IF_FF_NOISE) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<float> dist(0.0, 1.0);
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += dist(gen) * sqrt(Ka[0]);
+      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]]) * white(gen);
   }
 }
 
@@ -184,7 +184,7 @@ void updateRecInputs(){
     if (spikes[j] == 1) {
       pres_pop = which_pop[j];
 
-      for (unsigned long i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
+      for (size_t i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
         post_pop = which_pop[indices[i]];
         if (IF_STP && pres_pop == 0 && post_pop == 0)
           inputs[pres_pop][indices[i]] += A_stp[j] * Jab_scaled[pres_pop + N_POP * post_pop];
@@ -196,7 +196,7 @@ void updateRecInputs(){
   if (IF_NMDA) {
     for (int j = 0; j < Na[0]; ++j) // presynaptic
       if (spikes[j] == 1) {
-        for (unsigned long i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
+        for (size_t i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
           post_pop = which_pop[indices[i]];
           if (IF_STP && post_pop == 0)
             inputs_NMDA[indices[i]] += A_stp[j] * Jab_NMDA[post_pop];

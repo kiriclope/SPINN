@@ -26,7 +26,7 @@ float genConProb(int i, int j) {
   return proba;
 }
 
-void getSparseMatCSC(unsigned long *&colptr, int *&indices) {
+void getSparseMatCSC(size_t *&colptr, int *&indices) {
 
   std::cout << "Loading Sparse Matrix" ;
 
@@ -42,12 +42,12 @@ void getSparseMatCSC(unsigned long *&colptr, int *&indices) {
 
 }
 
-void saveSparseMatCSC(unsigned long* colptr, int* indices){
+void saveSparseMatCSC(size_t* colptr, int* indices){
 
   std::cout << "Saving Sparse Matrix" ;
 
   std::ofstream colptrFile("./matrix/colptr.txt");
-  saveArrayToFile(colptrFile, colptr, N+1);
+  saveArrayToFile(colptrFile, colptr, (size_t) N+1);
   colptrFile.close();
 
   std::ofstream indicesFile("./matrix/indices.txt");
@@ -58,15 +58,15 @@ void saveSparseMatCSC(unsigned long* colptr, int* indices){
 
 }
 
-void genSparseMatCSC(unsigned long*& colptr, int*& indices) {
+void genSparseMatCSC(size_t*& colptr, int*& indices) {
 
   std::cout << "Generating Sparse Matrix" ;
 
   std::mt19937 rng;
   rng.seed(42);
-  std::uniform_real_distribution<float> dist(0.0, 1.0);
+  std::uniform_real_distribution<float> unif(0.0, 1.0);
 
-  unsigned long nnz = 0;
+  size_t nnz = 0;
 
   std::cout << " " << PROBA << std::endl;
 
@@ -74,7 +74,7 @@ void genSparseMatCSC(unsigned long*& colptr, int*& indices) {
   for (int j = 0; j < N; j++) { // presynaptic
     for (int i = 0; i < N; i++) { // postsynaptic
 
-      if (dist(rng) < genConProb(i,j)) {
+      if (unif(rng) < genConProb(i,j)) {
         indices[nnz] = i;
         nnz++;
       }
@@ -88,7 +88,7 @@ void genSparseMatCSC(unsigned long*& colptr, int*& indices) {
   std::cout << " Done" << std::endl;
 }
 
-void cscToDense(unsigned long* colptr, int* indices, int** dense) {
+void cscToDense(size_t* colptr, int* indices, int** dense) {
     // Initialize dense matrix with zeros
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
@@ -98,7 +98,7 @@ void cscToDense(unsigned long* colptr, int* indices, int** dense) {
 
     // Fill dense matrix with non-zero values from CSC format
     for (int j = 0; j < N; j++) {
-        for (int i = colptr[j]; i < colptr[j+1]; i++) {
+        for (size_t i = colptr[j]; i < colptr[j+1]; i++) {
             dense[indices[i]][j] = 1 ;
         }
     }

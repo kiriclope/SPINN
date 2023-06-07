@@ -76,7 +76,7 @@ Here's an implementation of this algorithm in C++:
 This function takes as input the row pointers =rowptr=, column indices =indices=, and data =data= vectors for the sparse matrix, plus the input vector =x= and an output vector =y=. The function then applies the algorithm described above to compute the dot product of the matrix and the vector.
 
 
-#+begin_src ipython :results drawer
+#+begin_src python
 
   import numpy as np
   import matplotlib.pyplot as plt
@@ -88,15 +88,15 @@ This function takes as input the row pointers =rowptr=, column indices =indices=
         # print(data[:10,:10])
         # data = data.reshape(int(data.shape[0] / 5000), 5000)
         # Compute mean rate over population (i.e., average over time axis)
-        pop_mean = np.mean(data[:,:int(data.shape[1]/2)], axis=1)
-        time_mean = np.mean(data[:,:int(data.shape[1]/2)], axis=0)
+        pop_mean = np.mean(data[1:,:int(data.shape[1]*.75)], axis=1)
+        time_mean = np.mean(data[1:,:int(data.shape[1]*.75)], axis=0)
 
         # Create two subplots: one for the mean rate over time, the other for the histogram of mean rates
         fig, (ax0, ax1, ax2) = plt.subplots(nrows=3)
 
         # Plot the mean rate over time in the top subplot
         # ax0.plot(pop_mean)
-        ax0.imshow(data[:,:int(data.shape[1]/2)].T, origin='lower', aspect='auto', cmap='jet', interpolation='lanczos', vmax=10)
+        ax0.imshow(data[:,:int(data.shape[1]*.75)].T, origin='lower', aspect='auto', cmap='jet', interpolation='lanczos', vmax=10)
         # ax0.imshow(data[:,:int(data.shape[1])].T, origin='lower', aspect='auto', cmap='gray', interpolation='nearest'
         #            , vmin=0, vmax=1)
         # ax0.set_xlabel('Time')
@@ -119,10 +119,7 @@ This function takes as input the row pointers =rowptr=, column indices =indices=
 #+end_src
 
 #+RESULTS:
-:results:
-# Out[23]:
-[[file:./obipy-resources/w22I6b.png]]
-:end:
+: None
 
 #+begin_src ipython :results drawer :session mysession
 

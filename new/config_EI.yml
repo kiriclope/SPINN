@@ -1,25 +1,25 @@
 verbose: 1
-N: 20000
+N: 40000
 N_POP: 2
-K: 1000.0
+K: 2000.0
 
-FRAC: [0.5, 0.5]
+FRAC: [0.75, 0.25]
 
 DT: 0.1
-DURATION: 5000.0
+DURATION: 10000.0
 T_WINDOW: 10.
 T_STEADY: 2000.0
 
 T_STIM: [3000.0, 4000.0]
-A_STIM: [1.0, 0.0]
+A_STIM: [.10, 0.0]
 PHI_STIM: [180.0, 0.0]
-KAPPA_STIM: [0.5, 0.0]
+KAPPA_STIM: [1.0, 0.0]
 
 ##############
 # Dynamics
 ##############
-V_THRESH: 20.0
-V_REST: -3.33
+V_THRESH: -50.0
+V_REST: -70.0
 V_LEAK: 0.0
 
 TAU_MEM: [20.0, 10.0]
@@ -39,7 +39,7 @@ GAIN: 1.0
 # Iext: [77, 54]
 # Jab: [90.0, -1.4, 1.2, -0.90]
 
-Iext: [.05, 0.045]
+Iext: [.1, 0.09]
 Jab: [40.0, -2.8, 6.7, -3.4]
 
 # Iext: [.005, .0025]
@@ -52,13 +52,13 @@ Jab: [40.0, -2.8, 6.7, -3.4]
 # CONNECTIVITY
 ##############
 IF_LOAD_MAT: 0
-IF_SAVE_MAT: 1
+IF_SAVE_MAT: 0
 
 # PROBA: spec
-# KAPPA: [15.0, 0.0, 0.0, 0.0]
+# KAPPA: [10.0, 0.0, 0.0, 0.0]
 
 PROBA: cos
-KAPPA: [1.0, 1.0, 0.5, 1.0]
+KAPPA: [1.0, 0.5, 0.75, 1.0]
 
 ##############
 # STP
@@ -72,5 +72,5 @@ TAU_REC: [200, 200]
 # FF
 ##############
 IF_FF_NOISE: 0
-VAR_FF: [5.0, 5.0]
+VAR_FF: [1.0, 1.0]
 
