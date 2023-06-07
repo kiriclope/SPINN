@@ -1,8 +1,11 @@
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <cmath>
 #include <random>
-#include <string>
-#include <iostream>
+
 #include "globals.hpp"
+#include "utils.hpp"
 #include "sparse_mat.hpp"
 
 float genConProb(int i, int j) {
@@ -23,27 +26,66 @@ float genConProb(int i, int j) {
   return proba;
 }
 
+void getSparseMatCSC(unsigned long *&colptr, int *&indices) {
+
+  std::cout << "Loading Sparse Matrix" ;
+
+  std::ifstream inFile("./matrix/colptr.txt");
+  loadArrayFromFile(inFile, colptr, N+1);
+  inFile.close();
+
+  std::ifstream inFile2("./matrix/indices.txt");
+  loadArrayFromFile(inFile2, indices, colptr[N+1]);
+  inFile2.close();
+
+  std::cout << " Done" << std::endl;
+
+}
+
+void saveSparseMatCSC(unsigned long* colptr, int* indices){
+
+  std::cout << "Saving Sparse Matrix" ;
+
+  std::ofstream colptrFile("./matrix/colptr.txt");
+  saveArrayToFile(colptrFile, colptr, N+1);
+  colptrFile.close();
+
+  std::ofstream indicesFile("./matrix/indices.txt");
+  saveArrayToFile(indicesFile, indices, colptr[N+1]);
+  indicesFile.close();
+
+  std::cout << " Done" << std::endl;
+
+}
 
 void genSparseMatCSC(unsigned long*& colptr, int*& indices) {
-    std::mt19937 rng;
-    rng.seed(42);
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
 
-    unsigned long nnz = 0;
+  std::cout << "Generating Sparse Matrix" ;
 
-    std::cout << " " << PROBA << std::endl;
+  std::mt19937 rng;
+  rng.seed(42);
+  std::uniform_real_distribution<float> dist(0.0, 1.0);
 
-    colptr[0] = 0;
-    for (int j = 0; j < N; j++) { // presynaptic
-      for (int i = 0; i < N; i++) { // postsynaptic
+  unsigned long nnz = 0;
 
-        if (dist(rng) < genConProb(i,j)) {
-          indices[nnz] = i;
-          nnz++;
-        }
+  std::cout << " " << PROBA << std::endl;
+
+  colptr[0] = 0;
+  for (int j = 0; j < N; j++) { // presynaptic
+    for (int i = 0; i < N; i++) { // postsynaptic
+
+      if (dist(rng) < genConProb(i,j)) {
+        indices[nnz] = i;
+        nnz++;
       }
-      colptr[j+1] = nnz;
     }
+    colptr[j+1] = nnz;
+  }
+
+  if (IF_SAVE_MAT)
+    saveSparseMatCSC(colptr, indices);
+
+  std::cout << " Done" << std::endl;
 }
 
 void cscToDense(unsigned long* colptr, int* indices, int** dense) {

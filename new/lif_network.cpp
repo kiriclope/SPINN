@@ -96,6 +96,7 @@ void free_lif() {
 
 void initNetwork() {
   // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
+  std::cout << "Initializing Network";
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
@@ -121,6 +122,8 @@ void initNetwork() {
 
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
+
+  std::cout << " Done" << std::endl;
 }
 
 void updateFFinputs(int step) {
@@ -320,13 +323,12 @@ void runSimul(){
 
   const float dum = 1000.0 / T_WINDOW;
 
-  std::cout << "Initializing Network";
   initNetwork();
-  std::cout << " Done" << std::endl;
 
-  std::cout << "Generating Sparse Matrix";
-  genSparseMatCSC(colptr, indices);
-  std::cout << " Done" << std::endl;
+  if(IF_LOAD_MAT)
+    getSparseMatCSC(colptr, indices);
+  else
+    genSparseMatCSC(colptr, indices);
 
   printParam();
 

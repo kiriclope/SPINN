@@ -120,8 +120,8 @@ This function takes as input the row pointers =rowptr=, column indices =indices=
 
 #+RESULTS:
 :results:
-# Out[18]:
-[[file:./obipy-resources/p1b3Hc.png]]
+# Out[23]:
+[[file:./obipy-resources/w22I6b.png]]
 :end:
 
 #+begin_src ipython :results drawer :session mysession
@@ -132,6 +132,6 @@ This function takes as input the row pointers =rowptr=, column indices =indices=
 
 #+RESULTS:
 :results:
-# Out[7]:
-[[file:./obipy-resources/5ubOgx.png]]
+# Out[11]:
+[[file:./obipy-resources/Px7eGb.png]]
 :end:

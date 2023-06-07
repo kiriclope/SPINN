@@ -46,3 +46,15 @@ void saveArrayToFile(std::ofstream& outFile, T& arr, size_t len) {
     outFile << arr[i] << " ";
   outFile << std::endl;
 }
+
+template<typename T>
+void loadArrayFromFile(std::ifstream& inFile, T& arr, size_t len) {
+
+  if (!inFile.good()) {
+    std::cerr << "Error: could not read from file" << std::endl;
+    return;
+  }
+
+  for (size_t i = 0; i < len; ++i)
+    inFile >> arr[i];
+}

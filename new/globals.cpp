@@ -37,6 +37,8 @@ std::vector<float> TAU_MEM;
 float* DT_TAU_MEM;
 float* EXP_DT_TAU_MEM;
 
+int IF_LOAD_MAT;
+int IF_SAVE_MAT;
 std::string PROBA;
 std::vector<float> KAPPA;
 
@@ -60,6 +62,8 @@ std::vector<float> VAR_FF;
 void loadConfig(std::string configname){
   YAML::Node config = YAML::LoadFile(configname);
 
+  IF_LOAD_MAT = config["IF_LOAD_MAT"].as<int>();
+  IF_SAVE_MAT = config["IF_SAVE_MAT"].as<int>();
   VERBOSE = config["verbose"].as<int>();
 
   // Assign variables from configuration file

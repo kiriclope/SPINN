@@ -36,6 +36,8 @@ extern std::vector<float> TAU_MEM;
 extern float* DT_TAU_MEM;
 extern float* EXP_DT_TAU_MEM;
 
+extern int IF_LOAD_MAT;
+extern int IF_SAVE_MAT;
 extern std::string PROBA;
 extern std::vector<float> KAPPA;
 

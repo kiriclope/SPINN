@@ -51,11 +51,14 @@ Jab: [40.0, -2.8, 6.7, -3.4]
 ##############
 # CONNECTIVITY
 ##############
+IF_LOAD_MAT: 0
+IF_SAVE_MAT: 1
+
 # PROBA: spec
 # KAPPA: [15.0, 0.0, 0.0, 0.0]
 
 PROBA: cos
-KAPPA: [1.0, 0.5, 0.5, 0.5]
+KAPPA: [1.0, 1.0, 0.5, 1.0]
 
 ##############
 # STP
