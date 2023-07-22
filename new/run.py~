@@ -1,0 +1,10 @@
+import subprocess
+
+
+def run_cpp():
+    # replace './my_cpp_executable' with your actual executable.
+    proc = subprocess.run('./my_cpp_executable', shell=True, stdout=subprocess.PIPE)
+
+    print(proc.stdout.decode())
+
+run_cpp()

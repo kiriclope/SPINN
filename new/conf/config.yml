@@ -1,0 +1,22 @@
+verbose: 1
+N: 10000
+N_POP: 1
+K: 1000.0
+
+FRAC: [1.0]
+
+DT: 0.01
+DURATION: 1000.0
+T_WINDOW: 10.
+
+# Lif Model
+V_THRESH: 1.0
+V_REST: 0.0
+V_LEAK: 0.0
+
+TAU_MEM: [1.0]
+TAU_SYN: [1.0]
+
+GAIN: 1.0
+Iext: [2.0]
+Jab: [-1.0]

@@ -1,0 +1,37 @@
+# Compiler to be used
+CC = g++
+
+# Compiler flags
+CFLAGS = -Wall
+
+#Include directories
+INCLUDES = -I./include
+
+# Source and build directories
+SRCDIR = ./src
+BUILDDIR = ./obj
+TARGETDIR = ./bin
+
+# Application name (target)
+TARGET = MyProject
+
+# Get all source files
+SRCS := $(wildcard $(SRCDIR)/*.cpp)
+
+# Object files are the same as sources but with .o extension
+OBJS := $(SRCS:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
+
+# Build both Release and Debug by default
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $(TARGETDIR)/$@ $^
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	rm -rf $(BUILDDIR)/*.o $(TARGETDIR)/$(TARGET)
+
+# Recompile if any headers change
+.PHONY: clean
