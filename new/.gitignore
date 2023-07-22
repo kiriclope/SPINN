@@ -1,0 +1,17 @@
+*
+!.gitignore
+!*.cfg
+!*.txt
+!*.md
+!*.yml
+!*.c
+!*.cu
+!*.h
+!*.hpp
+!*.cpp
+!*.c
+!*.sh
+!code/
+!parameters/2pop/
+!new/
+!*.org
