@@ -15,6 +15,17 @@
 !*.org
 !MakeFile
 
+!/backup/
+!/bin/
+!/conf/
+!/doc/
+!/include/
+!/libs/
+!/obj/
+!/org/
+!/src/
+!/tests/
+
 !/**/*.cfg
 !/**/*.txt
 !/**/*.md
