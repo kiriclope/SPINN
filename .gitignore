@@ -28,5 +28,6 @@
 !**/*.py
 !**/*.org
 !**/MakeFile
+!**/*.bak
 
 /simul
