@@ -1,1 +1,1 @@
-# LIF RNN Simulator in C++
+# Leaky integrate and fire RNN model
