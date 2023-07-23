@@ -13,7 +13,7 @@
 !*.sh
 !*.py
 !backup/
-!bin/
+!bin/*
 !conf/
 !doc/
 !include/
