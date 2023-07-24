@@ -15,9 +15,11 @@
 !*.org
 !MakeFile
 
+!*/
 !/backup/
 !/bin/
 !/conf/
+!/notebooks/
 !/doc/
 !/include/
 !/libs/
