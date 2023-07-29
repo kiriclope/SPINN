@@ -43,4 +43,5 @@
 !/**/MakeFile
 !/**/*.bak
 
-/simul
+/data/simul/
+/data/matrix/

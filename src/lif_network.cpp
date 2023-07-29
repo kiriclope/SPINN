@@ -63,6 +63,8 @@ void init_lif() {
       u_stp = new float[N] {USE[0]};
       A_stp = new float[N] {USE[0]};
   }
+
+  ensureDirExists(DATA_PATH);
 }
 
 // Destructor to free memory
@@ -317,6 +319,9 @@ void printParam(){
     for(int j=0; j < N_POP; j++)
       std::cout << Jab_scaled[j + i * N_POP] << " ";
   std::cout << std::endl;
+
+  std::cout << "DATA_PATH " << DATA_PATH << std::endl;
+  std::cout << "MAT_PATH " << MAT_PATH << std::endl;
 }
 
 void runSimul(){
@@ -332,15 +337,15 @@ void runSimul(){
 
   printParam();
 
-  std::ofstream ratesFile("./simul/rates.txt");
-  std::ofstream spikesFile("./simul/spikes.txt");
-  std::ofstream inputsEfile("./simul/inputsE.txt");
-  std::ofstream inputsIfile("./simul/inputsI.txt");
-  std::ofstream voltsFile("./simul/volts.txt");
+  std::ofstream ratesFile(DATA_PATH + "/rates.txt");
+  std::ofstream spikesFile(DATA_PATH + "/spikes.txt");
+  std::ofstream inputsEfile(DATA_PATH + "/inputsE.txt");
+  std::ofstream inputsIfile(DATA_PATH + "/inputsI.txt");
+  std::ofstream voltsFile(DATA_PATH + "/volts.txt");
 
-  std::ofstream xstpFile("./simul/x_stp.txt");
-  std::ofstream ustpFile("./simul/u_stp.txt");
-  std::ofstream AstpFile("./simul/A_stp.txt");
+  std::ofstream xstpFile(DATA_PATH + "/x_stp.txt");
+  std::ofstream ustpFile(DATA_PATH + "/u_stp.txt");
+  std::ofstream AstpFile(DATA_PATH + "/A_stp.txt");
 
   int N_STEPS = (int) (DURATION/DT);
   int N_STEADY = (int) T_STEADY / DT;

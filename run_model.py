@@ -1,8 +1,8 @@
 import subprocess
 
 
-def run_cpp():
-    cmd = ["./bin/LifNet", "./conf/config_EI.yml"]
+def run_cpp(bin_path="../bin/LifNet", conf_path="../conf/config_EI.yml"):
+    cmd = [bin_path, conf_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Use these lines to print stdout and stderr in real-time
@@ -14,6 +14,3 @@ def run_cpp():
 
     # Wait for the process to terminate.
     proc.communicate()
-
-
-run_cpp()

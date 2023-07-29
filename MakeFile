@@ -3,7 +3,7 @@ CC = g++
 
 # Compiler flags
 # CFLAGS = -Wall -std=c++17 -lyaml-cpp
-CFLAGS = -Wall -lyaml-cpp -std=c++11
+CFLAGS = -Wall -lyaml-cpp -std=c++17
 
 #Include directories
 # INCLUDES = -I./include

@@ -5,6 +5,9 @@
 
 #include "globals.hpp"
 
+std::string DATA_PATH;
+std::string MAT_PATH;
+
 int VERBOSE;
 int N;
 int N_POP;
@@ -62,6 +65,9 @@ std::vector<float> VAR_FF;
 
 void loadConfig(std::string configname){
   YAML::Node config = YAML::LoadFile(configname);
+
+  DATA_PATH = config["DATA_PATH"].as<std::string>();
+  MAT_PATH = config["MAT_PATH"].as<std::string>();
 
   IF_LOAD_MAT = config["IF_LOAD_MAT"].as<int>();
   IF_SAVE_MAT = config["IF_SAVE_MAT"].as<int>();
@@ -154,3 +160,8 @@ void loadConfig(std::string configname){
 
 }
 
+void ensureDirExists(std::string &path) {
+    if (!std::filesystem::exists(path)) {
+        std::filesystem::create_directories(path);
+    }
+}

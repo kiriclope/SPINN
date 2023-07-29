@@ -3,6 +3,7 @@
 
 #include "globals.hpp"
 
+
 template <typename T>
 float popSum(T*& v, size_t start_idx = 0, size_t end_idx = 0)
 {

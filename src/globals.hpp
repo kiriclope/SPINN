@@ -2,8 +2,12 @@
 #define GLOBALS_HPP
 #include <vector>
 #include <string>
+#include <filesystem>
 
 // Declare all variables as extern
+extern std::string DATA_PATH;
+extern std::string MAT_PATH;
+
 extern int VERBOSE;
 extern int N;
 extern int N_POP;
@@ -60,4 +64,6 @@ extern int IF_FF_NOISE;
 extern std::vector<float> VAR_FF;
 
 void loadConfig(std::string configname);
+void ensureDirExists(std::string &path);
+
 #endif

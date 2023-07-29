@@ -1,0 +1,90 @@
+#+TITLE: Leaky Integrate and Fire RNN Model
+##+PROPERTY: header-args:ipython :results raw drawer :exports both :async t :session dual_data :kernel dual_data
+
+* A few imports
+#+begin_src ipython :results output :async t :session dual_data :kernel dual_data
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+
+#+begin_src ipython :results output :async t :session dual_data :kernel dual_data
+  import os
+  import sys
+
+  sys.path.insert(0, '../')
+  current_dir = os.path.dirname(os.path.abspath('__file__'))
+  # Get parent directory (= the project root)
+  project_root = os.path.join(current_dir, '..')
+  # Append to system path
+  sys.path.append(project_root)
+
+  print("Python exe")
+  print(sys.executable)
+
+#+end_src
+
+#+RESULTS:
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+
+#+begin_src ipython :results output :async t :session dual_data :kernel dual_data
+  import numpy as np
+  import matplotlib
+  import matplotlib.pyplot as plt
+  import seaborn as sns
+  import pandas as pd
+  # from dual_data.common.plot_utils import plot_summary
+
+  sns.set_context("poster")
+  sns.set_style("ticks")
+  plt.rc("axes.spines", top=False, right=False)
+  fig_path = '../figs/perf'
+  golden_ratio = (5**.5 - 1) / 2
+  width = 6
+
+  matplotlib.rcParams['figure.figsize'] = [width, width * golden_ratio ]
+  matplotlib.rcParams['lines.markersize'] = 6
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython :results raw drawer :exports both :async t :session dual_data
+  print('a test figure')
+  plt.figure()
+  plt.plot([1,2,3,4], '-o')
+  plt.xlabel('x')
+  plt.show()
+#+end_src
+
+#+RESULTS:
+:results:
+# Out[10]:
+[[file:./obipy-resources/zVhEzm.png]]
+:end:
+
+
+
+
+* Running a simulation
+#+begin_src ipython :results raw drawer :exports both :async t :session dual_data :kernel dual_data
+  from run_model import run_cpp
+#+end_src
+
+#+RESULTS:
+:results:
+# Out[13]:
+:end:
+
+#+begin_src ipython :results output :exports both :async t :session dual_data :kernel dual_data
+  run_cpp()
+#+end_src
+
+#+RESULTS:
+: 0 - 43d15dbb-a22a-4e11-844d-4222cd5349ce

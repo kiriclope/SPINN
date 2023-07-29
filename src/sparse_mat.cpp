@@ -60,11 +60,11 @@ void getSparseMatCSC(size_t *&colptr, int *&indices) {
 
   std::cout << "Loading Sparse Matrix" ;
 
-  std::ifstream colptrFile("./matrix/colptr.txt");
+  std::ifstream colptrFile(MAT_PATH + "/colptr.txt");
   loadArrayFromFile(colptrFile, colptr, (size_t) N+1);
   colptrFile.close();
 
-  std::ifstream indicesFile("./matrix/indices.txt");
+  std::ifstream indicesFile(MAT_PATH + "/indices.txt");
   loadArrayFromFile(indicesFile, indices, colptr[N]);
   indicesFile.close();
 
@@ -73,13 +73,14 @@ void getSparseMatCSC(size_t *&colptr, int *&indices) {
 
 void saveSparseMatCSC(size_t* colptr, int* indices){
 
-  std::cout << "Saving Sparse Matrix" ;
+  std::cout << "Saving Sparse Matrix to: " << MAT_PATH ;
+  ensureDirExists(MAT_PATH);
 
-  std::ofstream colptrFile("./matrix/colptr.txt");
+  std::ofstream colptrFile(MAT_PATH + "/colptr.txt");
   saveArrayToFile(colptrFile, colptr, (size_t) N+1);
   colptrFile.close();
 
-  std::ofstream indicesFile("./matrix/indices.txt");
+  std::ofstream indicesFile(MAT_PATH + "/indices.txt");
   saveArrayToFile(indicesFile, indices, colptr[N]);
   indicesFile.close();
 
