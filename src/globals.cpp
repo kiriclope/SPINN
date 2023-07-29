@@ -64,6 +64,7 @@ int IF_FF_NOISE;
 std::vector<float> VAR_FF;
 
 void loadConfig(std::string configname){
+
   YAML::Node config = YAML::LoadFile(configname);
 
   DATA_PATH = config["DATA_PATH"].as<std::string>();

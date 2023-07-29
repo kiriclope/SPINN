@@ -1,3 +1,6 @@
+#ifndef UTILS_HPP
+#define UTILS_HPP
+
 #include <iostream>
 #include <fstream>
 
@@ -39,16 +42,18 @@ float popMean(T*& v, size_t start_idx = 0, size_t end_idx = 0)
 }
 
 template<typename T>
-void saveArrayToFile(std::ofstream& outFile, T& arr, size_t len) {
+void saveArrayToFile(std::ofstream& outFile, T* arr, size_t len) {
 
   if (!outFile.good()) {
     std::cerr << "Error: could not write to file" << std::endl;
     return;
   }
 
-  for (size_t i = 0; i < len; ++i)
-    outFile << arr[i] << " ";
-  outFile << std::endl;
+  outFile.write(reinterpret_cast<char*>(arr), len * sizeof(T));
+
+  // for (size_t i = 0; i < len; ++i)
+  //   outFile << arr[i] << " ";
+  // outFile << std::endl;
 }
 
 template<typename T>
@@ -62,3 +67,5 @@ void loadArrayFromFile(std::ifstream& inFile, T& arr, size_t len) {
   for (size_t i = 0; i < len; ++i)
     inFile >> arr[i];
 }
+
+#endif

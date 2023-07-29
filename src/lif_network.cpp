@@ -102,7 +102,7 @@ void free_lif() {
 
 void initNetwork() {
   // Here (V_THRESH - V_REST) is important to get rates from the balanced linear eqs m = I/J;
-  std::cout << "Initializing Network";
+  std::cout << "Initializing Network, output dir:" << DATA_PATH;
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
@@ -137,7 +137,8 @@ void updateFFinputs(int step) {
   float theta_i = 0;
 
   if (step == (int) (T_STIM[0] / DT)) {
-    std::cout << " STIM ON" << std::endl;
+    if (VERBOSE)
+      std::cout << " STIM ON" << std::endl;
     for (int i = 0; i < N; i++) {
       theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
 
@@ -149,7 +150,8 @@ void updateFFinputs(int step) {
   }
 
   if (step == (int) (T_STIM[1] / DT)) {
-    std::cout << " STIM OFF" << std::endl;
+    if (VERBOSE)
+      std::cout << " STIM OFF" << std::endl;
     for (int i = 0; i < N; i++)
       ff_inputs[i] = Iext_scaled[which_pop[i]];
   }
@@ -280,10 +282,9 @@ void updateStp(int i, int step){
 }
 
 void printParam(){
-  std::cout << "LIF NETWORK ";
-  std::cout << "N_POP " << N_POP << std::endl;
+  std::cout << "N_POP " << N_POP;
 
-  std::cout << "N " << N << " Na ";
+  std::cout << " N " << N << " Na ";
   for(int i=0; i < N_POP; i++)
     std::cout << Na[i] << " ";
 
@@ -319,9 +320,6 @@ void printParam(){
     for(int j=0; j < N_POP; j++)
       std::cout << Jab_scaled[j + i * N_POP] << " ";
   std::cout << std::endl;
-
-  std::cout << "DATA_PATH " << DATA_PATH << std::endl;
-  std::cout << "MAT_PATH " << MAT_PATH << std::endl;
 }
 
 void runSimul(){
@@ -335,17 +333,28 @@ void runSimul(){
   else
     genSparseMatCSC(colptr, indices);
 
-  printParam();
+  if (VERBOSE)
+    printParam();
 
-  std::ofstream ratesFile(DATA_PATH + "/rates.txt");
-  std::ofstream spikesFile(DATA_PATH + "/spikes.txt");
-  std::ofstream inputsEfile(DATA_PATH + "/inputsE.txt");
-  std::ofstream inputsIfile(DATA_PATH + "/inputsI.txt");
-  std::ofstream voltsFile(DATA_PATH + "/volts.txt");
+  std::ofstream (DATA_PATH + "/rates.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/spikes.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/inputsE.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/inputsI.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/volts.txt", std::ios::trunc).close();
 
-  std::ofstream xstpFile(DATA_PATH + "/x_stp.txt");
-  std::ofstream ustpFile(DATA_PATH + "/u_stp.txt");
-  std::ofstream AstpFile(DATA_PATH + "/A_stp.txt");
+  std::ofstream (DATA_PATH + "/x_stp.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/u_stp.txt", std::ios::trunc).close();
+  std::ofstream (DATA_PATH + "/A_stp.txt", std::ios::trunc).close();
+
+  std::ofstream ratesFile(DATA_PATH + "/rates.txt", std::ios::app | std::ios::binary);
+  std::ofstream spikesFile(DATA_PATH + "/spikes.txt", std::ios::app | std::ios::binary);
+  std::ofstream inputsEfile(DATA_PATH + "/inputsE.txt", std::ios::app | std::ios::binary);
+  std::ofstream inputsIfile(DATA_PATH + "/inputsI.txt", std::ios::app | std::ios::binary);
+  std::ofstream voltsFile(DATA_PATH + "/volts.txt", std::ios::app | std::ios::binary);
+
+  std::ofstream xstpFile(DATA_PATH + "/x_stp.txt", std::ios::app | std::ios::binary);
+  std::ofstream ustpFile(DATA_PATH + "/u_stp.txt", std::ios::app | std::ios::binary);
+  std::ofstream AstpFile(DATA_PATH + "/A_stp.txt", std::ios::app | std::ios::binary);
 
   int N_STEPS = (int) (DURATION/DT);
   int N_STEADY = (int) T_STEADY / DT;
@@ -377,27 +386,26 @@ void runSimul(){
           std::cout << popMean(spikes, cNa[i], cNa[i + 1]) * 1000.0 / DT << " ";
         std::cout << std::flush;
         std::cout << "\r";
-
-        saveArrayToFile(spikesFile, spikes, N);
-        saveArrayToFile(ratesFile, rates, N);
-
-        saveArrayToFile(voltsFile, volts, N);
-
-        saveArrayToFile(inputsEfile, inputs[0], N);
-        saveArrayToFile(inputsIfile, inputs[1], N);
-
-        if (IF_STP) {
-          saveArrayToFile(xstpFile, x_stp, Na[0]);
-          saveArrayToFile(ustpFile, u_stp, Na[0]);
-          saveArrayToFile(AstpFile, A_stp, Na[0]);
-        }
-
-        for(int i=0; i<N; ++i)
-          rates[i] = 0.0 ;
       }
 
-    }
-  }
+      saveArrayToFile(spikesFile, spikes, N);
+      saveArrayToFile(ratesFile, rates, N);
+
+      saveArrayToFile(voltsFile, volts, N);
+
+      saveArrayToFile(inputsEfile, inputs[0], N);
+      saveArrayToFile(inputsIfile, inputs[1], N);
+
+      if (IF_STP) {
+        saveArrayToFile(xstpFile, x_stp, Na[0]);
+        saveArrayToFile(ustpFile, u_stp, Na[0]);
+        saveArrayToFile(AstpFile, A_stp, Na[0]);
+      }
+
+      for(int i=0; i<N; ++i)
+        rates[i] = 0.0 ;
+    } // end window
+  } // end for
 
   spikesFile.close();
   ratesFile.close();

@@ -13,10 +13,13 @@
 int main(int argc , char** argv) {
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  std::string configname = argv[1] ;
-  std::cout << configname << "\n";
+  std::cout << "LIF NETWORK SIMULATION" << std::endl;
 
+  std::string configname = argv[1] ;
+
+  std::cout << "Loading config from: " << configname;
   loadConfig(configname);
+  std::cout << " Done" << std::endl;
 
   init_lif();
   runSimul();

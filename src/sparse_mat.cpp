@@ -58,7 +58,7 @@ void genSparseMatCSC(size_t*& colptr, int*& indices) {
 
 void getSparseMatCSC(size_t *&colptr, int *&indices) {
 
-  std::cout << "Loading Sparse Matrix" ;
+  std::cout << "Loading Sparse Matrix from:" << MAT_PATH;
 
   std::ifstream colptrFile(MAT_PATH + "/colptr.txt");
   loadArrayFromFile(colptrFile, colptr, (size_t) N+1);
