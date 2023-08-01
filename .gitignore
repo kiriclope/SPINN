@@ -42,6 +42,7 @@
 !/**/*.org
 !/**/MakeFile
 !/**/*.bak
+!/**/*.ipynb
 
 /data/simul/*
 /data/matrix/*

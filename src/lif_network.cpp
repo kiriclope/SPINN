@@ -158,7 +158,7 @@ void updateFFinputs(int step) {
 
   if (IF_FF_NOISE) {
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]]) * white(gen) / 1000.0 ;
+      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
   }
 }
 
