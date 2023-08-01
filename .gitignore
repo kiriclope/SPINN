@@ -27,6 +27,7 @@
 !/org/
 !/src/
 !/tests/
+!/tmp/
 
 !/**/*.cfg
 !/**/*.txt
