@@ -130,7 +130,7 @@ from run_model import run_cpp, update_conf
 #+end_src
 
 #+RESULTS:
-: (119,)
+: (158,)
 
 #+begin_src ipython
 
@@ -141,7 +141,7 @@ from run_model import run_cpp, update_conf
   # Now 'data' is a numpy array containing your data
   data = data.reshape(-1, 40000).T
   print('data', data.shape)
-  plt.imshow(data, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 40, 0, data.shape[0]], origin='lower')
+  plt.imshow(data, aspect='auto', vmin=0, vmax=1, cmap='jet', extent=[0, 40, 0, data.shape[0]], origin='lower')
   # plt.xlim([0, data.shape[0]])
 
   print(np.mean(data[:30000]), np.mean(data[10000:]))
@@ -150,15 +150,15 @@ from run_model import run_cpp, update_conf
 
 #+RESULTS:
 :RESULTS:
-: data (40000, 120)
-: 1.35865 4.3643847
-[[file:./.ob-jupyter/a0ade0e4569ccf08b67f3d94e063dc665b69d139.png]]
+: data (40000, 69)
+: 1.6363865 4.813403
+[[file:./.ob-jupyter/03d6dc54a05eb7b80c5e1188842c56f0322fea3a.png]]
 :END:
 
 #+begin_src ipython
   from analysis.bump import decode_bump, circcvl
 
-  times = time[:data.shape[1]]
+  times = time[1:data.shape[1]]
   rates_E = data[:30000, 1:]
   print(rates_E.shape)
   m0, m1, phi = decode_bump(rates_E, axis=0)
@@ -186,8 +186,8 @@ from run_model import run_cpp, update_conf
 
 #+RESULTS:
 :RESULTS:
-: (30000, 119)
-[[file:./.ob-jupyter/01b7d4f93141734b58bf095defac6c5d60ee489d.png]]
+: (30000, 68)
+[[file:./.ob-jupyter/73408f42a5fe1e1d7c62890a2d4326465f2c8c36.png]]
 :END:
 
 #+begin_src ipython
@@ -202,7 +202,7 @@ from run_model import run_cpp, update_conf
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/32909088814fe8f9bdf112c73ea03fe73df82c78.png]]
+[[file:./.ob-jupyter/feb164a47a86b4b9a3eafc62acfecde62179d5e2.png]]
 
 
 #+BEGIN_SRC ipython

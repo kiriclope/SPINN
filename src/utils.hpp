@@ -57,15 +57,19 @@ void saveArrayToFile(std::ofstream& outFile, T* arr, size_t len) {
 }
 
 template<typename T>
-void loadArrayFromFile(std::ifstream& inFile, T& arr, size_t len) {
+void loadArrayFromFile(std::ifstream& inFile, T* arr, size_t len) {
 
   if (!inFile.good()) {
     std::cerr << "Error: could not read from file" << std::endl;
     return;
   }
 
-  for (size_t i = 0; i < len; ++i)
-    inFile >> arr[i];
+  inFile.read(reinterpret_cast<char*>(arr), len * sizeof(T));
+
+  // Alternatively, if you want to read from file line by line:
+  // for (size_t i = 0; i < len; ++i) {
+  //   inFile >> arr[i];
+  // }
 }
 
 #endif

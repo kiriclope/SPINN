@@ -136,6 +136,21 @@ void initNetwork() {
 void updateFFinputs(int step) {
 
   float theta_i = 0;
+  // if(IF_FF_NOISE || IF_FF_CORR)
+  //   for (int i = 0; i < N; i++)
+  //     ff_inputs[i] = Iext_scaled[which_pop[i]];
+
+  if (IF_FF_NOISE)
+    for (int i = 0; i < N; i++)
+      ff_inputs[i] = Iext_scaled[which_pop[i]] + std::sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
+
+  if (IF_FF_CORR) {
+    phi0 = unif(gen) * 2.0 * M_PI ;
+    for (int i = 0; i < N; i++) {
+      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
+      ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0 ) / std::sqrt(Ka[0]));
+    }
+  }
 
   if (step == (int) (T_STIM[0] / DT)) {
     if (VERBOSE)
@@ -155,18 +170,6 @@ void updateFFinputs(int step) {
       std::cout << " STIM OFF" << std::endl;
     for (int i = 0; i < N; i++)
       ff_inputs[i] = Iext_scaled[which_pop[i]];
-  }
-
-  if (IF_FF_NOISE)
-    for (int i = 0; i < N; i++)
-      ff_inputs[i] += std::sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
-
-  if (IF_FF_CORR) {
-    phi0 = unif(gen) * 2.0 * M_PI ;
-    for (int i = 0; i < N; i++) {
-      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
-      ff_inputs[i] += 1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0 ) / std::sqrt(Ka[0]);
-    }
   }
 
 }
@@ -378,7 +381,7 @@ void runSimul(){
     updateRecInputs(); // must come before updateNetInputs in this implementation
     updateNetInputs();
 
-    if(step % N_WINDOW == 0 && step >= N_STEADY) {
+    if(step % N_WINDOW == 0 && step >N_STEADY) {
       for(int i=0; i<N; ++i)
         rates[i] *= dum;
 
