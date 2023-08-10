@@ -63,6 +63,10 @@ std::vector<float> KAPPA_STIM ;
 int IF_FF_NOISE;
 std::vector<float> VAR_FF;
 
+int IF_FF_CORR;
+std::vector<float> CORR_FF;
+double phi0;
+
 void loadConfig(std::string configname){
 
   YAML::Node config = YAML::LoadFile(configname);
@@ -159,6 +163,8 @@ void loadConfig(std::string configname){
   IF_FF_NOISE = config["IF_FF_NOISE"].as<int>();
   VAR_FF = config["VAR_FF"].as<std::vector<float>>();
 
+  IF_FF_CORR = config["IF_FF_CORR"].as<int>();
+  CORR_FF = config["CORR_FF"].as<std::vector<float>>();
 }
 
 void ensureDirExists(std::string &path) {

@@ -33,6 +33,7 @@ float *A_stp;
 
 std::mt19937 gen;
 std::normal_distribution<float> white(0.0, 1.0);
+std::uniform_real_distribution<float> unif(0.0, 1.0);
 
 void init_lif() {
   rates = new float[N]();
@@ -156,10 +157,18 @@ void updateFFinputs(int step) {
       ff_inputs[i] = Iext_scaled[which_pop[i]];
   }
 
-  if (IF_FF_NOISE) {
+  if (IF_FF_NOISE)
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
+      ff_inputs[i] += std::sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
+
+  if (IF_FF_CORR) {
+    phi0 = unif(gen) * 2.0 * M_PI ;
+    for (int i = 0; i < N; i++) {
+      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
+      ff_inputs[i] += 1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0 ) / std::sqrt(Ka[0]);
+    }
   }
+
 }
 
 void updateVolts(){

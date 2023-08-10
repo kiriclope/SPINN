@@ -63,6 +63,10 @@ extern std::vector<float> KAPPA_STIM ;
 extern int IF_FF_NOISE;
 extern std::vector<float> VAR_FF;
 
+extern int IF_FF_CORR;
+extern std::vector<float> CORR_FF;
+extern double phi0;
+
 void loadConfig(std::string configname);
 void ensureDirExists(std::string &path);
 
