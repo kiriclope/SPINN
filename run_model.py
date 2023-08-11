@@ -1,5 +1,5 @@
 import subprocess
-
+import shutil
 import yaml
 
 
@@ -33,3 +33,16 @@ def update_conf(conf_name, key_to_change, new_value, axis=None):
 
     with open(conf_name + ".yml", "w") as file:
         documents = yaml.dump(conf, file)
+
+
+def restore_conf(conf_name):
+    try:
+        shutil.copy(conf_name + '.bak', conf_name)
+        print("File moved successfully!")
+    except FileNotFoundError:
+        print("Error: Source file not found!")
+    except PermissionError:
+        print("Error: You do not have permission to move the file!")
+    except shutil.Error as e:
+        print(f"Error: Failed to move the file. Reason: {e}")
+

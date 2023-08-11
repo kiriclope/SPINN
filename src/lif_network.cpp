@@ -31,7 +31,8 @@ float *x_stp;
 float *u_stp;
 float *A_stp;
 
-std::mt19937 gen;
+std::random_device rd;
+std::mt19937 gen(rd());
 std::normal_distribution<float> white(0.0, 1.0);
 std::uniform_real_distribution<float> unif(0.0, 1.0);
 
@@ -140,21 +141,11 @@ void updateFFinputs(int step) {
   //   for (int i = 0; i < N; i++)
   //     ff_inputs[i] = Iext_scaled[which_pop[i]];
 
-  if (IF_FF_NOISE)
-    for (int i = 0; i < N; i++)
-      ff_inputs[i] = Iext_scaled[which_pop[i]] + std::sqrt(VAR_FF[which_pop[i]] / 1000.0) * white(gen);
+  if ((step >= (int) (T_STIM[0] / DT)) && (step < (int) (T_STIM[1] / DT))) {
+    if (step == (int) (T_STIM[0] / DT))
+      if (VERBOSE)
+        std::cout << " STIM ON" << std::endl;
 
-  if (IF_FF_CORR) {
-    phi0 = unif(gen) * 2.0 * M_PI ;
-    for (int i = 0; i < N; i++) {
-      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
-      ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0 ) / std::sqrt(Ka[0]));
-    }
-  }
-
-  if (step == (int) (T_STIM[0] / DT)) {
-    if (VERBOSE)
-      std::cout << " STIM ON" << std::endl;
     for (int i = 0; i < N; i++) {
       theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
 
@@ -164,12 +155,26 @@ void updateFFinputs(int step) {
            cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
     }
   }
-
-  if (step == (int) (T_STIM[1] / DT)) {
-    if (VERBOSE)
-      std::cout << " STIM OFF" << std::endl;
+  else{
     for (int i = 0; i < N; i++)
       ff_inputs[i] = Iext_scaled[which_pop[i]];
+
+    if (step == (int) (T_STIM[1] / DT))
+      if (VERBOSE)
+        std::cout << " STIM OFF" << std::endl;
+  }
+
+  if (IF_FF_NOISE)
+    for (int i = 0; i < N; i++)
+      // ff_inputs[i] += std::sqrt(Ka[0]) * std::sqrt(VAR_FF[which_pop[i]]) * white(gen);
+      ff_inputs[i] += std::sqrt(VAR_FF[which_pop[i]] * Iext_scaled[which_pop[i]]) * white(gen);
+
+  if (IF_FF_CORR) {
+    phi0 = unif(gen) * 2.0 * M_PI ;
+    for (int i = 0; i < N; i++) {
+      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
+      ff_inputs[i] *= (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0 ));
+    }
   }
 
 }
@@ -381,7 +386,11 @@ void runSimul(){
     updateRecInputs(); // must come before updateNetInputs in this implementation
     updateNetInputs();
 
-    if(step % N_WINDOW == 0 && step >N_STEADY) {
+    if(step==N_STEADY)
+      for(int i=0; i<N; ++i)
+        rates[i] = 0.0 ;
+
+    if(step % N_WINDOW == 0 && step > N_STEADY) {
       for(int i=0; i<N; ++i)
         rates[i] *= dum;
 
