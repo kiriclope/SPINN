@@ -64,6 +64,7 @@ int IF_FF_NOISE;
 std::vector<float> VAR_FF;
 
 int IF_FF_CORR;
+std::vector<float> A_CORR;
 std::vector<float> CORR_FF;
 double phi0;
 
@@ -165,6 +166,7 @@ void loadConfig(std::string configname){
 
   IF_FF_CORR = config["IF_FF_CORR"].as<int>();
   CORR_FF = config["CORR_FF"].as<std::vector<float>>();
+  A_CORR = config["A_CORR"].as<std::vector<float>>();
 }
 
 void ensureDirExists(std::string &path) {

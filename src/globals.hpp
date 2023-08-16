@@ -65,6 +65,7 @@ extern std::vector<float> VAR_FF;
 
 extern int IF_FF_CORR;
 extern std::vector<float> CORR_FF;
+extern std::vector<float> A_CORR;
 extern double phi0;
 
 void loadConfig(std::string configname);
