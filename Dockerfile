@@ -1,21 +1,18 @@
-# Start from a base Image
-FROM ubuntu:latest
+# Use an official GCC runtime as a parent image
+FROM gcc:latest
 
-# Install essential libraries
-RUN apt-get update && apt-get install -y \
-    g++ \
-    cmake \
-    make
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Set the working directory to /app
-WORKDIR /app
+# Copy the current directory contents into the container
+COPY . .
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install any needed packages
+RUN apt-get update && \
+    apt-get install -y cmake make
 
-# Build the app
-RUN cmake .
-RUN cmake --build .
+# Compile the project
+RUN cmake . && make
 
-# Run the output app using the command line
+# Run the output program from the previous step
 CMD ["./LifNet"]
