@@ -133,9 +133,18 @@ void initNetwork() {
 
   if(IF_FF_CORR)
     for(int i=0; i < N_POP; i++)
-      A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
-    
+      // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
+      A_CORR[i] = A_CORR[i] * (V_THRESH - V_REST);
+  
   std::cout << " Done" << std::endl;
+
+  for(int i=0; i<N; i++)
+    volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
+
+  updateSpikes(-1); // must come before updateRecInputs in this implementation
+  updateFFinputs(-1); // must come before updateNetInputs in this implementation
+  updateRecInputs(); // must come before updateNetInputs in this implementation
+  updateNetInputs();
 }
 
 void updateFFinputs(int step) {

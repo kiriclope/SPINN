@@ -93,42 +93,11 @@
 * Spiking network model
 ** imports
 #+begin_src ipython
-  from run_model import run_cpp, update_conf, restore_conf
   from time import sleep
-#+end_src
-
-#+RESULTS:
-
-** Single trial
-*** compile
-#+begin_src sh
-  cd ..
-  make
-#+end_src
-
-#+RESULTS:
-| g++ | -Wall | -lyaml-cpp   | -std=c++17       | -pthread          | -Ofast        | -s         | -c    | src/sparse_mat.cpp  | -o         | obj/sparse_mat.o  |
-| g++ | -Wall | -lyaml-cpp   | -std=c++17       | -pthread          | -Ofast        | -s         | -c    | src/lif_network.cpp | -o         | obj/lif_network.o |
-| g++ | -Wall | -lyaml-cpp   | -std=c++17       | -pthread          | -Ofast        | -s         | -c    | src/globals.cpp     | -o         | obj/globals.o     |
-| g++ | -o    | ./bin/LifNet | obj/sparse_mat.o | obj/lif_network.o | obj/globals.o | obj/main.o | -Wall | -lyaml-cpp          | -std=c++17 | -pthread          |
-
-*** run
-#+begin_src ipython
-  # pass screen session_name to run_cpp
-  session = 'single_trial'
-  run_cpp(session)
-#+end_src
-
-#+RESULTS:
-*** results
-#+begin_src ipython
   from yaml import safe_load
-  config = safe_load(open("../conf/config_EI.yml", "r"))
   
-  times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
-  times -= config['T_STEADY']
-  times /= 1000.0
-
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.bump import decode_bump, circcvl
 #+end_src
 
 #+RESULTS:
@@ -143,47 +112,95 @@
     return data.reshape(-1, 40000).T
  #+end_src
 
- #+RESULTS:
+#+RESULTS:
 
 #+begin_src ipython
-  session = '/Jee_20.00/'
+  def get_times():
+       config = safe_load(open("../conf/config_EI.yml", "r"))
+
+       times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
+       times -= config['T_STEADY']
+       times /= 1000.0
+       
+       return times
+#+end_src
+
+#+RESULTS:
+
+** Single trial
+*** compile
+#+begin_src sh
+  cd ..
+  make
+#+end_src
+
+#+RESULTS:
+| g++ | -Wall | -lyaml-cpp   | -std=c++17       | -pthread          | -Ofast        | -s         | -c    | src/lif_network.cpp | -o         | obj/lif_network.o |        |    |
+| g++ | -o    | ./bin/LifNet | obj/sparse_mat.o | obj/lif_network.o | obj/globals.o | obj/main.o | -Wall | -lyaml-cpp          | -std=c++17 | -pthread          | -Ofast | -s |
+
+*** run
+#+begin_src ipython
+  # pass screen session_name to run_cpp
+  session = 'single_trial'
+  run_cpp(session)
+#+end_src
+
+#+RESULTS:
+*** results
+**** Raster
+#+begin_src ipython
+  session = '/Ie_4.40/'
+  # session = '/Jee_21.00/'
+
   # session = '/'
   data = get_data(session)
   print('data', data.shape)
-  plt.imshow(data[:,1:], aspect='auto', vmin=0, vmax=30, cmap='jet', extent=[0, 40, 0, data.shape[0]], origin='lower')
-  # plt.xlim([0, data.shape[0]])
-  print(np.mean(data[:30000]), np.mean(data[10000:])) 
+  print('rates', np.mean(data[:30000]), np.mean(data[10000:]))
+
+  theta = np.linspace(0, 360, 30000)
+  times = get_times()
+  print(times.shape)
+  plt.imshow(data[:30000], aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, times[data.shape[1]], 0, 30000], origin='lower')
+
+  plt.xlabel('Time (s)')
+  plt.ylabel('Pref. Loc. (°)')
+  plt.yticks([0, 30000/4, 30000/2, 3*30000/4, 30000], [0, 90, 180, 270, 360])
+
+  plt.show()
 #+end_src
 
 #+RESULTS:
 :RESULTS:
-: data (40000, 23)
-: 2.4724638 6.3028812
-[[file:./.ob-jupyter/cc6e96cdd3ed924a618ab368dbccc5264b49be75.png]]
+: data (40000, 223)
+: rates 2.4017668 6.147302
+: (224,)
+[[file:./.ob-jupyter/6f36241fd3f929347ea7233394029611143000cb.png]]
 :END:
 
+**** Fourier moments 
 #+begin_src ipython
-  from analysis.bump import decode_bump, circcvl
   data = get_data(session)
 
-  rates_E = data[:30000, :]
-  print(rates_E.shape)
+  rates_E = data[:30000]
   m0, m1, phi = decode_bump(rates_E, axis=0)
-  
+
+  times = get_times()
+  times = times[:data.shape[1]]
+
   fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
-  ax[0].plot(times[:data.shape[1]], m0)
+  ax[0].plot(times, m0)
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('$\mathcal{F}^0$')
   # ax[0].set_yticks([0, 1, ])
   # ax[0].set_ylim([0, 5])
 
-  ax[1].plot(times[:data.shape[1]], m1/m0)
+  ax[1].plot(times, m1/m0)
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
   ax[1].set_yticks([0, 0.5, 1, 1.5])
   # ax[1].set_ylim([0, 1])
 
-  ax[2].plot(times[:data.shape[1]], phi * 180 / np.pi)
+  ax[2].plot(times, phi * 180 / np.pi)
   ax[2].set_xlabel('Time (s)')
   ax[2].set_ylabel('$\phi$')
   ax[2].set_yticks([0, 90, 180, 270, 360])
@@ -192,24 +209,21 @@
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: (30000, 23)
-[[file:./.ob-jupyter/cb9724fa83a9d688b58e076ad958eb029f6721de.png]]
-:END:
-
+[[file:./.ob-jupyter/ee70b2a483e7fede7eb3edd339d563f1ec640804.png]]
+**** Spatial profile
 #+begin_src ipython
   smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
   theta = np.linspace(0, 360, rates_E.shape[0])
-  plt.plot(theta, smooth_E[:, -2])
+  plt.plot(theta, smooth_E[:, -1])
   
   plt.xlabel('Prefered Location (°)')
   plt.ylabel('Rate (Hz)')
-  plt.yticks([0, 5])
+  plt.yticks([0, 10])
   plt.xticks([0, 90, 180, 270, 360]);
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/5bf5e1a31e729058fe40c5d4c22eb4b817f42519.png]]
+[[file:./.ob-jupyter/80a259956077e910d4d3a16add44fdeba390d089.png]]
 
 
 #+BEGIN_SRC ipython
@@ -219,9 +233,9 @@
 #+RESULTS:
 
 ** Phase space exploration
-*** loop Jee
+*** Varying Jee
+**** run
 #+begin_src ipython
-
   def run_loop_Jee(Jee_list):
       
       for Jee in Jee_list:
@@ -243,14 +257,14 @@
 
 #+begin_src ipython
   
-  Jee_list = np.arange(15, 25, .5)
+  Jee_list = np.arange(15, 30, .5)
   run_loop_Jee(Jee_list)
 
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
-
+**** results
 #+begin_src ipython
   def get_rates_Jee(Jee_list):
      rates = []
@@ -285,13 +299,20 @@
 
 #+RESULTS:
 :RESULTS:
-: (20, 30000, 23)
-: (20, 23)
-: Text(0.5, 0, 'Jee')
-[[file:./.ob-jupyter/065ef04b737f0a999945a83145c49c1144397870.png]]
+# [goto error]
+: [0;31m---------------------------------------------------------------------------[0m
+: [0;31mNameError[0m                                 Traceback (most recent call last)
+: Cell [0;32mIn[279], line 2[0m
+: [1;32m      1[0m Jee_list [38;5;241m=[39m np[38;5;241m.[39marange([38;5;241m15[39m, [38;5;241m25[39m, [38;5;241m.5[39m)
+: [0;32m----> 2[0m rates [38;5;241m=[39m [43mget_rates_Jee[49m(Jee_list)
+: [1;32m      3[0m [38;5;28mprint[39m(rates[38;5;241m.[39mshape)
+: [1;32m      4[0m m0, m1, phase [38;5;241m=[39m decode_bump(rates, axis[38;5;241m=[39m[38;5;241m1[39m)
+: 
+: [0;31mNameError[0m: name 'get_rates_Jee' is not defined
 :END:
 
-*** loop Ie
+*** Varying Ie
+**** run
 #+begin_src ipython
 
   def run_loop_Ie(Ie_list):
@@ -322,9 +343,9 @@
 
 #+RESULTS:
 : File moved successfully!
-
+**** results
 #+begin_src ipython
-  def get_rates(Ie_list):
+  def get_rates_Ie(Ie_list):
      rates = []
      for Ie in Ie_list:
         session = "/Ie_%.2f/" % Ie
@@ -339,35 +360,32 @@
 
 #+begin_src ipython
   Ie_list = np.arange(2, 6, .1)
-  rates = get_rates(Ie_list)
+  rates = get_rates_Ie(Ie_list)
   print(rates.shape)
   m0, m1, phase = decode_bump(rates, axis=1)
 
   amp = m1 / m0
-  print(m0.shape)
-  print(Ie_list[20])
-  print(Ie_list[23])
-  plt.plot(amp[20], label='Off');
-  plt.plot(amp[23], label='On');
-  plt.legend(fontsize=10)
-  # plt.plot(Ie_list, m1[:,-1])
-  # plt.xlabel('FF input')
+  # print(Ie_list[20])
+  # print(Ie_list[23])
+  # plt.plot(amp[20], label='Off');
+  # plt.plot(amp[23], label='On');
+  # plt.legend(fontsize=10)
+  plt.plot(Ie_list, amp[:,-1])
+  plt.xlabel('FF input')
 
 #+end_src
 
 #+RESULTS:
 :RESULTS:
-: (40, 30000, 99)
-: (40, 99)
-: 4.000000000000002
-: 4.3000000000000025
-: /tmp/ipykernel_2002044/1966586740.py:6: RuntimeWarning: invalid value encountered in divide
+: (40, 30000, 23)
+: /tmp/ipykernel_2494347/1091463431.py:6: RuntimeWarning: invalid value encountered in divide
 :   amp = m1 / m0
-: <matplotlib.legend.Legend at 0x7f45194cc1f0>
-[[file:./.ob-jupyter/29ca34dd82a241d8d226b47f68a5973e324fa2f4.png]]
+: Text(0.5, 0, 'FF input')
+[[file:./.ob-jupyter/e21c234f2001be5fcee939b19ee701a8f511f539.png]]
 :END:
 
-**** loop Ie Jee
+*** Varying Ie & Jee
+**** run
 #+begin_src ipython
   Jee_list = np.arange(10, 21, 1)
   Ie_list = np.arange(1, 11, 1)
@@ -398,7 +416,7 @@
 #+RESULTS:
 : File moved successfully!
 
-*** analysis
+**** results
 #+begin_src ipython
   # %matplotlib qt
 
@@ -502,7 +520,7 @@
               update_conf('../conf/config_EI', 'DATA_PATH', data_path)
               update_conf('../conf/config_EI', 'PHI_STIM', float(phi), axis=0)
               update_conf('../conf/config_EI', 'Iext', float(I0), axis=0)
-              update_conf('../conf/config_EI', 'DURATION', float(10000))
+              update_conf('../conf/config_EI', 'DURATION', float(11000))
 
               sleep(.2)
               run_cpp(session)
@@ -516,10 +534,7 @@
 #+RESULTS:
 
 #+begin_src ipython  
-  def get_m0_m1_phases(dir, phi_list, init_list):
-     phases = []
-     m1s = []
-     m0s = []
+  def get_rates(dir, phi_list, init_list):
      rates = []
      for phi in phi_list:
 
@@ -533,25 +548,14 @@
 
              # try:
              rate = get_data(session)
-             m0, m1, phase = decode_bump(rate[:30000], axis=0)
-             phase_ini.append(phase)
-             m1_ini.append(m1)
-             m0_ini.append(m0)
              rate_ini.append(rate[:30000])
              # except:
              #     pass
-
-         phases.append(np.array(phase_ini))
-         m1s.append(np.array(m1_ini))
-         m0s.append(np.array(m0_ini))
          rates.append(np.array(rate_ini))
 
-     phases = np.array(phases)
-     m1s = np.array(m1s)
-     m0s = np.array(m0s)
      rates = np.array(rates)
 
-     return rates, m0s, m1s, phases
+     return rates
 #+end_src
 
 #+RESULTS:
@@ -559,14 +563,14 @@
 **** run
 #+begin_src ipython
   phi_list = np.linspace(0, 315, 8)
-  init_list = np.arange(1, 11, 1)
+  init_list = np.arange(1, 21, 1)
 #+end_src
 
 #+RESULTS:
 
 #+begin_src ipython
-  run_phi_ini('nb_off', phi_list, init_list, I0=0.004) 
-  run_phi_ini('nb_on', phi_list, init_list, I0=0.0043)
+  # run_phi_ini('nb_off', phi_list, init_list, I0=0.004)
+  run_phi_ini('nb_on', phi_list, init_list, I0=0.004)
 #+end_src
 
 #+RESULTS:
@@ -582,16 +586,19 @@
 #+RESULTS:
 
 #+begin_src ipython
-  rates_off, m0_off, m1_off, phases_off = get_m0_m1_phases('nb_off', phi_list, init_list)
+  rates_off = get_rates('nb_off', phi_list, init_list)
+  m0_off, m1_off, phases_off = decode_bump(rates_off, axis=2)
   print('phases off', phases_off.shape)
 
-  rates_on, m0_on, m1_on, phases_on = get_m0_m1_phases('nb_on', phi_list, init_list)
+  rates_on = get_rates('nb_on', phi_list, init_list)
+  m0_on, m1_on, phases_on = decode_bump(rates_on, axis=2)
   print('phases on', phases_on.shape)
+
 #+end_src
 
 #+RESULTS:
-: phases off (8, 10, 19)
-: phases on (8, 10, 19)
+: phases off (8, 40, 23)
+: phases on (8, 40, 23)
 
 ****** m1
 #+begin_src ipython
@@ -603,8 +610,8 @@
 
 #+RESULTS:
 :RESULTS:
-| <matplotlib.lines.Line2D | at | 0x7f68d17e5cd0> |
-[[file:./.ob-jupyter/23f7db86e1950c38e580b0ec43524162697ba709.png]]
+| <matplotlib.lines.Line2D | at | 0x7fea32fe0d90> |
+[[file:./.ob-jupyter/5b91173bfe8b19963a04288ec49fe6019491843b.png]]
 :END:
 
 #+begin_src ipython
@@ -625,12 +632,14 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/4065eea5b9b7c4a4cb7243b57c57c174fc0b9b9b.png]]
+[[file:./.ob-jupyter/96b034b88f81215e06b6c8f55db6af6dd9d1e9f8.png]]
 
 ****** phase vs time
 #+begin_src ipython
-  phases = np.vstack(phases_off).T
+  phases = np.vstack(phases_on).T
   print(phases.shape)
+  
+  times = get_times()
 
   plt.plot(phases * 180 / np.pi, alpha=0.25)
   plt.xlabel('Time (s)')
@@ -641,8 +650,8 @@
 
 #+RESULTS:
 :RESULTS:
-: (19, 80)
-[[file:./.ob-jupyter/930aafffc45e85b884f6cbb1d568b72cf142be6f.png]]
+: (23, 320)
+[[file:./.ob-jupyter/7500f73ff881375f47ef8fe83cdc34c9caf8ab9d.png]]
 :END:
 
 ****** phase hist
@@ -652,21 +661,21 @@
 
   cmean = circmean(phases_off, axis=1) # over initial conditions
   dtheta_off = np.vstack(phases_off - cmean[:,np.newaxis,:]).T * 180 / np.pi
-  
+
   cmean = circmean(phases_on, axis=1)
   dtheta_on = np.vstack(phases_on - cmean[:,np.newaxis,:]).T * 180 / np.pi
 
   plt.hist(dtheta_off[-1], bins='auto', histtype='step', label='Off', density=True)
   plt.hist(dtheta_on[-1], bins='auto', histtype='step', label='On', density=True)
   plt.legend(fontsize=10)
-  plt.xlim([-.00001, .00001])
+  plt.xlim([-10, 10])
   plt.xlabel('$\delta \phi$')
   plt.ylabel('Density')
   plt.show()
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/b870cd530f75f14a26f155b3a395df861e5d08a3.png]]
+[[file:./.ob-jupyter/df0389bc41b132ea493a86724ccec80cf3df522e.png]]
 
 #+begin_src ipython
 
