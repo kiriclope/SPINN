@@ -7,7 +7,8 @@ set (CMAKE_CXX_STANDARD 11)
 # Try to find the yaml-cpp package
 find_package(yaml-cpp REQUIRED)
 
-add_executable(LifNet src/main.cpp)
+file(GLOB SOURCES "src/*.cpp")
+add_executable(MyExecutable ${SOURCES})
 
 # Link yaml-cpp to the executable
 target_link_libraries(LifNet ${YAML_CPP_LIBRARIES})
