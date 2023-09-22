@@ -1,46 +1,76 @@
+##########################################
+# Simulation parameters
+##########################################
+# path for the output files of the simulation
 DATA_PATH: /home/leon/models/lif_cpp/data/simul
+# path to load/save the connectivity matrix
 MAT_PATH: /home/leon/models/lif_cpp/data/matrix
 
+# output different prompts for debugging purpose
 verbose: 1
-N: 40000
-N_POP: 2
-K: 2000.0
 
+# Time step in ms
+DT: 0.1
+# total simulation time in ms
+DURATION: 61000.0
+# time to start saving simulation files in ms
+T_STEADY: 5000.0
+# Saving to files every T_WINDOW in ms
+T_WINDOW: 250.
+
+##########################################
+# Network parameters
+##########################################
+# Total number of neurons
+N: 40000
+# Number of populations
+N_POP: 2
+# Average number of presynaptic inputs
+K: 2000.0
+# Fraction of neurons in each population
 FRAC: [0.75, 0.25]
 
-DT: 0.1
-DURATION: 61000.0
-T_WINDOW: 250.
-T_STEADY: 5000.0
-
-#################
-# Stimulus
-#################
+##########################################
+# Parameters for the stimulus presentation
+##########################################
+# stimulus has a cosine shape
+# time for stimulus onset/offset in ms 
 T_STIM: [6000.0, 7000.0]
+# amplitude of the stimulus
 A_STIM: [.075, 0.0]
+# Phase of the 1st stimulus
 PHI_STIM: [180.0, 0.0]
+# Tuning of the stimulus
 KAPPA_STIM: [1.0, 0.0]
 
 ##############
-# Dynamics
+# Network Dynamics
 ##############
+# Threshold in mV
 V_THRESH: -50.0
+# Resting potential in mV
 V_REST: -70.0
+# Leak in mV
 V_LEAK: 0.0
 
+# Membrane time constants in ms
 TAU_MEM: [20.0, 10.0]
+# Synaptic time constants in ms
 TAU_SYN: [4.0, 2.0]
 
+# Adding NMDA currents
 IF_NMDA: 1
+# NMDA time constants in s
 TAU_NMDA: [100.0, 50.0]
+# NMDA strength ratio
 R_NMDA: [0.5, 0.5]
 
-##############
-# Parameters
-##############
+# Network's gain
 GAIN: 1.0
 
+# Feedforward inputs strengths
 # Iext: [0.005, 0.005]
+# Synaptic strengths           
 # Jab: [1.0, -1.5, 1.0, -1.0]
 
 # Iext: [0.005, 0.0025]
@@ -56,11 +86,18 @@ Jab: [20.0, -1.4, 2.8, -1.7]
 ##############
 # CONNECTIVITY
 ##############
+# to load connectivity matrix from MAT_PATH
 IF_LOAD_MAT: 1
+# to save connectivity matrix from MAT_PATH
 IF_SAVE_MAT: 0
 
-# PROBA: spec
-# KAPPA: [10.0, 0.0, 0.0, 0.0]
+# connectivity type
+# PROBA can be 'cos', 'spec', 'gauss', 'None'
+# By default the matrix is a random sparse matrix Cij
+# 'cos' gives a sparse matrix with strong cosine structure,
+# Pij = (1 + 2 KAPPA cos(theta_ij) / sqrt(Kb)), Cij = 1 with proba Pij
+# 'spec' gives a sparse matrix with weak cosine structure,
+# Pij = (1 + 2 KAPPA cos(theta_ij) / sqrt(Kb)) , Cij = 1 with proba Pij
 
 PROBA: cos
 KAPPA: [1.0, 0.95, 1.0, 1.0]
@@ -68,17 +105,23 @@ KAPPA: [1.0, 0.95, 1.0, 1.0]
 ##############
 # STP
 ##############
+# adds STP (as in Mato & Hansel, J Neurosci, 2012)
 IF_STP: 1
 USE: [0.03, 0.03]
 TAU_FAC: [650, 650]
 TAU_REC: [200, 200]
 
 ##############
-# FF
+# Feed Forward
 ##############
+# adds gaussian noise to feedforward
 IF_FF_NOISE: 0
+# variance of the noise
 VAR_FF: [1.0, 1.0]
 
+# adds cosine correlation to the feedforward
 IF_FF_CORR: 0
+# amplitude of the correlations
 A_CORR: [0.5, 0.5]
+# 
 CORR_FF: [0.5, 0.5]
