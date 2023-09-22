@@ -16,9 +16,14 @@ cmake ..
 make
 ```
 
-Otherwise you can just use the *Makefile*
+If you have already installed the dependencies you can just use the *Makefile*
 ```bash
 make
+```
+
+Alternatively you can use Docker
+```bash
+docker pull ghcr.io/kiriclope/lif_cpp:latest
 ```
 
 ## Usage
