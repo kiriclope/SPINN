@@ -15,6 +15,7 @@
 !*.org
 !Makefile
 
+!.github/
 !*/
 !/backup/
 !/bin/
