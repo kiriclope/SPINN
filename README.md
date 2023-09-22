@@ -6,12 +6,22 @@ The network can have multiple neural populations, different connectivity profile
 For more info look at the config files in ./conf/.
 
 ## Installation
-Provide clear instructions on how to get your development environment running.
+This package requires
+A C++ Compiler supporting C++17, CMake (optional) and yaml-cpp
+
+To install with CMake:
 ```bash
 cd bin/
 cmake ..
 make
 ```
+
+Otherwise you can just use the *Makefile*
+```bash
+make
+```
+
+
 ## Usage
 Assuming the dependencies are installed, here is how to run the model (see notebooks folder or org folder for more doc)
 

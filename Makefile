@@ -4,6 +4,7 @@ CC = g++
 # Compiler flags
 # CFLAGS = -Wall -std=c++17 -lyaml-cpp
 CFLAGS = -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
+# CFLAGS = -Wall -std=c++17 -pthread -Ofast -s
 
 #Include directories
 # INCLUDES = -I./include
@@ -26,10 +27,10 @@ OBJS := $(SRCS:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $(TARGETDIR)/$@ $^ $(CFLAGS)
+	$(CC) -o $(TARGETDIR)/$@ $^ $(CFLAGS) $(INCLUDES)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm -rf $(BUILDDIR)/*.o $(TARGETDIR)/$(TARGET)
