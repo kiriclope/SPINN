@@ -9,7 +9,7 @@ COPY . .
 
 # Install any needed packages
 RUN apt-get update && \
-    apt-get install -y cmake make
+    apt-get install -y cmake make libyaml-cpp-dev
 
 # Compile the project
 RUN cmake . && make
