@@ -8,8 +8,9 @@ For more info look at the config files in ./conf/.
 ## Installation
 Provide clear instructions on how to get your development environment running.
 ```bash
-cmake
-cmake --build
+cd bin/
+cmake ..
+make
 ```
 ## Usage
 Assuming the dependencies are installed, here is how to run the model (see notebooks folder or org folder for more doc)
