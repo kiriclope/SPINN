@@ -16,7 +16,7 @@ int main(int argc , char** argv) {
   std::cout << "LIF NETWORK SIMULATION" << std::endl;
 
   std::string configname = argv[1] ;
-
+  
   std::cout << "Loading config from: " << configname;
   loadConfig(configname);
   std::cout << " Done" << std::endl;

@@ -12,7 +12,7 @@ verbose: 1
 # Time step in ms
 DT: 0.1
 # total simulation time in ms
-DURATION: 61000.0
+DURATION: 10000.0
 # time to start saving simulation files in ms
 T_STEADY: 5000.0
 # Saving to files every T_WINDOW in ms
@@ -108,7 +108,7 @@ KAPPA: [1.0, 0.95, 1.0, 1.0]
 # adds STP (as in Mato & Hansel, J Neurosci, 2012)
 IF_STP: 1
 USE: [0.03, 0.03]
-TAU_FAC: [650, 650]
+TAU_FAC: [750, 750]
 TAU_REC: [200, 200]
 
 ##############

@@ -363,7 +363,7 @@ void runSimul(){
 
   if (VERBOSE)
     printParam();
-
+  
   std::ofstream (DATA_PATH + "/rates.txt", std::ios::trunc).close();
   std::ofstream (DATA_PATH + "/spikes.txt", std::ios::trunc).close();
   std::ofstream (DATA_PATH + "/inputsE.txt", std::ios::trunc).close();
