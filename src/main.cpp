@@ -20,7 +20,7 @@ int main(int argc , char** argv) {
   std::cout << "Loading config from: " << configname;
   loadConfig(configname);
   std::cout << " Done" << std::endl;
-
+  
   init_lif();
   runSimul();
   free_lif();

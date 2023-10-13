@@ -62,7 +62,7 @@ __global__ void genSparseMatCSC(unsigned long* colptr, int* indices) {
   }
 }
 
-int main() {
+int main(int argc , char** argv) {
   
   std::string configname = argv[1] ;
   loadConfig(configname);

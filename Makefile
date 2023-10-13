@@ -2,9 +2,7 @@
 CC = g++
 
 # Compiler flags
-# CFLAGS = -Wall -std=c++17 -lyaml-cpp
 CFLAGS = -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
-# CFLAGS = -Wall -std=c++17 -pthread -Ofast -s
 
 #Include directories
 # INCLUDES = -I./include

@@ -57,6 +57,7 @@ std::vector<float> USE;
 
 std::vector<float> T_STIM ;
 std::vector<float> A_STIM ;
+std::vector<float> STD_STIM ;
 std::vector<float> PHI_STIM ;
 std::vector<float> KAPPA_STIM ;
 
@@ -158,6 +159,7 @@ void loadConfig(std::string configname){
 
   T_STIM = config["T_STIM"].as<std::vector<float>>();
   A_STIM = config["A_STIM"].as<std::vector<float>>();
+  STD_STIM = config["STD_STIM"].as<std::vector<float>>();
   PHI_STIM = config["PHI_STIM"].as<std::vector<float>>();
   KAPPA_STIM = config["KAPPA_STIM"].as<std::vector<float>>();
 
@@ -171,6 +173,6 @@ void loadConfig(std::string configname){
 
 void ensureDirExists(std::string &path) {
     if (!std::filesystem::exists(path)) {
-        std::filesystem::create_directories(path);
+      std::filesystem::create_directories(path);
     }
 }

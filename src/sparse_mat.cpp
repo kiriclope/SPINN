@@ -22,14 +22,14 @@ float genConProb(int i, int j) {
     proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] * cos(theta_i - theta_j));
   else if (PROBA == "spec")
     proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop] / sqrt(Ka[pres_pop]) * cos(theta_i - theta_j));
-
+  
   return proba;
 }
 
 void genSparseMatCSC(size_t*& colptr, int*& indices) {
-
+  
   std::cout << "Generating Sparse Matrix" ;
-
+  
   std::mt19937 rng;
   rng.seed(42);
   std::uniform_real_distribution<float> unif(0.0, 1.0);
@@ -52,7 +52,7 @@ void genSparseMatCSC(size_t*& colptr, int*& indices) {
 
   if (IF_SAVE_MAT)
     saveSparseMatCSC(colptr, indices);
-
+  
   std::cout << " Done" << std::endl;
 }
 

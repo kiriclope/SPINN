@@ -51,7 +51,7 @@ void init_lif() {
 
   colptr = new size_t[N+1]();
   indices = new int[(size_t) (N * 5.0 * K)]();
-
+  
   for (int i = 0; i < N_POP; i++)
     inputs[i] = new float[N]();
 
@@ -160,7 +160,7 @@ void updateFFinputs(int step) {
       theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
 
       ff_inputs[i] = Iext_scaled[which_pop[i]]
-        + A_STIM[which_pop[i]] * sqrt(Ka[0])
+        + (A_STIM[which_pop[i]] + STD_STIM[which_pop[i]] * white(gen)) * sqrt(Ka[0])
         * (1.0 + KAPPA_STIM[which_pop[i]] *
            cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
     }
@@ -288,7 +288,7 @@ void updateStp(int i, int step){
   spike_times[i] = step * DT;
 
   int pre_pop = which_pop[i];
-
+  
   A_stp[i] = u_stp[i] * x_stp[i];
   u_stp[i] = u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]));
   x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-ISI / TAU_REC[pre_pop]) + 1.0 - exp(-ISI / TAU_REC[pre_pop]);

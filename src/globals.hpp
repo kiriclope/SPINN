@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+#include <string>
 
 // Declare all variables as extern
 extern std::string DATA_PATH;
@@ -57,6 +58,7 @@ extern std::vector<float> USE;
 
 extern std::vector<float> T_STIM ;
 extern std::vector<float> A_STIM ;
+extern std::vector<float> STD_STIM ;
 extern std::vector<float> PHI_STIM ;
 extern std::vector<float> KAPPA_STIM ;
 
