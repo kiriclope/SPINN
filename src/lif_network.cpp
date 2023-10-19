@@ -59,11 +59,11 @@ void init_lif() {
     Jab_NMDA = new float[N_POP]();
     inputs_NMDA = new float[N]();
   }
-
+  
   if(IF_STP) {
     x_stp = new float[N] {1.0};
-      u_stp = new float[N] {USE[0]};
-      A_stp = new float[N] {USE[0]};
+    u_stp = new float[N] {1.0};
+    A_stp = new float[N] {1.0};
   }
 
   ensureDirExists(DATA_PATH);
@@ -127,10 +127,14 @@ void initNetwork() {
     // Iext_scaled[i] = GAIN * Iext[i] ;
     // // Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
     Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
-
+  
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
 
+  if(IF_FF_NOISE)
+    for(int i=0; i < N_POP; i++)
+      STD_FF[i] *= GAIN * (V_THRESH - V_REST);
+  
   if(IF_FF_CORR)
     for(int i=0; i < N_POP; i++)
       // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
@@ -138,9 +142,10 @@ void initNetwork() {
   
   std::cout << " Done" << std::endl;
 
+  // network initialization
   for(int i=0; i<N; i++)
     volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
-
+  
   updateSpikes(-1); // must come before updateRecInputs in this implementation
   updateFFinputs(-1); // must come before updateNetInputs in this implementation
   updateRecInputs(); // must come before updateNetInputs in this implementation
@@ -151,33 +156,36 @@ void updateFFinputs(int step) {
 
   float theta_i = 0;
   
-  if ((step >= (int) (T_STIM[0] / DT)) && (step < (int) (T_STIM[1] / DT))) {
-    if (step == (int) (T_STIM[0] / DT))
-      if (VERBOSE)
-        std::cout << " STIM ON" << std::endl;
-
+  if (step == N_STIM[0]) {
+    if (VERBOSE)
+      std::cout << " STIM ON" << std::endl;
+    
     for (int i = 0; i < N; i++) {
       theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
-
+      
       ff_inputs[i] = Iext_scaled[which_pop[i]]
-        + (A_STIM[which_pop[i]] + STD_STIM[which_pop[i]] * white(gen)) * sqrt(Ka[0])
-        * (1.0 + KAPPA_STIM[which_pop[i]] *
-           cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
+        + (A_STIM[which_pop[i]]
+           + STD_STIM[which_pop[i]] * white(gen))
+        * sqrt(Ka[0])
+        * (1.0
+           + KAPPA_STIM[which_pop[i]]
+           * cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
     }
   }
-  else{
+  
+  if (step == N_STIM[1]) {
+    if (VERBOSE)
+      std::cout << " STIM OFF" << std::endl;
+    
     for (int i = 0; i < N; i++)
       ff_inputs[i] = Iext_scaled[which_pop[i]];
-
-    if (step == (int) (T_STIM[1] / DT))
-      if (VERBOSE)
-        std::cout << " STIM OFF" << std::endl;
+    
   }
-
+  
   if (IF_FF_NOISE)
     for (int i = 0; i < N; i++)
-      // ff_inputs[i] += std::sqrt(Ka[0]) * std::sqrt(VAR_FF[which_pop[i]]) * white(gen);
-      ff_inputs[i] += std::sqrt(VAR_FF[which_pop[i]] * Iext_scaled[which_pop[i]]) * white(gen);
+      // ff_inputs[i] += std::sqrt(Ka[0]) * std::sqrt(STD_FF[which_pop[i]]) * white(gen);
+      ff_inputs[i] += STD_FF[which_pop[i]] * white(gen);
 
   if (IF_FF_CORR) {
     phi0 = unif(gen) * 2.0 * M_PI ;
@@ -187,7 +195,6 @@ void updateFFinputs(int step) {
       ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0));
     }
   }
-
 }
 
 void updateVolts(){
@@ -383,11 +390,12 @@ void runSimul(){
   std::ofstream xstpFile(DATA_PATH + "/x_stp.txt", std::ios::app | std::ios::binary);
   std::ofstream ustpFile(DATA_PATH + "/u_stp.txt", std::ios::app | std::ios::binary);
   std::ofstream AstpFile(DATA_PATH + "/A_stp.txt", std::ios::app | std::ios::binary);
-
+  
   int N_STEPS = (int) (DURATION/DT);
   int N_STEADY = (int) T_STEADY / DT;
   int N_WINDOW = (int) T_WINDOW / DT;
-
+  int N_SAVE = (int)  (DURATION - T_SAVE) / DT;
+    
   std::cout << "Running Simulation" << std::endl;
   for(int step = 0; step < N_STEPS; step += 1) {
 
@@ -400,15 +408,15 @@ void runSimul(){
     if(step==N_STEADY)
       for(int i=0; i<N; ++i)
         rates[i] = 0.0 ;
-
+    
     if(step % N_WINDOW == 0 && step > N_STEADY) {
       for(int i=0; i<N; ++i)
         rates[i] *= dum;
-
+      
       if (VERBOSE) {
         std::cout << std::setprecision(3);
         std::cout << "time " << step * DT << "s";
-
+        
         std::cout << "| Rates ";
         for (int i = 0; i < N_POP; ++i)
           std::cout << popMean(rates, cNa[i], cNa[i + 1]) << " Hz ";
@@ -419,35 +427,40 @@ void runSimul(){
         std::cout << std::flush;
         std::cout << "\r";
       }
+      
+      if (IF_SAVE_DATA) {
+        // if (step>N_SAVE) {
+        saveArrayToFile(spikesFile, spikes, N);
+        saveArrayToFile(ratesFile, rates, N);
 
-      saveArrayToFile(spikesFile, spikes, N);
-      saveArrayToFile(ratesFile, rates, N);
-
-      saveArrayToFile(voltsFile, volts, N);
-
-      saveArrayToFile(inputsEfile, inputs[0], N);
-      saveArrayToFile(inputsIfile, inputs[1], N);
-
-      if (IF_STP) {
-        saveArrayToFile(xstpFile, x_stp, Na[0]);
-        saveArrayToFile(ustpFile, u_stp, Na[0]);
-        saveArrayToFile(AstpFile, A_stp, Na[0]);
+        saveArrayToFile(voltsFile, volts, N);
+        
+        saveArrayToFile(inputsEfile, inputs[0], N);
+        saveArrayToFile(inputsIfile, inputs[1], N);
+        
+        if (IF_STP) {
+          saveArrayToFile(xstpFile, x_stp, Na[0]);
+          saveArrayToFile(ustpFile, u_stp, Na[0]);
+          saveArrayToFile(AstpFile, A_stp, Na[0]);
+        }
       }
-
+      
       for(int i=0; i<N; ++i)
         rates[i] = 0.0 ;
     } // end window
   } // end for
 
-  spikesFile.close();
-  ratesFile.close();
-  inputsEfile.close();
-  inputsIfile.close();
-  voltsFile.close();
+  if (IF_SAVE_DATA) {
+    spikesFile.close();
+    ratesFile.close();
+    inputsEfile.close();
+    inputsIfile.close();
+    voltsFile.close();
 
-  xstpFile.close();
-  ustpFile.close();
-  AstpFile.close();
-
+    xstpFile.close();
+    ustpFile.close();
+    AstpFile.close();
+  }
+  
   std::cout << "Done" << std::endl;
 }

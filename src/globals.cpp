@@ -42,6 +42,9 @@ float* EXP_DT_TAU_MEM;
 
 int IF_LOAD_MAT;
 int IF_SAVE_MAT;
+int IF_SAVE_DATA;
+float T_SAVE;
+
 std::string PROBA;
 std::vector<float> KAPPA;
 
@@ -56,13 +59,14 @@ std::vector<float> TAU_FAC;
 std::vector<float> USE;
 
 std::vector<float> T_STIM ;
+int* N_STIM ;
 std::vector<float> A_STIM ;
 std::vector<float> STD_STIM ;
 std::vector<float> PHI_STIM ;
 std::vector<float> KAPPA_STIM ;
 
 int IF_FF_NOISE;
-std::vector<float> VAR_FF;
+std::vector<float> STD_FF;
 
 int IF_FF_CORR;
 std::vector<float> A_CORR;
@@ -78,6 +82,10 @@ void loadConfig(std::string configname){
 
   IF_LOAD_MAT = config["IF_LOAD_MAT"].as<int>();
   IF_SAVE_MAT = config["IF_SAVE_MAT"].as<int>();
+  
+  IF_SAVE_DATA = config["IF_SAVE_DATA"].as<int>();
+  T_SAVE = config["T_SAVE"].as<float>();
+  
   VERBOSE = config["verbose"].as<int>();
 
   // Assign variables from configuration file
@@ -158,13 +166,17 @@ void loadConfig(std::string configname){
   USE = config["USE"].as<std::vector<float>>();
 
   T_STIM = config["T_STIM"].as<std::vector<float>>();
+  N_STIM = new int[N_POP]();
+  for(int i=0; i<N_POP; ++i)
+    N_STIM[i] = (int) (T_STIM[i] / DT);
+  
   A_STIM = config["A_STIM"].as<std::vector<float>>();
   STD_STIM = config["STD_STIM"].as<std::vector<float>>();
   PHI_STIM = config["PHI_STIM"].as<std::vector<float>>();
   KAPPA_STIM = config["KAPPA_STIM"].as<std::vector<float>>();
 
   IF_FF_NOISE = config["IF_FF_NOISE"].as<int>();
-  VAR_FF = config["VAR_FF"].as<std::vector<float>>();
+  STD_FF = config["STD_FF"].as<std::vector<float>>();
 
   IF_FF_CORR = config["IF_FF_CORR"].as<int>();
   CORR_FF = config["CORR_FF"].as<std::vector<float>>();

@@ -36,7 +36,7 @@ def decode_bump(signal, axis=-1):
     return m0, m1, phi
 
 
-def circcvl(signal, windowSize=10, axis=-1):
+def circcvl(signal, windowSize=3000, axis=-1):
     """
     Compute the circular convolution of a signal with a smooth kernel.
 

@@ -1,0 +1,448 @@
+#+STARTUP: fold
+#+TITLE: Cholinergic neuromodulation of prefrontal attractor dynamics controls performance in spatial WM
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
+
+* Notebook Settings
+#+begin_src ipython
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+
+  %run /home/leon/models/lif_cpp/notebooks/setup.py
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+
+* Compilation
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make 
+#+end_src
+
+#+RESULTS:
+: g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
+
+
+* Imports
+#+begin_src ipython
+  import sys
+  sys.path.insert(0, '/home/leon/models/lif_cpp')  
+  REPO_PATH = "/home/leon/models/lif_cpp"
+
+  import subprocess
+  import pandas as pd
+  from time import sleep
+  from yaml import safe_load
+  from scipy.stats import circmean
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.decode import decode_bump, circcvl  
+#+end_src
+
+#+RESULTS:
+
+* Helpers
+#+begin_src ipython
+  def get_data(session='/'):
+    # Open the file in binary mode and read the data
+    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T
+ #+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_rates_X(name, X_list, ini_list, phi_list, X_str='Jee'):
+     rates = []
+     for ini in ini_list:
+        for phi in phi_list:
+           for X in X_list:
+              try:
+                 session = "/%s_%s_%.2f_phi_%d_ini_%d/" % (name, X_str, X, phi, ini)
+                 rate = get_data(session)
+                 rates.append(rate[:30000])
+              except:
+                 pass
+              
+     rates = np.array(rates)
+     rates = rates.reshape(len(ini_list), len(phi_list), len(X_list), 30000, -1)
+     return rates
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython  
+  def get_df_ini_X(rates, X_str='Jee'):
+      n_trials, n_phi, n_X, n_neurons, n_times = rates.shape
+
+      # Create indices
+      trials_ind, phi_ind, X_ind, neurons_ind, times_ind = np.indices((n_trials, n_phi, n_X, n_neurons, n_times))
+
+      # Construct DataFrame
+      df = pd.DataFrame({
+          'trial': trials_ind.flatten(),
+          'phi': phi_ind.flatten(),
+          X_str : X_ind.flatten(),
+          'neuron': neurons_ind.flatten(),
+          'time': times_ind.flatten(),
+          'rates': rates.flatten()
+      })
+
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def load_data(name, X_list, ini_list, phi_list, X_str='Jee'):
+      rates = get_rates_X(name, X_list, ini_list, phi_list, X_str)
+      df = get_df_ini_X(rates, X_str)
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_df_code(df, X_str='Jee'):
+      df_code = df.groupby(['time', 'trial', 'phi', X_str])['rates'].apply(decode_bump).reset_index()
+      df_code[['m0', 'm1', 'phase']] = pd.DataFrame(df_code['rates'].tolist(), index=df_code.index)
+      df_code = df_code.drop(columns=['rates'])
+      
+      end_point = df_code[df_code.time==df_code.time.iloc[-1]]
+      end_point = end_point.drop(columns=['time'])
+      print(end_point.head())  
+      return df_code, end_point  
+#+end_src
+
+#+RESULTS:
+
+* Phase Space
+*** Varying Ie
+**** Parameters
+
+#+begin_src ipython
+  name = 'noisy'
+  Ie_list = np.linspace(3, 5, 11)
+  ini_list = np.arange(1, 50)
+  phi_list = np.linspace(0, 315, 8)
+#+end_src
+
+#+RESULTS:
+
+**** Simulation
+#+begin_src ipython
+  def run_loop_Ie(name, Ie_list, ini_list, phi_list):
+      
+      for ini in ini_list:
+          for phi in phi_list:
+              for Ie in Ie_list:
+                  session = "%s_Ie_%.2f_phi_%d_ini_%d" % (name, Ie, phi, ini)
+                  data_path = REPO_PATH + '/data/simul/' + session
+                  update_conf(REPO_PATH + '/conf/config_EI', 'DATA_PATH', data_path)
+                  update_conf(REPO_PATH + '/conf/config_EI', 'Iext', float(Ie/1000.0), axis=0)
+                  update_conf(REPO_PATH + '/conf/config_EI', 'PHI_STIM', float(phi), axis=0)
+
+                  sleep(.2)
+                  run_cpp(session)
+                  sleep(.2)
+
+                  subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
+                  subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
+
+      restore_conf(REPO_PATH + '/conf/config_EI.yml')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  run_loop_Ie(name, Ie_list, ini_list, phi_list)
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+
+**** Analysis
+***** Load Data
+
+#+begin_src ipython
+  df = load_data(name, Ie_list, ini_list, phi_list, 'Ie')
+  print(df.head())
+#+end_src
+
+#+RESULTS:
+:    trial  phi  Ie  neuron  time  rates
+: 0      0    0   0       0     0    4.0
+: 1      0    0   0       1     0    0.0
+: 2      0    0   0       2     0    0.0
+: 3      0    0   0       3     0    0.0
+: 4      0    0   0       4     0    0.0
+
+#+begin_src ipython
+  df_code, end_point = get_df_code(df, 'Ie')
+#+end_src
+
+#+RESULTS:
+:    trial  phi  Ie        m0        m1     phase
+: 0      0    0   0  0.454667  0.019032  4.779345
+: 1      0    0   1  0.710267  0.054432  5.904123
+: 2      0    0   2  1.364533  0.636089  0.010394
+: 3      0    0   3  2.615067  1.782959  6.281067
+: 4      0    0   4  3.305467  1.986725  0.171147
+
+***** Tuning
+#+begin_src ipython
+  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
+
+  sns.lineplot(end_point, x='Ie', y='m0', ax=ax[0], legend=False, marker='o')
+  ax[0].set_xlabel('FF Input')
+  ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
+  ax[0].set_xticks(np.linspace(0, len(Ie_list), 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+
+  # sns.lineplot(end_point, x='Ie', y=end_point['m1'], ax=ax[1], legend=False, marker='o')
+  # ax[1].set_ylabel('$\mathcal{F}_1$ (Hz)')
+  
+  sns.lineplot(end_point, x='Ie', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o')
+  ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+  ax[1].set_xlabel('FF Input')
+  ax[1].set_xticks(np.linspace(0, len(Ie_list)-1, 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+
+  plt.show()
+#+end_src
+#+RESULTS:
+[[file:./.ob-jupyter/c520831ee9aab64efdf943af39cc41ac41d42833.png]]
+
+#+begin_src ipython
+  df_smooth = df.groupby(['time', 'trial', 'phi', 'Ie'])['rates'].apply(circcvl).reset_index()
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+    endpoint = df_smooth[df_smooth.time==df_smooth.time.iloc[-1]]
+    endpoint = endpoint.drop(columns=['time'])
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  idx_off = 3
+  idx_on = 5
+
+  end0 = endpoint[end_point.Ie==idx_off].reset_index()
+  end1 = endpoint[end_point.Ie==idx_on].reset_index()
+
+  plt.plot(end0.rates[4])
+  plt.plot(end1.rates[4])
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+| <matplotlib.lines.Line2D | at | 0x7f8843267a00> |
+[[file:./.ob-jupyter/97872b5b43fc0dd9c0e3aeabe3488399c9f39f2d.png]]
+:END:
+
+***** Errors
+#+begin_src ipython
+  def get_precision(x):
+      return x - circmean(x)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
+  end_point['precision'] = end_point.groupby(['phi', 'Ie'], group_keys=False)['phase'].apply(get_precision)
+  
+  print(end_point.head())
+#+end_src
+
+#+RESULTS:
+:    trial  phi  Ie        m0        m1     phase  accuracy  precision
+: 0      0    0   0  0.454667  0.019032  4.779345  4.779345   4.768412
+: 1      0    0   1  0.710267  0.054432  5.904123  5.904123  -0.352107
+: 2      0    0   2  1.364533  0.636089  0.010394  0.010394  -0.012113
+: 3      0    0   3  2.615067  1.782959  6.281067  6.281067   6.231762
+: 4      0    0   4  3.305467  1.986725  0.171147  0.171147   0.080629
+
+#+begin_src ipython
+  fig, ax = plt.subplots()
+
+  sns.lineplot(end_point, x='Ie', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax)
+  ax.set_xlabel('FF Input')
+  ax.set_ylabel('Diffusivity (°)')
+  # ax.set_xticks(np.linspace(0, len(Ie_list)-1, 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+
+  ax1 = ax.twinx()
+  sns.lineplot(end_point, x='Ie', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5)
+  ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+  
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/62251a924634bc47cfc69d8f4da11b65db9868ee.png]]
+
+#+begin_src ipython
+point = end_point[end_point.Ie==idx_off]
+point_on = end_point[end_point.Ie==idx_on]
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
+
+  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='b')
+  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='r')
+  ax[0].set_xlabel('$\phi$(°)')
+  ax[0].set_ylabel('Density')
+  ax[0].set_xticks([0, 90, 180, 270, 360])
+
+  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='b')
+  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='r')
+  ax[1].set_xlabel('$\phi - \phi_{stim}$ (°)')
+  ax[1].set_ylabel('Density')
+  ax[1].set_xticks([0, 90, 180, 270, 360])
+
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=True, stat='density', element='step', alpha=0,color = 'b')
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=True, stat='density', element='step', alpha=0., color='r')
+  ax[2].set_xlabel('$\phi - <\phi>_{trials}$ (°)')
+  ax[2].set_ylabel('Density')
+  ax[2].set_xlim([-20, 20])
+
+  plt.show()  
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/b00cbc53244bcd17918b9714da1657c20340429e.png]]
+
+#+begin_src ipython
+
+#+end_src
+
+#+RESULTS:
+
+*** Varying Jee
+**** Parameters
+
+#+begin_src ipython
+  Jee_list = np.linspace(15, 25, 11)
+  ini_list = np.arange(0, 1)
+  phi_list = np.linspace(0, 315, 8)
+  #  phi_list = [180]
+#+end_src
+
+#+RESULTS:
+
+**** Simulation
+#+begin_src ipython
+  def run_loop_Jee(Jee_list, ini_list, phi_list):
+      
+      for ini in ini_list:
+          for phi in phi_list:
+              for Jee in Jee_list:
+                  session = "EI_Jee_%.2f_phi_%d_ini_%d" % (Jee, phi, ini)
+                  data_path = REPO_PATH + '/data/simul/' + session
+                  update_conf(REPO_PATH + '/conf/config_EI', 'DATA_PATH', data_path)
+                  update_conf(REPO_PATH + '/conf/config_EI', 'Jab', float(Jee), axis=0)
+                  update_conf(REPO_PATH + '/conf/config_EI', 'PHI_STIM', float(phi), axis=0)
+
+                  sleep(.2)
+                  run_cpp(session)
+                  sleep(.2)
+
+                  subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
+                  subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
+
+      restore_conf(REPO_PATH + '/conf/config_EI.yml')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  run_loop_Jee(Jee_list, ini_list, phi_list)
+#+end_src
+
+#+RESULTS:
+:  CPU_USAGE > 90.0 %, sleeping for a while ...
+: File moved successfully!
+
+**** Analysis
+***** Load Data
+
+#+begin_src ipython
+  df = load_data(Jee_list, ini_list, phi_list, 'Jee')
+  print(df.head())
+#+end_src
+
+#+RESULTS:
+:    trial  phi  Jee  neuron  time  rates
+: 0      0    0    0       0     0   16.0
+: 1      0    0    0       0     1    8.0
+: 2      0    0    0       0     2    8.0
+: 3      0    0    0       0     3    4.0
+: 4      0    0    0       0     4   12.0
+
+#+begin_src ipython
+  df_code, end_point = get_df_code(df, 'Jee')
+#+end_src
+
+#+RESULTS:
+:       trial  phi  Jee        m0        m1     phase
+: 1584      0    0    0  0.804933  0.097705  0.039616
+: 1585      0    0    1  1.000667  0.260478  0.159484
+: 1586      0    0    2  1.783467  0.982758  0.032981
+: 1587      0    0    3  3.440267  2.332981  0.058166
+: 1588      0    0    4  4.703200  2.534673  0.112516
+
+***** Plot Data
+#+begin_src ipython
+  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
+
+  sns.lineplot(end_point, x='Jee', y='m0', ax=ax[0], legend=False, marker='o')
+  ax[0].set_xlabel('$J_{EE}$')
+  ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
+  ax[0].set_xticks(np.linspace(0, len(Jee_list), 5), np.round(np.linspace(Jee_list[0], Jee_list[-1], 5), 2))
+  
+  # sns.lineplot(end_point, x='Jee', y=end_point['m1'], ax=ax[1], legend=False)
+  # ax[1].set_ylabel('$\mathcal{F}_1$ (Hz)')
+
+  sns.lineplot(end_point, x='Jee', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o')
+  ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+  ax[1].set_xlabel('$J_{EE}$')
+  ax[1].set_xticks(np.linspace(0, len(Jee_list)-1, 5), np.round(np.linspace(Jee_list[0], Jee_list[-1], 5), 2))
+
+  plt.show()
+#+end_src
+#+RESULTS:
+[[file:./.ob-jupyter/67bdd61c82f8fed5e3106885537333f96e724dcd.png]]
+
+#+begin_src ipython
+  df_smooth = df.groupby(['time', 'trial', 'phi', 'Jee'])['rates'].apply(circcvl).reset_index()
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  endpoint = df_smooth[df_smooth.time==df_smooth.time.iloc[-1]]
+  endpoint = endpoint.drop(columns=['time']).reset_index()
+#+end_src
+
+#+begin_src ipython
+  end0 = endpoint[endpoint.Jee==3].reset_index()
+  end1 = endpoint[endpoint.Jee==4].reset_index()
+
+  plt.plot(end0.rates[4])
+  plt.plot(end1.rates[4])
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/90051de35ebf479e9fd865971b340a030369877a.png]]

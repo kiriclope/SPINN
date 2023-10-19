@@ -41,6 +41,9 @@ extern std::vector<float> TAU_MEM;
 extern float* DT_TAU_MEM;
 extern float* EXP_DT_TAU_MEM;
 
+extern int IF_SAVE_DATA;
+extern float T_SAVE;
+
 extern int IF_LOAD_MAT;
 extern int IF_SAVE_MAT;
 extern std::string PROBA;
@@ -57,13 +60,14 @@ extern std::vector<float> TAU_FAC;
 extern std::vector<float> USE;
 
 extern std::vector<float> T_STIM ;
+extern int* N_STIM ;
 extern std::vector<float> A_STIM ;
 extern std::vector<float> STD_STIM ;
 extern std::vector<float> PHI_STIM ;
 extern std::vector<float> KAPPA_STIM ;
 
 extern int IF_FF_NOISE;
-extern std::vector<float> VAR_FF;
+extern std::vector<float> STD_FF;
 
 extern int IF_FF_CORR;
 extern std::vector<float> CORR_FF;

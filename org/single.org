@@ -1,0 +1,170 @@
+#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
+
+* Notebook Settings
+#+begin_src ipython
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+
+  %run /home/leon/models/lif_cpp/notebooks/setup.py
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+
+* Compilation
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make 
+#+end_src
+
+#+RESULTS:
+: g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
+
+* Imports
+#+begin_src ipython
+  import sys
+  sys.path.insert(0, '/home/leon/models/lif_cpp')  
+  REPO_PATH = "/home/leon/models/lif_cpp"
+
+  import subprocess
+  import pandas as pd
+  from time import sleep
+  from yaml import safe_load
+  from scipy.stats import circmean
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.decode import decode_bump, circcvl  
+#+end_src
+
+#+RESULTS:
+
+* Connectivity
+#+begin_src sh
+  cd $HOME/models/lif_cpp/src
+  nvcc -lyaml-cpp mat.cu globals.cpp
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  arr = np.fromfile('../data/matrix/colptr.txt', dtype=np.uint)  # specify the dtype according to your data
+  print(arr)
+#+end_src
+
+#+RESULTS:
+: [20002519 20103263 20148192 ... 39849837 39803895 39915849]
+
+* Single trial
+** Simulation
+#+begin_src ipython
+  session = 'single_trial'
+  run_cpp(session)
+#+end_src
+
+#+RESULTS:
+
+** Analysis
+#+begin_src ipython
+  def get_times():
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_EI.yml", "r"))
+
+       times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
+       times -= config['T_STEADY']
+       times /= 1000.0
+       
+       return times
+#+end_src
+
+#+RESULTS:
+
+**** Raster
+#+begin_src ipython
+  session = '/'
+  data = get_data(session)
+  print('data', data.shape)
+  print('rates', np.mean(data[:30000]), np.mean(data[10000:]))
+#+end_src
+
+#+RESULTS:
+: data (40000, 19)
+: rates 3.9633403 6.964786
+
+#+begin_src ipython  
+  theta = np.linspace(0, 360, 30000)
+  times = get_times()
+  print(times.shape)
+  plt.imshow(data[:30000], aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, times[data.shape[1]], 0, 30000], origin='lower')
+
+  plt.xlabel('Time (s)')
+  plt.ylabel('Pref. Location (°)')
+  plt.yticks([0, 30000/4, 30000/2, 3*30000/4, 30000], [0, 90, 180, 270, 360])
+
+  plt.show()
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+: (20,)
+[[file:./.ob-jupyter/e177597d7a955f7d58df5d866094338408d3c1ce.png]]
+:END:
+
+**** Fourier vs Time
+#+begin_src ipython
+  data = get_data(session)
+
+  rates_E = data[:30000]
+  m0, m1, phi = decode_bump(rates_E, axis=0)
+
+  times = get_times()
+  times = times[:data.shape[1]]
+
+  fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
+  ax[0].plot(times, m0)
+  ax[0].set_xlabel('Time (s)')
+  ax[0].set_ylabel('$\mathcal{F}^0$')
+  # ax[0].set_yticks([0, 1, ])
+  # ax[0].set_ylim([0, 5])
+
+  ax[1].plot(times, m1/m0)
+  ax[1].set_xlabel('Time (s)')
+  ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
+  ax[1].set_yticks([0, 0.5, 1, 1.5])
+  # ax[1].set_ylim([0, 1])
+
+  ax[2].plot(times, phi * 180 / np.pi)
+  ax[2].set_xlabel('Time (s)')
+  ax[2].set_ylabel('$\phi$')
+  ax[2].set_yticks([0, 90, 180, 270, 360])
+  plt.tight_layout()
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/fee5eec8e25ee21b980affed50b166653524f542.png]]
+
+**** Spatial profile
+#+begin_src ipython
+  smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
+  theta = np.linspace(0, 360, rates_E.shape[0])
+  plt.plot(theta, smooth_E[:, -1])
+
+  plt.xlabel('Prefered Location (°)')
+  plt.ylabel('Rate (Hz)')
+  # plt.yticks([0, 5])
+  plt.xticks([0, 90, 180, 270, 360]);
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/28311f99055933f8a388e91536b7c46cdf00551b.png]]
+
+#+BEGIN_SRC ipython
+
+#+END_SRC
+
+#+RESULTS:
