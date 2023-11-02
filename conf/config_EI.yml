@@ -1,8 +1,6 @@
 ##########################################
 # Simulation parameters
 ##########################################
-
-
 IF_SAVE_DATA: 1
 # saving the last T_SAVE ms
 T_SAVE: 500.0
@@ -16,11 +14,11 @@ MAT_PATH: /home/leon/models/lif_cpp/data/matrix
 verbose: 1
 
 # Time step in ms
-DT: 0.1
+DT: 0.05
 # total simulation time in ms
 DURATION: 30000.0
 # time to start showing simulation result ms
-T_STEADY: 10000.0
+T_STEADY: 3000.0
 # Saving to files every T_WINDOW in ms
 T_WINDOW: 250.
 
@@ -41,9 +39,9 @@ FRAC: [0.75, 0.25]
 ##########################################
 # stimulus has a cosine shape
 # time for stimulus onset/offset in ms 
-T_STIM: [6000.0, 7000.0]
+T_STIM: [1000.0, 1500.0]
 # amplitude of the stimulus
-A_STIM: [.05, 0.0]
+A_STIM: [.1, 0.0]
 # std of the stimulus
 STD_STIM: [0.0, 0.0]
 # Phase of the 1st stimulus
@@ -51,6 +49,7 @@ PHI_STIM: [180.0, 0.0]
 # Tuning of the stimulus
 KAPPA_STIM: [0.5, 0.0]
 
+CHECK_BISTABILITY: 0
 ##############
 # Network Dynamics
 ##############
@@ -69,17 +68,17 @@ TAU_SYN: [4.0, 2.0]
 # Adding NMDA currents
 IF_NMDA: 1
 # NMDA time constants in s
-TAU_NMDA: [80.0, 80.0]
+TAU_NMDA: [60.0, 40.0]
 # NMDA strength ratio
-R_NMDA: [0.9, 0.9]
+R_NMDA: [0.5, 0.5]
 
 # Network's gain
 GAIN: 1.0
 
 # Feedforward inputs strengths
-Iext: [.004, 0.0015]
+Iext: [.004, 0.002]
 # Synaptic strengths 
-Jab: [18.5, -1.4, 2.8, -1.7]
+Jab: [21., -1.4, 2.8, -1.7]
 
 ##############
 # CONNECTIVITY
@@ -98,14 +97,14 @@ IF_SAVE_MAT: 0
 # Pij = (1 + KAPPA cos(theta_ij) / sqrt(Kb)) , Cij = 1 with proba Pij
 
 PROBA: cos
-KAPPA: [1.0, 0.95, 1.0, 1.0]
+KAPPA: [0.5, 0.45, 0.5, 0.5]
 
 ##############
 # STP
 ##############
 # adds STP (as in Mato & Hansel, J Neurosci, 2012)
 IF_STP: 1
-USE: [0.025, 0.025]
+USE: [0.03, 0.03]
 TAU_FAC: [850, 850]
 TAU_REC: [200, 200]
 
@@ -113,13 +112,13 @@ TAU_REC: [200, 200]
 # Feed Forward
 ##############
 # adds gaussian noise to feedforward
-IF_FF_NOISE: 1
+IF_FF_NOISE: 0
 # variance of the noise
-STD_FF: [0.0001, 0.0001]
+STD_FF: [0.00005, 0.00005]
 
 # adds cosine correlation to the feedforward
 IF_FF_CORR: 0
 # amplitude of the correlations
-A_CORR: [0.5, 0.5]
+A_CORR: [0.0001, 0.0001]
 # 
 CORR_FF: [0.5, 0.5]

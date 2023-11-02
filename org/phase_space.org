@@ -1,5 +1,4 @@
 #+STARTUP: fold
-#+TITLE: Cholinergic neuromodulation of prefrontal attractor dynamics controls performance in spatial WM
 #+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
 
 * Notebook Settings
@@ -27,7 +26,6 @@
 
 #+RESULTS:
 : g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
-
 
 * Imports
 #+begin_src ipython
@@ -123,20 +121,6 @@
 
 #+RESULTS:
 
-* Phase Space
-*** Varying Ie
-**** Parameters
-
-#+begin_src ipython
-  name = 'noisy'
-  Ie_list = np.linspace(3, 5, 11)
-  ini_list = np.arange(1, 50)
-  phi_list = np.linspace(0, 315, 8)
-#+end_src
-
-#+RESULTS:
-
-**** Simulation
 #+begin_src ipython
   def run_loop_Ie(name, Ie_list, ini_list, phi_list):
       
@@ -162,10 +146,34 @@
 #+RESULTS:
 
 #+begin_src ipython
+  def get_precision(x):
+      return x - circmean(x)
+#+end_src
+
+#+RESULTS:
+
+* Phase Space
+*** Varying Ie
+**** Parameters
+
+#+begin_src ipython
+  name = 'noisy_ff'
+  Ie_list = np.linspace(3, 5, 11)
+  ini_list = np.arange(1, 10)
+  phi_list = np.linspace(0, 315, 8)
+  phi_list = [180]
+#+end_src
+
+#+RESULTS:
+
+**** Simulation
+
+#+begin_src ipython
   run_loop_Ie(name, Ie_list, ini_list, phi_list)
 #+end_src
 
 #+RESULTS:
+:  CPU_USAGE > 90.0 %, sleeping for a while ...
 : File moved successfully!
 
 **** Analysis
@@ -178,46 +186,52 @@
 
 #+RESULTS:
 :    trial  phi  Ie  neuron  time  rates
-: 0      0    0   0       0     0    4.0
-: 1      0    0   0       1     0    0.0
-: 2      0    0   0       2     0    0.0
-: 3      0    0   0       3     0    0.0
-: 4      0    0   0       4     0    0.0
+: 0      0    0   0       0     0    0.0
+: 1      0    0   0       0     1    0.0
+: 2      0    0   0       0     2    0.0
+: 3      0    0   0       0     3    0.0
+: 4      0    0   0       0     4    0.0
 
 #+begin_src ipython
   df_code, end_point = get_df_code(df, 'Ie')
 #+end_src
 
 #+RESULTS:
-:    trial  phi  Ie        m0        m1     phase
-: 0      0    0   0  0.454667  0.019032  4.779345
-: 1      0    0   1  0.710267  0.054432  5.904123
-: 2      0    0   2  1.364533  0.636089  0.010394
-: 3      0    0   3  2.615067  1.782959  6.281067
-: 4      0    0   4  3.305467  1.986725  0.171147
+:        trial  phi  Ie        m0        m1     phase
+: 10494      0    0   0  1.384133  0.075082  4.154230
+: 10495      0    0   1  1.724133  0.085064  6.191511
+: 10496      0    0   2  1.909600  0.205215  2.527409
+: 10497      0    0   3  1.944267  0.181370  2.261149
+: 10498      0    0   4  2.399200  0.172905  5.936165
 
-***** Tuning
+***** Bifurcation
 #+begin_src ipython
-  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
+    fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
 
-  sns.lineplot(end_point, x='Ie', y='m0', ax=ax[0], legend=False, marker='o')
-  ax[0].set_xlabel('FF Input')
-  ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
-  ax[0].set_xticks(np.linspace(0, len(Ie_list), 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+    # sns.lineplot(end_point, x='Ie', y='m0', ax=ax[0], legend=False, marker='o')
+    sns.lineplot(end_point, x='Ie', y='m0', ax=ax[0], legend=False, marker='o', lw=0, hue='trial')
+    ax[0].set_xlabel('FF Input')
+    ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
+    # ax[0].set_xticks(np.linspace(0, len(Ie_list), 5), np.r
+    #ound(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
 
-  # sns.lineplot(end_point, x='Ie', y=end_point['m1'], ax=ax[1], legend=False, marker='o')
-  # ax[1].set_ylabel('$\mathcal{F}_1$ (Hz)')
-  
-  sns.lineplot(end_point, x='Ie', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o')
-  ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
-  ax[1].set_xlabel('FF Input')
-  ax[1].set_xticks(np.linspace(0, len(Ie_list)-1, 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+    # sns.lineplot(end_point, x='Ie', y=end_point['m1'], ax=ax[1], legend=False, marker='o')
+    # ax[1].set_ylabel('$\mathcal{F}_1$ (Hz)')
 
-  plt.show()
+    # sns.lineplot(end_point, x='Ie', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o')
+
+    sns.lineplot(end_point, x='Ie', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', lw=0, hue='trial')
+
+    ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+    ax[1].set_xlabel('FF Input')
+    # ax[1].set_xticks(np.linspace(0, len(Ie_list)-1, 5), np.round(np.linspace(Ie_list[0], Ie_list[-1], 5), 2))
+
+    plt.show()
 #+end_src
 #+RESULTS:
-[[file:./.ob-jupyter/c520831ee9aab64efdf943af39cc41ac41d42833.png]]
+[[file:./.ob-jupyter/6c04d7b93059f116b8c6d8f57d212fecb24a3dd4.png]]
 
+***** Tuning Profile
 #+begin_src ipython
   df_smooth = df.groupby(['time', 'trial', 'phi', 'Ie'])['rates'].apply(circcvl).reset_index()
 #+end_src
@@ -240,19 +254,13 @@
 
   plt.plot(end0.rates[4])
   plt.plot(end1.rates[4])
+  plt.show()
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-| <matplotlib.lines.Line2D | at | 0x7f8843267a00> |
-[[file:./.ob-jupyter/97872b5b43fc0dd9c0e3aeabe3488399c9f39f2d.png]]
-:END:
+[[file:./.ob-jupyter/dca8f7a9cbd2dab90dfd89c411d38f1490950251.png]]
 
 ***** Errors
-#+begin_src ipython
-  def get_precision(x):
-      return x - circmean(x)
-#+end_src
 
 #+RESULTS:
 
@@ -264,12 +272,12 @@
 #+end_src
 
 #+RESULTS:
-:    trial  phi  Ie        m0        m1     phase  accuracy  precision
-: 0      0    0   0  0.454667  0.019032  4.779345  4.779345   4.768412
-: 1      0    0   1  0.710267  0.054432  5.904123  5.904123  -0.352107
-: 2      0    0   2  1.364533  0.636089  0.010394  0.010394  -0.012113
-: 3      0    0   3  2.615067  1.782959  6.281067  6.281067   6.231762
-: 4      0    0   4  3.305467  1.986725  0.171147  0.171147   0.080629
+:        trial  phi  Ie        m0        m1     phase  accuracy  precision
+: 10494      0    0   0  1.384133  0.075082  4.154230  4.154230  -0.922139
+: 10495      0    0   1  1.724133  0.085064  6.191511  6.191511   0.995255
+: 10496      0    0   2  1.909600  0.205215  2.527409  2.527409  -1.831870
+: 10497      0    0   3  1.944267  0.181370  2.261149  2.261149  -0.150988
+: 10498      0    0   4  2.399200  0.172905  5.936165  5.936165   4.735941
 
 #+begin_src ipython
   fig, ax = plt.subplots()
@@ -287,7 +295,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/62251a924634bc47cfc69d8f4da11b65db9868ee.png]]
+[[file:./.ob-jupyter/4a0bcb3a55ea48385759c9be7a31a17c0f2cb336.png]]
 
 #+begin_src ipython
 point = end_point[end_point.Ie==idx_off]
@@ -333,22 +341,22 @@ point_on = end_point[end_point.Ie==idx_on]
 **** Parameters
 
 #+begin_src ipython
-  Jee_list = np.linspace(15, 25, 11)
-  ini_list = np.arange(0, 1)
+  Jee_list = np.linspace(17, 23, 11)
+  ini_list = np.arange(0, 10)
   phi_list = np.linspace(0, 315, 8)
-  #  phi_list = [180]
+  phi_list = [180]
 #+end_src
 
 #+RESULTS:
 
 **** Simulation
 #+begin_src ipython
-  def run_loop_Jee(Jee_list, ini_list, phi_list):
-      
+  def run_loop_Jee(name, Jee_list, ini_list, phi_list):
+
       for ini in ini_list:
           for phi in phi_list:
               for Jee in Jee_list:
-                  session = "EI_Jee_%.2f_phi_%d_ini_%d" % (Jee, phi, ini)
+                  session = "%s_Jee_%.2f_phi_%d_ini_%d" % (name, Jee, phi, ini)
                   data_path = REPO_PATH + '/data/simul/' + session
                   update_conf(REPO_PATH + '/conf/config_EI', 'DATA_PATH', data_path)
                   update_conf(REPO_PATH + '/conf/config_EI', 'Jab', float(Jee), axis=0)
@@ -357,7 +365,7 @@ point_on = end_point[end_point.Ie==idx_on]
                   sleep(.2)
                   run_cpp(session)
                   sleep(.2)
-
+                  
                   subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
                   subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
 
@@ -367,54 +375,55 @@ point_on = end_point[end_point.Ie==idx_on]
 #+RESULTS:
 
 #+begin_src ipython
-  run_loop_Jee(Jee_list, ini_list, phi_list)
+  name = 'EI'
+  run_loop_Jee(name, Jee_list, ini_list, phi_list)
 #+end_src
 
 #+RESULTS:
-:  CPU_USAGE > 90.0 %, sleeping for a while ...
 : File moved successfully!
 
 **** Analysis
 ***** Load Data
 
 #+begin_src ipython
-  df = load_data(Jee_list, ini_list, phi_list, 'Jee')
+  df = load_data(name, Jee_list, ini_list, phi_list, 'Jee')
   print(df.head())
 #+end_src
 
 #+RESULTS:
 :    trial  phi  Jee  neuron  time  rates
-: 0      0    0    0       0     0   16.0
-: 1      0    0    0       0     1    8.0
-: 2      0    0    0       0     2    8.0
-: 3      0    0    0       0     3    4.0
-: 4      0    0    0       0     4   12.0
+: 0      0    0    0       0     0    4.0
+: 1      0    0    0       0     1    4.0
+: 2      0    0    0       0     2    4.0
+: 3      0    0    0       0     3    8.0
+: 4      0    0    0       0     4    0.0
 
 #+begin_src ipython
   df_code, end_point = get_df_code(df, 'Jee')
 #+end_src
 
 #+RESULTS:
-:       trial  phi  Jee        m0        m1     phase
-: 1584      0    0    0  0.804933  0.097705  0.039616
-: 1585      0    0    1  1.000667  0.260478  0.159484
-: 1586      0    0    2  1.783467  0.982758  0.032981
-: 1587      0    0    3  3.440267  2.332981  0.058166
-: 1588      0    0    4  4.703200  2.534673  0.112516
+:        trial  phi  Jee        m0        m1     phase
+: 11660      0    0    0  0.263600  0.004021  3.766620
+: 11661      0    0    1  0.265333  0.007139  1.962238
+: 11662      0    0    2  0.270000  0.009053  2.494349
+: 11663      0    0    3  0.286533  0.010270  4.420489
+: 11664      0    0    4  0.290133  0.005266  1.065609
 
 ***** Plot Data
 #+begin_src ipython
   fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
 
-  sns.lineplot(end_point, x='Jee', y='m0', ax=ax[0], legend=False, marker='o')
+  # sns.lineplot(end_point, x='Jee', y='m0', ax=ax[0], legend=False, marker='o')
+  sns.lineplot(end_point, x='Jee', y='m0', ax=ax[0], legend=False, marker='o', lw=0, hue='trial')
   ax[0].set_xlabel('$J_{EE}$')
   ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
   ax[0].set_xticks(np.linspace(0, len(Jee_list), 5), np.round(np.linspace(Jee_list[0], Jee_list[-1], 5), 2))
-  
+
   # sns.lineplot(end_point, x='Jee', y=end_point['m1'], ax=ax[1], legend=False)
   # ax[1].set_ylabel('$\mathcal{F}_1$ (Hz)')
 
-  sns.lineplot(end_point, x='Jee', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o')
+  sns.lineplot(end_point, x='Jee', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', hue='trial', lw=0)
   ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax[1].set_xlabel('$J_{EE}$')
   ax[1].set_xticks(np.linspace(0, len(Jee_list)-1, 5), np.round(np.linspace(Jee_list[0], Jee_list[-1], 5), 2))
@@ -422,7 +431,14 @@ point_on = end_point[end_point.Ie==idx_on]
   plt.show()
 #+end_src
 #+RESULTS:
-[[file:./.ob-jupyter/67bdd61c82f8fed5e3106885537333f96e724dcd.png]]
+[[file:./.ob-jupyter/5eb1062945926247a0beb44f68930237a2bcc88e.png]]
+
+#+begin_src ipython
+
+#+end_src
+
+#+RESULTS:
+
 
 #+begin_src ipython
   df_smooth = df.groupby(['time', 'trial', 'phi', 'Jee'])['rates'].apply(circcvl).reset_index()
@@ -435,6 +451,8 @@ point_on = end_point[end_point.Ie==idx_on]
   endpoint = endpoint.drop(columns=['time']).reset_index()
 #+end_src
 
+#+RESULTS:
+
 #+begin_src ipython
   end0 = endpoint[endpoint.Jee==3].reset_index()
   end1 = endpoint[endpoint.Jee==4].reset_index()
@@ -444,5 +462,3 @@ point_on = end_point[end_point.Ie==idx_on]
   plt.show()
 #+end_src
 
-#+RESULTS:
-[[file:./.ob-jupyter/90051de35ebf479e9fd865971b340a030369877a.png]]

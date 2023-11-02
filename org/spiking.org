@@ -14,13 +14,10 @@
 #+end_src
 
 #+RESULTS:
-:RESULTS:
 : The autoreload extension is already loaded. To reload it, use:
 :   %reload_ext autoreload
 : Python exe
 : /home/leon/mambaforge/envs/dual_data/bin/python
-: <Figure size 600x370.82 with 0 Axes>
-:END:
 
 * Spiking network model
 ** imports
@@ -733,7 +730,7 @@ print(Jee_list)
 
 #+begin_src ipython
   fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
-
+  
   ax[0].plot(Jei_list, m0[:, -1])
   ax[0].set_xlabel('$J_{EI}$')
   ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
@@ -746,11 +743,7 @@ print(Jee_list)
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: 1.75
-: 0.8748 0.052695109436351764
-[[file:./.ob-jupyter/b51c7c81867ee8e01f05fe1bd956e4eb95334ede.png]]
-:END:
+[[file:./.ob-jupyter/697c9b62e49c8e055bfbf3f33bdd3f8fe348dfee.png]]
 
 *** Varying Ie
 #+begin_src ipython

@@ -1,7 +1,8 @@
 #+STARTUP: fold
-#+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
 
-* Notebook Settings
+* Notebook Configuration
+** Settings
 #+begin_src ipython
   %load_ext autoreload
   %autoreload 2
@@ -13,21 +14,15 @@
 #+end_src
 
 #+RESULTS:
+:RESULTS:
 : The autoreload extension is already loaded. To reload it, use:
 :   %reload_ext autoreload
 : Python exe
 : /home/leon/mambaforge/envs/dual_data/bin/python
+: <Figure size 500x309.017 with 0 Axes>
+:END:
 
-* Compilation
-#+begin_src sh
-  cd $HOME/models/lif_cpp
-  make 
-#+end_src
-
-#+RESULTS:
-: g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
-
-* Imports
+** Imports
 #+begin_src ipython
   import sys
   sys.path.insert(0, '/home/leon/models/lif_cpp')  
@@ -40,6 +35,31 @@
   from scipy.stats import circmean
   from run_model import run_cpp, update_conf, restore_conf
   from analysis.decode import decode_bump, circcvl  
+#+end_src
+
+#+RESULTS:
+
+* Helpers
+#+begin_src ipython
+  def get_data(session='/'):
+    # Open the file in binary mode and read the data
+    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T
+ #+end_src
+
+ #+RESULTS:
+
+#+begin_src ipython
+  def get_times():
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_EI.yml", "r"))
+
+       times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
+       times -= config['T_STEADY']
+       times /= 1000.0
+       
+       return times
 #+end_src
 
 #+RESULTS:
@@ -60,6 +80,15 @@
 #+RESULTS:
 : [20002519 20103263 20148192 ... 39849837 39803895 39915849]
 
+* Compilation
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make 
+#+end_src
+
+#+RESULTS:
+: g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
+
 * Single trial
 ** Simulation
 #+begin_src ipython
@@ -69,20 +98,23 @@
 
 #+RESULTS:
 
-** Analysis
-#+begin_src ipython
-  def get_times():
-       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_EI.yml", "r"))
-
-       times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
-       times -= config['T_STEADY']
-       times /= 1000.0
-       
-       return times
+#+begin_src ipython :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json
+  a = 2
+  print("Hello")
 #+end_src
 
 #+RESULTS:
+: Hello
 
+#+begin_src ipython :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json
+  print("a", a)
+#+end_src
+
+#+RESULTS:
+: a 2
+
+
+** Analysis
 **** Raster
 #+begin_src ipython
   session = '/'
@@ -92,8 +124,12 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 19)
-: rates 3.9633403 6.964786
+: data (40000, 0)
+: rates nan nan
+: /home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/numpy/core/fromnumeric.py:3464: RuntimeWarning: Mean of empty slice.
+:   return _methods._mean(a, axis=axis, dtype=dtype,
+: /home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/numpy/core/_methods.py:192: RuntimeWarning: invalid value encountered in divide
+:   ret = ret.dtype.type(ret / rcount)
 
 #+begin_src ipython  
   theta = np.linspace(0, 360, 30000)
@@ -110,8 +146,10 @@
 
 #+RESULTS:
 :RESULTS:
-: (20,)
-[[file:./.ob-jupyter/e177597d7a955f7d58df5d866094338408d3c1ce.png]]
+: (108,)
+: /tmp/ipykernel_3002590/3176607547.py:4: UserWarning: Attempting to set identical low and high xlims makes transformation singular; automatically expanding.
+:   plt.imshow(data[:30000], aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, times[data.shape[1]], 0, 30000], origin='lower')
+[[file:./.ob-jupyter/3183856d22a07c225cc5c03a6e91b42498423224.png]]
 :END:
 
 **** Fourier vs Time
@@ -146,14 +184,15 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/fee5eec8e25ee21b980affed50b166653524f542.png]]
+[[file:./.ob-jupyter/a3949f60bdce740e40bea473396d0cc9c421adcd.png]]
 
 **** Spatial profile
 #+begin_src ipython
   smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
   theta = np.linspace(0, 360, rates_E.shape[0])
+  plt.plot(theta, smooth_E[:, 0])
   plt.plot(theta, smooth_E[:, -1])
-
+  
   plt.xlabel('Prefered Location (°)')
   plt.ylabel('Rate (Hz)')
   # plt.yticks([0, 5])
@@ -161,7 +200,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/28311f99055933f8a388e91536b7c46cdf00551b.png]]
+[[file:./.ob-jupyter/a00a373715e8498ef8db8d5223f545b62f9ab264.png]]
 
 #+BEGIN_SRC ipython
 

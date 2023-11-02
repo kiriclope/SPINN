@@ -9,6 +9,7 @@
 extern std::string DATA_PATH;
 extern std::string MAT_PATH;
 
+extern int CHECK_BISTABILITY;
 extern int VERBOSE;
 extern int N;
 extern int N_POP;

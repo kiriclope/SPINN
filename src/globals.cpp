@@ -8,6 +8,8 @@
 std::string DATA_PATH;
 std::string MAT_PATH;
 
+int CHECK_BISTABILITY;
+
 int VERBOSE;
 int N;
 int N_POP;
@@ -87,7 +89,8 @@ void loadConfig(std::string configname){
   T_SAVE = config["T_SAVE"].as<float>();
   
   VERBOSE = config["verbose"].as<int>();
-
+  CHECK_BISTABILITY = config["CHECK_BISTABILITY"].as<int>();
+  
   // Assign variables from configuration file
   N = config["N"].as<int>();
   N_POP = config["N_POP"].as<int>();
@@ -168,7 +171,7 @@ void loadConfig(std::string configname){
   T_STIM = config["T_STIM"].as<std::vector<float>>();
   N_STIM = new int[N_POP]();
   for(int i=0; i<N_POP; ++i)
-    N_STIM[i] = (int) (T_STIM[i] / DT);
+    N_STIM[i] = (int) ((T_STIM[i] + T_STEADY) / DT);
   
   A_STIM = config["A_STIM"].as<std::vector<float>>();
   STD_STIM = config["STD_STIM"].as<std::vector<float>>();

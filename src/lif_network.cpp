@@ -9,6 +9,8 @@
 #include "sparse_mat.hpp"
 #include "lif_network.hpp"
 
+float twoPi = 2.0 * M_PI;
+
 float *rates;
 float *volts;
 float *spikes;
@@ -31,13 +33,16 @@ float *x_stp;
 float *u_stp;
 float *A_stp;
 
+float *theta;
+
 std::random_device rd;
 std::mt19937 gen(rd());
 std::normal_distribution<float> white(0.0, 1.0);
 std::uniform_real_distribution<float> unif(0.0, 1.0);
+std::uniform_real_distribution<float> unif_theta(0.0, twoPi);
 
 void init_lif() {
-  rates = new float[N]();
+  rates = new float[N]();  
   volts = new float[N]();
   spikes = new float[N]();
   spike_times= new float[N]();
@@ -66,7 +71,16 @@ void init_lif() {
     A_stp = new float[N] {1.0};
   }
 
+  theta = new float[N]();
+  for (int i = 0; i < N; i++)
+    theta[i] = (twoPi * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
+  
   ensureDirExists(DATA_PATH);
+}
+
+float cosine(float x) {
+  return 1.0 - x * x / 2.0 + x * x * x * x / 24.0 ;
+  // return 1.0 - x * x / 2.0 + x * x * x * x / 24.0 - x * x * x * x * x * x / 720.0;
 }
 
 // Destructor to free memory
@@ -100,6 +114,8 @@ void free_lif() {
     delete[] u_stp;
     delete[] A_stp;
   }
+
+  delete[] theta;
 }
 
 void initNetwork() {
@@ -114,15 +130,16 @@ void initNetwork() {
       Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
 
-  if(IF_NMDA)
+  if(IF_NMDA) {
     for(int i=0; i < N_POP; i++)
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] ;
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
       Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
 
-  Jab_NMDA[0] *= (1.0 - R_NMDA[0]) / R_NMDA[0];
-  Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
-
+    Jab_NMDA[0] *= (1.0 - R_NMDA[0]) / R_NMDA[0];
+    Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
+  }
+  
   for(int i=0; i < N_POP; i++)
     // Iext_scaled[i] = GAIN * Iext[i] ;
     // // Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
@@ -133,12 +150,13 @@ void initNetwork() {
 
   if(IF_FF_NOISE)
     for(int i=0; i < N_POP; i++)
-      STD_FF[i] *= GAIN * (V_THRESH - V_REST);
+      // STD_FF[i] *= GAIN * (V_THRESH - V_REST);
+      STD_FF[i] = sqrt(Iext_scaled[i] / sqrt(Ka[0]) ) * sqrt(Ka[0]);
   
   if(IF_FF_CORR)
     for(int i=0; i < N_POP; i++)
       // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
-      A_CORR[i] = A_CORR[i] * (V_THRESH - V_REST);
+      A_CORR[i] = A_CORR[i] * (V_THRESH - V_REST) / sqrt(Ka[0]);
   
   std::cout << " Done" << std::endl;
 
@@ -154,14 +172,19 @@ void initNetwork() {
 
 void updateFFinputs(int step) {
 
-  float theta_i = 0;
+  // float theta_i = 0;
   
   if (step == N_STIM[0]) {
     if (VERBOSE)
       std::cout << " STIM ON" << std::endl;
+
+    if(unif(gen) < 0.5 && CHECK_BISTABILITY==1) {
+      A_STIM[0] = 0.0 ;
+      A_STIM[1] = 0.0 ;
+    }
     
     for (int i = 0; i < N; i++) {
-      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
+      // theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
       
       ff_inputs[i] = Iext_scaled[which_pop[i]]
         + (A_STIM[which_pop[i]]
@@ -169,7 +192,7 @@ void updateFFinputs(int step) {
         * sqrt(Ka[0])
         * (1.0
            + KAPPA_STIM[which_pop[i]]
-           * cos(theta_i - PHI_STIM[which_pop[i]] * M_PI / 180.0));
+           * cos(theta[i] - PHI_STIM[which_pop[i]] * M_PI / 180.0));
     }
   }
   
@@ -186,13 +209,11 @@ void updateFFinputs(int step) {
     for (int i = 0; i < N; i++)
       // ff_inputs[i] += std::sqrt(Ka[0]) * std::sqrt(STD_FF[which_pop[i]]) * white(gen);
       ff_inputs[i] += STD_FF[which_pop[i]] * white(gen);
-
+      
   if (IF_FF_CORR) {
-    phi0 = unif(gen) * 2.0 * M_PI ;
     for (int i = 0; i < N; i++) {
-      theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
-      // ff_inputs[i] *= (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0));
-      ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta_i - phi0));
+      ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta[i] - unif_theta(gen)));
+      // ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * cosine(theta[i] - unif_theta(gen)));
     }
   }
 }
@@ -204,7 +225,8 @@ void updateVolts(){
     pres_pop = which_pop[i];
     volts[i] *= EXP_DT_TAU_MEM[pres_pop];
     // volts[i] += DT_TAU_MEM[pres_pop] * (net_inputs[i] + V_LEAK);
-    volts[i] += DT * (net_inputs[i] + V_LEAK); // This gets me the correct mf rates
+    // volts[i] += DT * (net_inputs[i] + V_LEAK); // This gets me the correct mf rates
+    volts[i] += DT * net_inputs[i]; // This gets me the correct mf rates
   }
 
   // float RK1=0, RK2=0;
