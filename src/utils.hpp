@@ -85,7 +85,7 @@ void saveVectorToFile(std::ofstream& outFile, std::vector<T>& vec) {
 }
 
 template<typename T>
-void loadVectorFromFile(std::ifstream& inFile, std::vector<T>& vec, size_t len) {
+void loadVectorFromFile(std::ifstream& inFile, std::vector<T>& vec) {
 
   inFile.seekg(0, std::ios::end);
   size_t fileSize = inFile.tellg();

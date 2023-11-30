@@ -153,7 +153,7 @@ Low rank
                  REPO_PATH + '/conf/config_LR.yml.bak')
 
     conf_path = REPO_PATH + '/conf/config_LR.yml'
-    
+
     for ini in ini_list:
         for phi in phi_list:
             session = "%s_phi_%d_ini_%d" % (name, phi, ini)
@@ -165,9 +165,9 @@ Low rank
             run_cpp(session, conf_path=conf_path)
             sleep(.2)
 
-            subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
-            subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
-
+            # subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
+            # subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
+            
     restore_conf(REPO_PATH + '/conf/config_LR.yml.bak',
                  REPO_PATH + '/conf/config_LR.yml')
 #+end_src
@@ -179,8 +179,9 @@ Low rank
 **** Parameters
 
 #+begin_src ipython
-  ini_list = np.arange(0, 20)
+  ini_list = np.arange(0, 50)
   phi_list = [0, 180]
+  name = 'LR_Go_ortho'
 #+end_src
 
 #+RESULTS:
@@ -188,108 +189,47 @@ Low rank
 **** simulation
 
 #+begin_src ipython
-  run_ini_phi('LR_DPA_ortho', ini_list, phi_list)
+  run_ini_phi(name, ini_list, phi_list)
 #+end_src
 
 #+RESULTS:
-#+begin_example
-  File moved successfully!
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 11.2939: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 2.34375: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 11.5912: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 2.34375: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 11.8925: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 3.90625: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 12.1859: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 3.90625: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 12.4812: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 4.6875: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 12.7815: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 6.25: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 13.076: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 7.03125: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 13.3727: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 7.8125: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 13.6727: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 8.59375: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 13.9707: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 9.375: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 14.2644: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 10.1562: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 14.5626: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 12.5: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 14.8616: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 11.7188: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 15.1571: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 12.5: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 15.4538: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 13.2812: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 15.7503: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 14.0625: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 16.0456: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 14.8438: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 16.343: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 15.625: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 16.642: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 16.4062: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 16.9379: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 17.1875: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 17.2367: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 17.9688: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 17.5355: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 18.75: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 17.8292: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 19.5312: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 18.1272: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 20.3125: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 18.4258: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 21.0938: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 18.7233: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 21.875: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 19.0219: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 22.6562: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 19.3222: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 24.2188: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 19.6177: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 24.2188: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 19.9146: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 20.2177: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 27.3438: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 20.5168: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 26.5625: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 20.8065: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 27.3438: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 21.1088: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 28.125: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 21.4049: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 28.9062: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 21.7017: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 29.6875: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 22.0019: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 30.4688: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 22.3005: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 31.25: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 22.5979: invalid number
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 32.0312: invalid number
-  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 22.8981: invalid number
-  File moved successfully!
-  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 32.8125: invalid number
-#+end_example
+: File moved successfully!
+: File moved successfully!
 
 *** Analysis
 #+begin_src ipython
   index_order = get_index()
-  df = load_data_ini_phi('LR_DPA_ortho', ini_list, phi_list, index_order)
+  df = load_data_ini_phi(name, ini_list, phi_list, index_order)
   df_code, end_point = get_code(df)
 #+end_src
 
 #+RESULTS:
-:       trial  phi        m0        m1     phase
-: 2320      0    0  3.802875  3.069512  0.051333
-: 2321      0    1  3.876875  2.539821  3.154328
-: 2322      1    0  3.998500  2.082789  1.355927
-: 2323      1    1  3.936000  3.221273  3.179001
-: 2324      2    0  3.895000  3.018065  1.699571
+:RESULTS:
+# [goto error]
+#+begin_example
+  [0;31m---------------------------------------------------------------------------[0m
+  [0;31mValueError[0m                                Traceback (most recent call last)
+  Cell [0;32mIn[144], line 2[0m
+  [1;32m      1[0m index_order [38;5;241m=[39m get_index()
+  [0;32m----> 2[0m df [38;5;241m=[39m [43mload_data_ini_phi[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex_order[49m[43m)[49m
+  [1;32m      3[0m df_code, end_point [38;5;241m=[39m get_code(df)
+
+  Cell [0;32mIn[8], line 2[0m, in [0;36mload_data_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
+  [1;32m      1[0m [38;5;28;01mdef[39;00m [38;5;21mload_data_ini_phi[39m(name, ini_list, phi_list, index):
+  [0;32m----> 2[0m     rates [38;5;241m=[39m [43mget_rates_ini_phi[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex[49m[43m)[49m
+  [1;32m      3[0m     df [38;5;241m=[39m get_df_ini_phi(rates)
+  [1;32m      4[0m     [38;5;28;01mreturn[39;00m df
+
+  Cell [0;32mIn[6], line 8[0m, in [0;36mget_rates_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
+  [1;32m      6[0m [38;5;28;01mdef[39;00m [38;5;21mget_rates_ini_phi[39m(name, ini_list, phi_list, index[38;5;241m=[39m[38;5;28;01mNone[39;00m):
+  [1;32m      7[0m      rates [38;5;241m=[39m Parallel(n_jobs[38;5;241m=[39m[38;5;241m-[39m[38;5;241m1[39m)(delayed(get_rate)(name, ini, phi) [38;5;28;01mfor[39;00m ini [38;5;129;01min[39;00m ini_list [38;5;28;01mfor[39;00m phi [38;5;129;01min[39;00m phi_list)
+  [0;32m----> 8[0m      rates [38;5;241m=[39m np[38;5;241m.[39marray(rates)
+  [1;32m      9[0m      rates [38;5;241m=[39m rates[38;5;241m.[39mreshape([38;5;28mlen[39m(ini_list), [38;5;28mlen[39m(phi_list), [38;5;241m32000[39m, [38;5;241m-[39m[38;5;241m1[39m)
+  [1;32m     10[0m      [38;5;28;01mreturn[39;00m rates[[38;5;241m.[39m[38;5;241m.[39m[38;5;241m.[39m, index, :]
+
+  [0;31mValueError[0m: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (100, 32000) + inhomogeneous part.
+#+end_example
+:END:
 
 #+begin_src ipython
   print(end_point.head())
@@ -297,11 +237,11 @@ Low rank
 
 #+RESULTS:
 :       trial  phi        m0        m1     phase
-: 2320      0    0  3.802875  3.069512  0.051333
-: 2321      0    1  3.876875  2.539821  3.154328
-: 2322      1    0  3.998500  2.082789  1.355927
-: 2323      1    1  3.936000  3.221273  3.179001
-: 2324      2    0  3.895000  3.018065  1.699571
+: 3000      0    0  3.550875  3.105146  1.779070
+: 3001      0    1  3.479250  3.330270  2.245522
+: 3002      1    0  3.473750  3.219861  0.194016
+: 3003      1    1  3.637000  3.703045  2.282712
+: 3004      2    0  3.458125  2.993749  0.749735
 
 *** Phases 
 #+begin_src ipython
@@ -333,165 +273,45 @@ Low rank
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/cf56ea9a62dd4a73187c162bc9c78055d5573d5a.png]]
+[[file:./.ob-jupyter/f8ebcaa796d218aee7db8b4eb81e67536166f07b.png]]
 
-#+begin_src ipython
-
-#+end_src
-
-#+RESULTS:
 
 #+begin_src ipython
   from matplotlib.patches import Circle
 
   fig, ax = plt.subplots()
 
-  phi = end_point['phase']
-  m1 = end_point['m1']
-
+  phi = end_point[end_point.phi==0].phase
+  m1 = end_point[end_point.phi==0].m1
   theta = np.array([m1 * np.cos(phi), m1 * np.sin(phi)])
-  print(theta.shape)
 
-  ax.plot(theta[0], theta[1], 'ob')
+  ax.plot(theta[0], theta[1], 'or', label='A')
+
+  phi = end_point[end_point.phi==1].phase
+  m1 = end_point[end_point.phi==1].m1
+  theta = np.array([m1 * np.cos(phi), m1 * np.sin(phi)])
+
+  ax.plot(theta[0], theta[1], 'ob', label='B')
+
   # ax.plot(theta[0][0], theta[1][0], '*', ms=10, color='b')
   # ax.plot(theta[0][-1], theta[1][-1], 'o', ms=10, color='r')
   ax.axis('off')
   # ax.set_title('Dual Go')
   # Create a circle patch
   circle = Circle((0, 0), radius=2.5, color='blue', fill=False, lw=20, alpha=0.1)
-
   # Add the circle to the current Axes
   ax.add_patch(circle)
-
+  plt.axvline(x=0, ls='--', color='k', alpha=0.1)
+  plt.axhline(y=0, ls='--', color='k', alpha=0.1)
+  plt.legend(fontsize=14, frameon=False)
   # Set equal scaling by changing the axis limits or the plot aspect ratio
   ax.axis('equal')
-  plt.savefig('trajectory_A.svg', dpi=300)
+  plt.savefig('errors_' + name + '.svg', dpi=300)
   plt.show()
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: (2, 40)
-[[file:./.ob-jupyter/db9e66e8005b86a59fc22230e9900fad6b15a267.png]]
-:END:
-
-#+begin_example
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
-    with pd.option_context('mode.use_inf_as_na', True):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
-    with pd.option_context('mode.use_inf_as_na', True):
-#+end_example
-# [goto error]
-#+begin_example
-  [0;31m---------------------------------------------------------------------------[0m
-  [0;31mValueError[0m                                Traceback (most recent call last)
-  Cell [0;32mIn[170], line 9[0m
-  [1;32m      6[0m ax[[38;5;241m0[39m][38;5;241m.[39mset_ylabel([38;5;124m'[39m[38;5;124mm1 (Hz)[39m[38;5;124m'[39m)
-  [1;32m      7[0m [38;5;66;03m# ax[0].set_yticks([0, 90, 180, 270, 360])[39;00m
-  [0;32m----> 9[0m [43msns[49m[38;5;241;43m.[39;49m[43mlineplot[49m[43m([49m[43mdata[49m[38;5;241;43m=[39;49m[43mdf_code[49m[43m,[49m[43m [49m[43mx[49m[38;5;241;43m=[39;49m[38;5;124;43m'[39;49m[38;5;124;43mtime[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43my[49m[38;5;241;43m=[39;49m[43mdf_code[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mphase[39;49m[38;5;124;43m'[39;49m[43m][49m[38;5;241;43m*[39;49m[38;5;241;43m180[39;49m[38;5;241;43m/[39;49m[43mnp[49m[38;5;241;43m.[39;49m[43mpi[49m[43m,[49m[43m [49m[43mlegend[49m[38;5;241;43m=[39;49m[38;5;28;43;01mFalse[39;49;00m[43m,[49m[43m [49m[43mlw[49m[38;5;241;43m=[39;49m[38;5;241;43m2[39;49m[43m,[49m[43m [49m[43max[49m[38;5;241;43m=[39;49m[43max[49m[43m[[49m[38;5;241;43m1[39;49m[43m][49m[43m,[49m[43m [49m[43mhue[49m[38;5;241;43m=[39;49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mphi[39;49m[38;5;124;43m'[39;49m[43m][49m[43m,[49m[43m [49m[43malpha[49m[38;5;241;43m=[39;49m[38;5;241;43m0.25[39;49m[43m)[49m
-  [1;32m     11[0m ax[[38;5;241m1[39m][38;5;241m.[39mset_xlabel([38;5;124m'[39m[38;5;124mTime (s)[39m[38;5;124m'[39m)
-  [1;32m     12[0m ax[[38;5;241m1[39m][38;5;241m.[39mset_ylabel([38;5;124m'[39m[38;5;124m$[39m[38;5;124m\[39m[38;5;124mphi$ (°)[39m[38;5;124m'[39m)
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/relational.py:618[0m, in [0;36mlineplot[0;34m(data, x, y, hue, size, style, units, palette, hue_order, hue_norm, sizes, size_order, size_norm, dashes, markers, style_order, estimator, errorbar, n_boot, seed, orient, sort, err_style, err_kws, legend, ci, ax, **kwargs)[0m
-  [1;32m    615[0m errorbar [38;5;241m=[39m _deprecate_ci(errorbar, ci)
-  [1;32m    617[0m variables [38;5;241m=[39m _LinePlotter[38;5;241m.[39mget_semantics([38;5;28mlocals[39m())
-  [0;32m--> 618[0m p [38;5;241m=[39m [43m_LinePlotter[49m[43m([49m
-  [1;32m    619[0m [43m    [49m[43mdata[49m[38;5;241;43m=[39;49m[43mdata[49m[43m,[49m[43m [49m[43mvariables[49m[38;5;241;43m=[39;49m[43mvariables[49m[43m,[49m
-  [1;32m    620[0m [43m    [49m[43mestimator[49m[38;5;241;43m=[39;49m[43mestimator[49m[43m,[49m[43m [49m[43mn_boot[49m[38;5;241;43m=[39;49m[43mn_boot[49m[43m,[49m[43m [49m[43mseed[49m[38;5;241;43m=[39;49m[43mseed[49m[43m,[49m[43m [49m[43merrorbar[49m[38;5;241;43m=[39;49m[43merrorbar[49m[43m,[49m
-  [1;32m    621[0m [43m    [49m[43msort[49m[38;5;241;43m=[39;49m[43msort[49m[43m,[49m[43m [49m[43morient[49m[38;5;241;43m=[39;49m[43morient[49m[43m,[49m[43m [49m[43merr_style[49m[38;5;241;43m=[39;49m[43merr_style[49m[43m,[49m[43m [49m[43merr_kws[49m[38;5;241;43m=[39;49m[43merr_kws[49m[43m,[49m
-  [1;32m    622[0m [43m    [49m[43mlegend[49m[38;5;241;43m=[39;49m[43mlegend[49m[43m,[49m
-  [1;32m    623[0m [43m[49m[43m)[49m
-  [1;32m    625[0m p[38;5;241m.[39mmap_hue(palette[38;5;241m=[39mpalette, order[38;5;241m=[39mhue_order, norm[38;5;241m=[39mhue_norm)
-  [1;32m    626[0m p[38;5;241m.[39mmap_size(sizes[38;5;241m=[39msizes, order[38;5;241m=[39msize_order, norm[38;5;241m=[39msize_norm)
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/relational.py:365[0m, in [0;36m_LinePlotter.__init__[0;34m(self, data, variables, estimator, n_boot, seed, errorbar, sort, orient, err_style, err_kws, legend)[0m
-  [1;32m    351[0m [38;5;28;01mdef[39;00m [38;5;21m__init__[39m(
-  [1;32m    352[0m     [38;5;28mself[39m, [38;5;241m*[39m,
-  [1;32m    353[0m     data[38;5;241m=[39m[38;5;28;01mNone[39;00m, variables[38;5;241m=[39m{},
-  [0;32m   (...)[0m
-  [1;32m    359[0m     [38;5;66;03m# the kind of plot to draw, but for the time being we need to set[39;00m
-  [1;32m    360[0m     [38;5;66;03m# this information so the SizeMapping can use it[39;00m
-  [1;32m    361[0m     [38;5;28mself[39m[38;5;241m.[39m_default_size_range [38;5;241m=[39m (
-  [1;32m    362[0m         np[38;5;241m.[39mr_[[38;5;241m.5[39m, [38;5;241m2[39m] [38;5;241m*[39m mpl[38;5;241m.[39mrcParams[[38;5;124m"[39m[38;5;124mlines.linewidth[39m[38;5;124m"[39m]
-  [1;32m    363[0m     )
-  [0;32m--> 365[0m     [38;5;28;43msuper[39;49m[43m([49m[43m)[49m[38;5;241;43m.[39;49m[38;5;21;43m__init__[39;49m[43m([49m[43mdata[49m[38;5;241;43m=[39;49m[43mdata[49m[43m,[49m[43m [49m[43mvariables[49m[38;5;241;43m=[39;49m[43mvariables[49m[43m)[49m
-  [1;32m    367[0m     [38;5;28mself[39m[38;5;241m.[39mestimator [38;5;241m=[39m estimator
-  [1;32m    368[0m     [38;5;28mself[39m[38;5;241m.[39merrorbar [38;5;241m=[39m errorbar
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:640[0m, in [0;36mVectorPlotter.__init__[0;34m(self, data, variables)[0m
-  [1;32m    635[0m [38;5;66;03m# var_ordered is relevant only for categorical axis variables, and may[39;00m
-  [1;32m    636[0m [38;5;66;03m# be better handled by an internal axis information object that tracks[39;00m
-  [1;32m    637[0m [38;5;66;03m# such information and is set up by the scale_* methods. The analogous[39;00m
-  [1;32m    638[0m [38;5;66;03m# information for numeric axes would be information about log scales.[39;00m
-  [1;32m    639[0m [38;5;28mself[39m[38;5;241m.[39m_var_ordered [38;5;241m=[39m {[38;5;124m"[39m[38;5;124mx[39m[38;5;124m"[39m: [38;5;28;01mFalse[39;00m, [38;5;124m"[39m[38;5;124my[39m[38;5;124m"[39m: [38;5;28;01mFalse[39;00m}  [38;5;66;03m# alt., used DefaultDict[39;00m
-  [0;32m--> 640[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43massign_variables[49m[43m([49m[43mdata[49m[43m,[49m[43m [49m[43mvariables[49m[43m)[49m
-  [1;32m    642[0m [38;5;28;01mfor[39;00m var, [38;5;28mcls[39m [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39m_semantic_mappings[38;5;241m.[39mitems():
-  [1;32m    643[0m 
-  [1;32m    644[0m     [38;5;66;03m# Create the mapping function[39;00m
-  [1;32m    645[0m     map_func [38;5;241m=[39m partial([38;5;28mcls[39m[38;5;241m.[39mmap, plotter[38;5;241m=[39m[38;5;28mself[39m)
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:701[0m, in [0;36mVectorPlotter.assign_variables[0;34m(self, data, variables)[0m
-  [1;32m    699[0m [38;5;28;01melse[39;00m:
-  [1;32m    700[0m     [38;5;28mself[39m[38;5;241m.[39minput_format [38;5;241m=[39m [38;5;124m"[39m[38;5;124mlong[39m[38;5;124m"[39m
-  [0;32m--> 701[0m     plot_data, variables [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_assign_variables_longform[49m[43m([49m
-  [1;32m    702[0m [43m        [49m[43mdata[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mvariables[49m[43m,[49m
-  [1;32m    703[0m [43m    [49m[43m)[49m
-  [1;32m    705[0m [38;5;28mself[39m[38;5;241m.[39mplot_data [38;5;241m=[39m plot_data
-  [1;32m    706[0m [38;5;28mself[39m[38;5;241m.[39mvariables [38;5;241m=[39m variables
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:953[0m, in [0;36mVectorPlotter._assign_variables_longform[0;34m(self, data, **kwargs)[0m
-  [1;32m    947[0m         val_cls [38;5;241m=[39m val[38;5;241m.[39m[38;5;18m__class__[39m[38;5;241m.[39m[38;5;18m__name__[39m
-  [1;32m    948[0m         err [38;5;241m=[39m (
-  [1;32m    949[0m             [38;5;124mf[39m[38;5;124m"[39m[38;5;124mLength of [39m[38;5;132;01m{[39;00mval_cls[38;5;132;01m}[39;00m[38;5;124m vectors must match length of `data`[39m[38;5;124m"[39m
-  [1;32m    950[0m             [38;5;124mf[39m[38;5;124m"[39m[38;5;124m when both are used, but `data` has length [39m[38;5;132;01m{[39;00m[38;5;28mlen[39m(data)[38;5;132;01m}[39;00m[38;5;124m"[39m
-  [1;32m    951[0m             [38;5;124mf[39m[38;5;124m"[39m[38;5;124m and the vector passed to `[39m[38;5;132;01m{[39;00mkey[38;5;132;01m}[39;00m[38;5;124m` has length [39m[38;5;132;01m{[39;00m[38;5;28mlen[39m(val)[38;5;132;01m}[39;00m[38;5;124m.[39m[38;5;124m"[39m
-  [1;32m    952[0m         )
-  [0;32m--> 953[0m         [38;5;28;01mraise[39;00m [38;5;167;01mValueError[39;00m(err)
-  [1;32m    955[0m plot_data[key] [38;5;241m=[39m val
-  [1;32m    957[0m [38;5;66;03m# Try to infer the name of the variable[39;00m
-
-  [0;31mValueError[0m: Length of list vectors must match length of `data` when both are used, but `data` has length 2360 and the vector passed to `hue` has length 1.
-#+end_example
-[[file:./.ob-jupyter/52641d066940b583869bad758efa66c2a4767b20.png]]
-:END:
-#+RESULTS:
-:RESULTS:
-: (2, 40)
-[[file:./.ob-jupyter/0b5c08f40c7fb7b8aca0655bfb61767001ef2cb6.png]]
-:END:
-
-#+begin_example
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1498: FutureWarning: is_categorical_dtype is deprecated and will be removed in a future version. Use isinstance(dtype, CategoricalDtype) instead
-    if pd.api.types.is_categorical_dtype(vector):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
-    with pd.option_context('mode.use_inf_as_na', True):
-  /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/seaborn/_oldcore.py:1119: FutureWarning: use_inf_as_na option is deprecated and will be removed in a future version. Convert inf values to NaN before operating instead.
-    with pd.option_context('mode.use_inf_as_na', True):
-#+end_example
-:END:
-#+RESULTS:
-:RESULTS:
-: (2, 40)
-[[file:./.ob-jupyter/17acc2438d47e171d393196e216559b4ca776b6f.png]]
-:END:
+[[file:./.ob-jupyter/00fbd97ce74733dfd9a4b14338917ef31ae36615.png]]
 
 #+begin_src ipython
   sample_A = end_point[end_point.phi==0].phase * 180 / np.pi
@@ -500,11 +320,11 @@ Low rank
   plt.hist(sample_A)
   errors_A = (sample_A > 90) & (sample_A<270)
   errors_B = (sample_B < 90) | (sample_B>270)
-  print((np.sum(errors_A) + np.sum(errors_B)) / 40)
+  print(1-(np.sum(errors_A) + np.sum(errors_B)) / 100)
 #+end_src
 
 #+RESULTS:
 :RESULTS:
-: 0.3
-[[file:./.ob-jupyter/1c577b47741ca171e873f2ced7b94035b884c894.png]]
+: 0.6799999999999999
+[[file:./.ob-jupyter/8791935a4e14273b4ab929f854d2c86cce76a29b.png]]
 :END:

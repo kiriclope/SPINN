@@ -68,7 +68,6 @@ int LR_LOAD;
 std::vector<float> LR_MEAN;
 std::vector<float> LR_STD;
 std::vector<float> LR_RHO;
-std::vector<float> LR_FF_RHO;
 
 std::vector<float> ksi_0(N);
 std::vector<float> ksi_1(N);
@@ -226,7 +225,6 @@ void loadConfig(std::string configname){
   IF_FF_CORR = config["IF_FF_CORR"].as<int>();
   CORR_FF = config["CORR_FF"].as<std::vector<float>>();
   A_CORR = config["A_CORR"].as<std::vector<float>>();
-
   
   LR_RANK = config["LR_RANK"].as<int>();
   LR_SEED = config["LR_SEED"].as<int>();
@@ -235,10 +233,9 @@ void loadConfig(std::string configname){
   LR_MEAN = config["LR_MEAN"].as<std::vector<float>>();
   LR_STD = config["LR_STD"].as<std::vector<float>>();
   LR_RHO = config["LR_RHO"].as<std::vector<float>>();
-  LR_FF_RHO = config["LR_FF_RHO"].as<std::vector<float>>();
-
-  if(PHI_STIM[0] == 180.0)
-    LR_FF_RHO[0] *= -1;
+  
+  if(PHI_STIM[0] == 0.0)
+    LR_RHO[1] *= -1;
   
 }
 

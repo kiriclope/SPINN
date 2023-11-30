@@ -23,34 +23,36 @@ std::mt19937 rng_lr(rd_lr());
 std::array<float, 3> generateTrivariateGaussian(std::vector<float>means,
                                                 std::vector<float> stds,
                                                 std::vector<float> rhos) {
-                                        
+  
   // Generate three independent standard normal variables
   float Z1 = white(rng_lr);
   float Z2 = white(rng_lr);
   float Z3 = white(rng_lr);
-
+  
   // Extract correlation coefficients for readability
-  float rho_xy = rhos[0];
-  float rho_xz = rhos[1];
-  float rho_yz = rhos[2];
-
+  float rho_21 = rhos[0];
+  float rho_31 = rhos[1];
+  float rho_32 = rhos[2];
+  
   // float deter = (1.0 - rho_yz*rho_yz) - rho_xy * (rho_xy - rho_xz*rho_yz) + rho_xz * (rho_xy*rho_yz - rho_xz);
   // std::cout << deter << std::endl;
     
   // Cholesky decomposition of the covariance matrix
-  float L11 = stds[0];
-  float L21 = rho_xy * stds[1];
-  float L22 = stds[1] * std::sqrt(1.0f - rho_xy * rho_xy);
-  float L31 = rho_xz * stds[2];
-  float L32 = (rho_yz - rho_xy * rho_xz) / std::sqrt(1.0f - rho_xy * rho_xy) * stds[2];
-  float L33 = std::sqrt(1.0f - rho_xz * rho_xz - (L32 / stds[2]) * (L32 / stds[2])) * stds[2];
-
+  float L11 = 1.0;
+  float L21 = rho_21;
+  float L22 = sqrt(1.0 - L21 * L21);
+  // float L31 = rho_xz / L11;
+  float L31 = rho_31;
+  // float L32 = (rho_32 - L31 * L21) / L22 ;
+  float L32 = rho_32;
+  float L33 = sqrt(1.0 - L31 * L31 - L32 * L32);
+  
   // Generating correlated variables
   float X1 = L11 * Z1 + means[0];
   float X2 = L21 * Z1 + L22 * Z2 + means[1];
   float X3 = L31 * Z1 + L32 * Z2 + L33 * Z3 + means[2];
-
-  return {X1, X2, X3};
+  
+  return {X3, X1, X2};
 }
 
 std::array<float, 3> generateBivariateGaussian(std::vector<float> means, std::vector<float> stds, std::vector<float> correlation) {  
@@ -64,7 +66,7 @@ std::array<float, 3> generateBivariateGaussian(std::vector<float> means, std::ve
   return {X1, X2, X2};
 }
 
-std::array<float, 3> generateGaussian(std::vector<float> means, std::vector<float> stds, std::vector<float> correlation) {
+std::array<float, 3> generateGaussian(std::vector<float> means, std::vector<float> stds) {
     
   float Z1 = white(rng_lr);
   float X1 = stds[0] * Z1 + means[0];
@@ -76,8 +78,8 @@ std::vector<std::vector<float>> outerProduct(std::vector<float>& vec) {
   size_t length = vec.size();
   std::vector<std::vector<float>> result(length, std::vector<float>(length));
 
-  for (size_t i = 0; i < length; ++i) {
-    for (size_t j = 0; j < length; ++j) {
+  for (size_t i = 0; i < length; i++) {
+    for (size_t j = 0; j < length; j++) {
       result[i][j] = vec[i] * vec[j];
     }
   }
@@ -86,46 +88,44 @@ std::vector<std::vector<float>> outerProduct(std::vector<float>& vec) {
 }
 
 void generate_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, std::vector<float> &sample_2, int Nb) {
+
+  std::cout << "Generating LR Vec ";
+  
+  if(LR_SEED!=0){
+    std::cout << " LR_SEED " << LR_SEED ;
+    rng_lr.seed(LR_SEED);
+  }
   
   std::array<float, 3> samples;
   
   if(LR_RANK == 1)
-    for (int i = 0; i < Nb; ++i) {
-      samples = generateGaussian(LR_MEAN, LR_STD, LR_RHO);
+    for (int i = 0; i < Nb; i++) {
+      samples = generateGaussian(LR_MEAN, LR_STD);
       sample_0.push_back(samples[0]);
       sample_1.push_back(samples[0]);
     }
   
   if(LR_RANK == 2)
-    for (int i = 0; i < Nb; ++i) {
+    for (int i = 0; i < Nb; i++) {
       samples = generateBivariateGaussian(LR_MEAN, LR_STD, LR_RHO);
       sample_1.push_back(samples[0]); // ksi_1
       sample_2.push_back(samples[1]); // ksi_2
-
-      // // Sample Stimuli
-      sample_0.push_back(LR_FF_RHO[0] * samples[0]
-                         + LR_FF_RHO[1] * samples[1]
-                         + sqrt(1.0
-                                - LR_FF_RHO[0] * LR_FF_RHO[0]
-                                - LR_FF_RHO[1] * LR_FF_RHO[1])
-                         * white(rng_lr));
     }
   
-  if(LR_RANK==3)
-    for (int i = 0; i < Nb; ++i) {
+  if(LR_RANK==3) {    
+    for (int i = 0; i < Nb; i++) {
       samples = generateTrivariateGaussian(LR_MEAN, LR_STD, LR_RHO);
-      sample_0.push_back(samples[0]);
-      sample_1.push_back(samples[1]);
-      sample_2.push_back(samples[2]);
+      sample_0.push_back(samples[0]); // Input
+      sample_1.push_back(samples[1]); // ksi_1
+      sample_2.push_back(samples[2]); // ksi_2
     }
-  
-  std::cout << std::endl;
+  }
   std::cout <<" ksi ";
-  for (int i=0; i<5; ++i)
+  for (int i=0; i<5; i++)
     std::cout << sample_1[i] << " ";
   std::cout << std::endl;
 
-  std::cout << "Saving LR vec to:" << MAT_PATH;
+  std::cout << "Saving LR Vec to:" << MAT_PATH;
   
   std::ofstream ksi0File(MAT_PATH + "/ksi_0.txt");
   saveVectorToFile(ksi0File, sample_0);
@@ -138,10 +138,12 @@ void generate_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, st
   std::ofstream ksi2File(MAT_PATH + "/ksi_2.txt");
   saveVectorToFile(ksi2File, sample_2);
   ksi2File.close();
+
+  std::cout << " Done" << std::endl;  
 }
 
 
-std::vector<std::vector<float>> gen_mat_LR(std::vector<float> sample_1, std::vector<float> sample_2) {    
+std::vector<std::vector<float>> gen_mat_LR(std::vector<float> sample_1, std::vector<float> sample_2) {
   std::vector<std::vector<float>> outer = outerProduct(sample_1);  
   return outer;
 }
@@ -150,7 +152,7 @@ float genConProb(int i, int j) {
 
   int pres_pop = which_pop[j];
   int post_pop = which_pop[i];
-
+  
   float theta_i = (2.0 * M_PI * (i - cNa[post_pop])) / (float) Na[post_pop];
   float theta_j = (2.0 * M_PI * (j - cNa[pres_pop])) / (float) Na[pres_pop];
   
@@ -164,7 +166,7 @@ float genConProb(int i, int j) {
 
   else if (PROBA[pres_pop + N_POP * post_pop] == "lr") {
     proba *= (1.0 + KAPPA[pres_pop + N_POP * post_pop]
-              * (ksi_1[i - cNa[post_pop]] * ksi_1[j - cNa[pres_pop]]                 
+              * (ksi_1[i - cNa[post_pop]] * ksi_1[j - cNa[pres_pop]]
                  + ksi_2[i - cNa[post_pop]] * ksi_2[j - cNa[pres_pop]])
               / sqrt(Ka[pres_pop]));
   }
@@ -180,11 +182,6 @@ float genConProb(int i, int j) {
 void genSparseMatCSC(size_t*& colptr, int*& indices) {
   
   std::cout << "Generating Sparse Matrix" ;
-
-  if(LR_SEED!=0){
-    std::cout << " LR_SEED " << LR_SEED << std::endl;
-    rng_lr.seed(LR_SEED);
-  }
   
   // arma::mat ksi_mat;
   // std::vector<float> ksi_1;
@@ -207,7 +204,7 @@ void genSparseMatCSC(size_t*& colptr, int*& indices) {
   colptr[0] = 0;
   for (int j = 0; j < N; j++) { // presynaptic
     for (int i = 0; i < N; i++) { // postsynaptic
-      
+      // std::cout << i << " " << j << std::endl;
       if (unif(rng) < genConProb(i, j)) {
         indices[nnz] = i;
         nnz++;
@@ -222,26 +219,26 @@ void genSparseMatCSC(size_t*& colptr, int*& indices) {
   std::cout << " Done" << std::endl;
 }
 
-void load_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, std::vector<float> &sample_2, int Nb) {
+void load_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, std::vector<float> &sample_2) {
   std::cout << "Loading LR vec from:" << MAT_PATH;
-
+  
   std::ifstream ksi0File(MAT_PATH + "/ksi_0.txt");
-  loadVectorFromFile(ksi0File, sample_0, Nb);
+  loadVectorFromFile(ksi0File, sample_0);
   ksi0File.close();
   
   std::ifstream ksi1File(MAT_PATH + "/ksi_1.txt");
-  loadVectorFromFile(ksi1File, sample_1, Nb);
+  loadVectorFromFile(ksi1File, sample_1);
   ksi1File.close();
   
   std::ifstream ksi2File(MAT_PATH + "/ksi_2.txt");
-  loadVectorFromFile(ksi2File, sample_2, Nb);
+  loadVectorFromFile(ksi2File, sample_2);
   ksi2File.close();
 
   std::cout << std::endl;
   std::cout <<" ksi ";  
-  for(int i=0; i<5; ++i)
+  for(int i=0; i<5; i++)
     std::cout << sample_1[i] << " ";
-  std::cout << std::endl;
+  std::cout << " Done" << std::endl;
 }
 
 void getSparseMatCSC(size_t *&colptr, int *&indices) {
@@ -263,7 +260,7 @@ void saveSparseMatCSC(size_t* colptr, int* indices){
   
   std::cout << "Saving Sparse Matrix to: " << MAT_PATH ;
   ensureDirExists(MAT_PATH);
-
+  
   std::ofstream colptrFile(MAT_PATH + "/colptr.txt");
   saveArrayToFile(colptrFile, colptr, (size_t) N+1);
   colptrFile.close();

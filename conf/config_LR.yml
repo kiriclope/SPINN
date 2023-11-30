@@ -16,7 +16,7 @@ verbose: 1
 # Time step in ms
 DT: 0.05
 # total simulation time in ms
-DURATION: 15000.0
+DURATION: 8000.0
 # time to start showing simulation result ms
 T_STEADY: 0.0
 # Saving to files every T_WINDOW in ms
@@ -30,7 +30,7 @@ N: 40000
 # Number of populations
 N_POP: 2
 # Average number of presynaptic inputs
-K: 2000.0
+K: 4000.0
 # Fraction of neurons in each population
 FRAC: [0.8, 0.2]
 
@@ -45,7 +45,7 @@ A_STIM: [0.1, 0.0]
 # std of the stimulus
 STD_STIM: [0.0, 0.0]
 # Phase of the 1st stimulus
-PHI_STIM: [180.0, 0.0]
+PHI_STIM: [0.0, 0.0]
 # Tuning of the stimulus
 KAPPA_STIM: [0.0, 0.0]
 
@@ -120,15 +120,14 @@ KAPPA: [3.5, 0.0, 0.0, 0.0]
 
 # Low rank
 LR_SEED: 3
-LR_LOAD: 1
+LR_LOAD: 0
 
 LR_RANK: 3
 LR_MEAN: [0.0, 0.0, 0.0]
 LR_STD: [1.0, 1.0, 1.0]
 # xy, xz, yz
-LR_RHO: [0.5, 0.5, 0.5]
-
-COV_SD: 0.5
+# LR_RHO: [0.05, 0.8, 0.2]
+LR_RHO: [0.0, 1.0, 0.0]
 
 ##############
 # STP

@@ -109,12 +109,12 @@
 #+end_src
 
 #+RESULTS:
-| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |            |                  |       |                     |          |                   |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/globals.cpp     | -o       | obj/globals.o     |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/lif_network.cpp | -o       | obj/lif_network.o |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/main.cpp        | -o       | obj/main.o        |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/sparse_mat.cpp  | -o       | obj/sparse_mat.o  |    |            |
-| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o | obj/sparse_mat.o | -Wall | -std=c++17          | -pthread | -Ofast            | -s | -lyaml-cpp |
+| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |               |                  |                  |             |                      |                           |               |                |                     |             |                      |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/globals.cpp     | -o          | obj/globals.o        |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/main.cpp        | -o          | obj/main.o           |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/sparse_mat.cpp  | -o          | obj/sparse_mat.o     |                           |            |
+| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
 
 * Single trial
 ** Simulation
@@ -132,7 +132,7 @@
 
 #+begin_src ipython
   session = '/'
-  # session = '/LR_Go_ortho_phi_0_ini_3'
+  session = '/LR_Go_early_phi_0_ini_0'
   data = get_data(session)
   print('data', data.shape)
   rates = data[:32000]
@@ -140,8 +140,8 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 36)
-: rates 2.58225 9.250059
+: data (40000, 17)
+: rates 1.4341692 5.6550074
 
 #+begin_src ipython  
   index_order = get_index()
@@ -180,7 +180,7 @@
 #+RESULTS:
 :RESULTS:
 : (28,)
-[[file:./.ob-jupyter/7c2483f87fbe25f3457611ea54ac8bedfe55f46c.png]]
+[[file:./.ob-jupyter/ae684e2e9c23ba7afe3cc1406197d361785a5c1a.png]]
 :END:
 
 **** Fourier vs Time
@@ -217,9 +217,9 @@
 
 #+RESULTS:
 :RESULTS:
-: /tmp/ipykernel_3988353/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
+: /tmp/ipykernel_962795/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
 :   ax[1].plot(times, m1 / m0)
-[[file:./.ob-jupyter/3fcc917f72f668facd29bb42953c276a2497bd07.png]]
+[[file:./.ob-jupyter/fd338dc9e8fcc2d2831b43f41e9df081ee48965d.png]]
 :END:
 
 #+begin_src ipython
@@ -246,10 +246,9 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/8f069a5398b31057b9ccb6306cf2741a5ce63ec1.png]]
+[[file:./.ob-jupyter/460520178b0dd946d25406256bc43e005add4b40.png]]
 
 **** Spatial profile
-
 
 #+begin_src ipython
   smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
@@ -264,7 +263,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/3071aa03e77a11a12bba00b1333ac85ccd295079.png]]
+[[file:./.ob-jupyter/513294c611b7436f612df12a8621a8bd50955160.png]]
 
 #+BEGIN_SRC ipython
 

@@ -67,7 +67,6 @@ extern int LR_LOAD;
 extern std::vector<float> LR_MEAN;
 extern std::vector<float> LR_STD;
 extern std::vector<float> LR_RHO;
-extern std::vector<float> LR_FF_RHO;
 
 extern std::vector<float> ksi_0;
 extern std::vector<float> ksi_1;
