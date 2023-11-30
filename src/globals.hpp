@@ -4,12 +4,20 @@
 #include <string>
 #include <filesystem>
 #include <string>
+#include <random>
+//#define ARMA_DONT_PRINT_FAST_MATH_WARNING
+//#include <armadillo>
+
+extern std::normal_distribution<float> white;
+extern std::uniform_real_distribution<float> unif;
 
 // Declare all variables as extern
 extern std::string DATA_PATH;
 extern std::string MAT_PATH;
 
 extern int CHECK_BISTABILITY;
+extern std::vector<int> BUMP_SWITCH;
+
 extern int VERBOSE;
 extern int N;
 extern int N_POP;
@@ -47,8 +55,23 @@ extern float T_SAVE;
 
 extern int IF_LOAD_MAT;
 extern int IF_SAVE_MAT;
-extern std::string PROBA;
+extern std::vector<std::string> PROBA;
+// extern std::string PROBA;
 extern std::vector<float> KAPPA;
+
+// extern arma::mat ksi;
+extern int LR_RANK;
+extern int LR_SEED;
+extern int LR_LOAD;
+
+extern std::vector<float> LR_MEAN;
+extern std::vector<float> LR_STD;
+extern std::vector<float> LR_RHO;
+extern std::vector<float> LR_FF_RHO;
+
+extern std::vector<float> ksi_0;
+extern std::vector<float> ksi_1;
+extern std::vector<float> ksi_2;
 
 extern int IF_NMDA;
 extern std::vector<float> TAU_NMDA;
@@ -66,6 +89,13 @@ extern std::vector<float> A_STIM ;
 extern std::vector<float> STD_STIM ;
 extern std::vector<float> PHI_STIM ;
 extern std::vector<float> KAPPA_STIM ;
+
+extern std::vector<float> T_DIST ;
+extern int* N_DIST ;
+extern std::vector<float> A_DIST ;
+extern std::vector<float> STD_DIST ;
+extern std::vector<float> PHI_DIST ;
+extern std::vector<float> KAPPA_DIST ;
 
 extern int IF_FF_NOISE;
 extern std::vector<float> STD_FF;

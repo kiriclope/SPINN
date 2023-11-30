@@ -7,7 +7,7 @@ def run_cpp(session, bin_path="/home/leon/models/lif_cpp/bin/LifNet", conf_path=
     cmd = ["screen", "-dmS", session, bin_path, conf_path]
     # cmd = ["screen", "-dmS", session, bin_path, conf_path, "&&", "notify-send", "Job Finished", session, "has finished"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+    
     # Use these lines to print stdout and stderr in real-time
     for line in proc.stdout:
         print(line.decode().strip())
@@ -36,9 +36,9 @@ def update_conf(conf_name, key_to_change, new_value, axis=None):
         documents = yaml.dump(conf, file)
 
 
-def restore_conf(conf_name):
+def restore_conf(src, dest):
     try:
-        shutil.copy(conf_name + '.bak', conf_name)
+        shutil.copy(src, dest)
         print("File moved successfully!")
     except FileNotFoundError:
         print("Error: Source file not found!")

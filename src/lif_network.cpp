@@ -37,16 +37,53 @@ float *theta;
 
 std::random_device rd;
 std::mt19937 gen(rd());
-std::normal_distribution<float> white(0.0, 1.0);
-std::uniform_real_distribution<float> unif(0.0, 1.0);
+
 std::uniform_real_distribution<float> unif_theta(0.0, twoPi);
+
+std::vector<std::pair<int, float>> spike_pair;
+
+
+void odr_stimuli(float* &ff_inputs, int FLAG) {
+  for (int i = 0; i < Na[0]; ++i) {
+    ff_inputs[i] = Iext_scaled[which_pop[i]]
+      + (A_STIM[which_pop[i]]
+         + STD_STIM[which_pop[i]] * white(gen))
+      * sqrt(Ka[0])
+      * (1.0
+         + KAPPA_STIM[which_pop[i]]
+         * cos(theta[i] - PHI_STIM[which_pop[i]] * M_PI / 180.0));      
+  }
+}
+
+void dual_task_stimuli(float* &ff_inputs, int FLAG) {
+
+  if(FLAG ==0)
+    for (int i = 0; i < Na[0]; ++i) {      
+      if(PHI_STIM[0]==0)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 - A_STIM[which_pop[i]] * ksi_0[i]);
+      if(PHI_STIM[0]==180)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_STIM[which_pop[i]] * ksi_0[i]);
+  
+      if(PHI_STIM[0]==270)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 - A_STIM[which_pop[i]] * ksi_2[i]);
+      if(PHI_STIM[0]==90)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_STIM[which_pop[i]] * ksi_2[i]);      
+  }
+  else
+    for (int i = 0; i < Na[0]; ++i) {
+      if(PHI_DIST[0]==270)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 - A_DIST[which_pop[i]] * ksi_2[i]);
+      if(PHI_DIST[0]==90)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_DIST[which_pop[i]] * ksi_2[i]);      
+    }
+}
 
 void init_lif() {
   rates = new float[N]();  
   volts = new float[N]();
   spikes = new float[N]();
   spike_times= new float[N]();
-
+  
   ff_inputs = new float[N]();
   inputs = new float*[N_POP]();
   net_inputs = new float[N]();
@@ -72,7 +109,7 @@ void init_lif() {
   }
 
   theta = new float[N]();
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; ++i)
     theta[i] = (twoPi * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
   
   ensureDirExists(DATA_PATH);
@@ -92,7 +129,7 @@ void free_lif() {
 
   delete[] ff_inputs;
 
-  for (int i = 0; i < N_POP; i++) {
+  for (int i = 0; i < N_POP; ++i) {
     delete[] inputs[i];
   }
   delete[] inputs;
@@ -123,15 +160,15 @@ void initNetwork() {
   std::cout << "Initializing Network, output dir:" << DATA_PATH;
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
-  for(int i=0; i < N_POP; i++)
-    for(int j=0; j < N_POP; j++)
+  for(int i=0; i < N_POP; ++i)
+    for(int j=0; j < N_POP; ++j)
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP];
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / Ka[j] * sqrt(Ka[0]);
       Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
 
   if(IF_NMDA) {
-    for(int i=0; i < N_POP; i++)
+    for(int i=0; i < N_POP; ++i)
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] ;
       // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
       Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
@@ -140,28 +177,28 @@ void initNetwork() {
     Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
   }
   
-  for(int i=0; i < N_POP; i++)
+  for(int i=0; i < N_POP; ++i)
     // Iext_scaled[i] = GAIN * Iext[i] ;
     // // Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
     Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
   
-  for(int i=0; i<N; i++)
+  for(int i=0; i<N; ++i)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
 
   if(IF_FF_NOISE)
-    for(int i=0; i < N_POP; i++)
+    for(int i=0; i < N_POP; ++i)
       // STD_FF[i] *= GAIN * (V_THRESH - V_REST);
-      STD_FF[i] = sqrt(Iext_scaled[i] / sqrt(Ka[0]) ) * sqrt(Ka[0]);
+      STD_FF[i] = sqrt(Iext_scaled[i] / sqrt(Ka[0]) );
   
   if(IF_FF_CORR)
-    for(int i=0; i < N_POP; i++)
+    for(int i=0; i < N_POP; ++i)
       // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
       A_CORR[i] = A_CORR[i] * (V_THRESH - V_REST) / sqrt(Ka[0]);
   
   std::cout << " Done" << std::endl;
 
   // network initialization
-  for(int i=0; i<N; i++)
+  for(int i=0; i<N; ++i)
     volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
   
   updateSpikes(-1); // must come before updateRecInputs in this implementation
@@ -172,46 +209,46 @@ void initNetwork() {
 
 void updateFFinputs(int step) {
 
-  // float theta_i = 0;
+  if (step == 0)
+    if(BUMP_SWITCH[0])
+      for (int i = 0; i < Na[0]; ++i)
+        ff_inputs[i] = Iext_scaled[0] / sqrt(Ka[0]);
   
   if (step == N_STIM[0]) {
     if (VERBOSE)
-      std::cout << " STIM ON" << std::endl;
-
-    if(unif(gen) < 0.5 && CHECK_BISTABILITY==1) {
-      A_STIM[0] = 0.0 ;
-      A_STIM[1] = 0.0 ;
-    }
-    
-    for (int i = 0; i < N; i++) {
-      // theta_i = (2.0 * M_PI * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
-      
-      ff_inputs[i] = Iext_scaled[which_pop[i]]
-        + (A_STIM[which_pop[i]]
-           + STD_STIM[which_pop[i]] * white(gen))
-        * sqrt(Ka[0])
-        * (1.0
-           + KAPPA_STIM[which_pop[i]]
-           * cos(theta[i] - PHI_STIM[which_pop[i]] * M_PI / 180.0));
-    }
+      std::cout << " STIM ON" << std::endl;       
+    dual_task_stimuli(ff_inputs, 0);
   }
   
   if (step == N_STIM[1]) {
     if (VERBOSE)
       std::cout << " STIM OFF" << std::endl;
     
-    for (int i = 0; i < N; i++)
-      ff_inputs[i] = Iext_scaled[which_pop[i]];
+    for (int i = 0; i < N; ++i)
+      ff_inputs[i] = Iext_scaled[which_pop[i]];    
+  }
+  
+  if (step == N_DIST[0]) {
+    if (VERBOSE)
+      std::cout << " DIST ON" << std::endl;
     
+    dual_task_stimuli(ff_inputs, 1);
+  }
+  
+  if (step == N_DIST[1]) {
+    if (VERBOSE)
+      std::cout << " DIST OFF" << std::endl;
+    
+    for (int i = 0; i < N; ++i)
+      ff_inputs[i] = Iext_scaled[which_pop[i]];    
   }
   
   if (IF_FF_NOISE)
-    for (int i = 0; i < N; i++)
-      // ff_inputs[i] += std::sqrt(Ka[0]) * std::sqrt(STD_FF[which_pop[i]]) * white(gen);
+    for (int i = 0; i < N; ++i)
       ff_inputs[i] += STD_FF[which_pop[i]] * white(gen);
-      
+  
   if (IF_FF_CORR) {
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
       ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta[i] - unif_theta(gen)));
       // ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * cosine(theta[i] - unif_theta(gen)));
     }
@@ -245,7 +282,7 @@ void updateRecInputs(){
   for (int j = 0; j < N; ++j) // presynaptic
     if (spikes[j] == 1) {
       pres_pop = which_pop[j];
-
+      
       for (size_t i = colptr[j]; i < colptr[j + 1]; ++i) { // postsynaptic
         post_pop = which_pop[indices[i]];
         if (IF_STP && pres_pop == 0 && post_pop == 0)
@@ -294,6 +331,8 @@ void updateSpikes(int step){
       volts[i] = V_REST;
       spikes[i] = 1.0;
 
+      spike_pair.push_back(std::make_pair(i, step * DT));
+      
       // if (IF_RK2) {
       //   dt2 = DT * (V_THRESH - vold[i]) / (volts[i] - vold[i] );
       //   volts[i] = (volts[i] - V_THRESH)
@@ -342,39 +381,39 @@ void printParam(){
   std::cout << "N_POP " << N_POP;
 
   std::cout << " N " << N << " Na ";
-  for(int i=0; i < N_POP; i++)
+  for(int i=0; i < N_POP; ++i)
     std::cout << Na[i] << " ";
 
   std::cout << " cNa ";
-  for(int i=0; i < N_POP+1; i++)
+  for(int i=0; i < N_POP+1; ++i)
     std::cout << cNa[i] << " ";
   std::cout << std::endl;
 
   std::cout << "K " << K << " Ka ";
-  for(int i=0; i < N_POP; i++)
+  for(int i=0; i < N_POP; ++i)
     std::cout << Ka[i] << " ";
   std::cout << std::endl;
 
   std::cout << "Jab ";
-  for(int i=0; i < N_POP; i++)
-    for(int j=0; j < N_POP; j++)
+  for(int i=0; i < N_POP; ++i)
+    for(int j=0; j < N_POP; ++j)
       std::cout << Jab[j + i * N_POP] << " ";
   // std::cout << std::endl;
 
   std::cout << "Iext ";
-  for(int i=0; i < N_POP; i++)
+  for(int i=0; i < N_POP; ++i)
     std::cout << Iext[i] << " ";
   std::cout << std::endl;
 
   std::cout << "Iext_scaled ";
-  for (int i = 0; i < N_POP; i++) {
+  for (int i = 0; i < N_POP; ++i) {
     std::cout << Iext_scaled[i] << " ";
   }
   // std::cout << std::endl;
 
   std::cout << "Jab_scaled ";
-  for(int i=0; i < N_POP; i++)
-    for(int j=0; j < N_POP; j++)
+  for(int i=0; i < N_POP; ++i)
+    for(int j=0; j < N_POP; ++j)
       std::cout << Jab_scaled[j + i * N_POP] << " ";
   std::cout << std::endl;
 }
@@ -385,11 +424,22 @@ void runSimul(){
 
   initNetwork();
 
+  if (PROBA[0] == "lr") {
+    if (LR_LOAD)
+      load_ksi(ksi_0, ksi_1, ksi_2, Na[0]);
+    else
+      generate_ksi(ksi_0, ksi_1, ksi_2, Na[0]);
+    
+    float product = std::inner_product(ksi_1.begin(), ksi_1.end(), ksi_2.begin(), 0);
+    std::cout << std::endl;
+    std::cout << "inner " << product << std::endl;
+  }
+  
   if(IF_LOAD_MAT)
     getSparseMatCSC(colptr, indices);
   else
     genSparseMatCSC(colptr, indices);
-
+  
   if (VERBOSE)
     printParam();
   
@@ -409,6 +459,7 @@ void runSimul(){
   std::ofstream inputsIfile(DATA_PATH + "/inputsI.txt", std::ios::app | std::ios::binary);
   std::ofstream voltsFile(DATA_PATH + "/volts.txt", std::ios::app | std::ios::binary);
 
+  
   std::ofstream xstpFile(DATA_PATH + "/x_stp.txt", std::ios::app | std::ios::binary);
   std::ofstream ustpFile(DATA_PATH + "/u_stp.txt", std::ios::app | std::ios::binary);
   std::ofstream AstpFile(DATA_PATH + "/A_stp.txt", std::ios::app | std::ios::binary);
@@ -416,10 +467,10 @@ void runSimul(){
   int N_STEPS = (int) (DURATION/DT);
   int N_STEADY = (int) T_STEADY / DT;
   int N_WINDOW = (int) T_WINDOW / DT;
-  int N_SAVE = (int)  (DURATION - T_SAVE) / DT;
+  // int N_SAVE = (int)  (DURATION - T_SAVE) / DT;
     
   std::cout << "Running Simulation" << std::endl;
-  for(int step = 0; step < N_STEPS; step += 1) {
+  for(int step = 0; step < N_STEPS; ++step) {
 
     updateVolts();
     updateSpikes(step); // must come before updateRecInputs in this implementation
@@ -473,6 +524,9 @@ void runSimul(){
   } // end for
 
   if (IF_SAVE_DATA) {
+    
+    saveVectorOfPairsToFile(spikesFile, spike_pair);
+    
     spikesFile.close();
     ratesFile.close();
     inputsEfile.close();

@@ -38,4 +38,7 @@ void updateSpikes(int step);
 void updateStp(int i, int step);
 void runSimul();
 
+void odr_stimuli(float* &ff_inputs, int FLAG);
+void dual_task_stimuli(float* &ff_inputs, int FLAG);
+
 #endif

@@ -27,16 +27,16 @@ arma::mat generateProbabilityMatrix(std::string proba_str, size_t N, float K, fl
         }
       }
     
-    return P
+    return P;
 }
 
-arma::mat generateRandomMatrix(const arma::mat& P) {
+// arma::mat generateRandomMatrix(const arma::mat& P) {
 
-    arma::mat C = arma::randu<arma::mat>(P.n_rows, P.n_cols); // Uniform random matrix
-    C.transform( [&P] (double val, arma::uword i, arma::uword j) { return ( val <= P(i,j) ) ? 1.0 : 0.0; } ); // Transform based on threshold
+//     arma::mat C = arma::randu<arma::mat>(P.n_rows, P.n_cols); // Uniform random matrix
+//     C.transform( [&P] (double val, arma::uword i, arma::uword j) { return ( val <= P(i,j) ) ? 1.0 : 0.0; } ); // Transform based on threshold
 
-    return C;
-}
+//     return C;
+// }
 
 arma::mat generateMVN(const arma::vec& mu, const arma::mat& Sigma, int num_samples) {
     int num_vars = mu.n_elem; // Number of variables (Dimension of the Gaussian)
@@ -66,7 +66,7 @@ int main() {
     std::cout << "Covariance of first and second columns: " << cov01 << std::endl;
     std::cout << "Covariance of first and third columns: " << cov02 << std::endl;
     std::cout << "Covariance of first and fourth columns: " << cov03 << std::endl;
-
+    
     // arma::rowvec x1 = X.row(0);
     // arma::rowvec x2 = X.row(1);
     // arma::rowvec x3 = X.row(2);

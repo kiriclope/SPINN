@@ -2,7 +2,6 @@
 #+TITLE: Cholinergic neuromodulation of prefrontal attractor dynamics controls performance in spatial WM
 #+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
 
-
 * Notebook Settings
 #+begin_src ipython
   %load_ext autoreload
@@ -58,17 +57,52 @@
  
  #+RESULTS:
 
+ 
+**** Low rank
+#+begin_src ipython
+  ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
+  ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32)  
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def gram_schmidt(a, b):
+      e1 = a / np.linalg.norm(a)
+      v = b - np.dot(b, e1) * e1      
+      # Normalize the vectors (make them unit vectors)
+      # e1 = u / np.linalg.norm(u)
+      e2 = v / np.linalg.norm(v)
+
+      theta = np.arctan2(e2, e1)
+      return theta
+#+end_src
+#+RESULTS:
+
+#+begin_src ipython
+  theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
+  theta = gram_schmidt(ksi_1, ksi_2)
+
+  index_order = theta.argsort()
+  # index_order = ksi_1.argsort()
+  # print(index_order)
+  # rates_ordered = rates[index_order]
+#+end_src
+
+#+RESULTS:
+
+
 #+begin_src ipython
   def get_rate(name, ini, phi):
        session = "/%s_phi_%d_ini_%d/" % (name, phi, ini)
        rate = get_data(session)
        return rate[:30000]
 
-  def get_rates_ini_phi(name, ini_list, phi_list):
+  def get_rates_ini_phi(name, ini_list, phi_list, index=None):
        rates = Parallel(n_jobs=-1)(delayed(get_rate)(name, ini, phi) for ini in ini_list for phi in phi_list)
        rates = np.array(rates)
        rates = rates.reshape(len(ini_list), len(phi_list), 30000, -1)
-       return rates
+       return rates[..., index, :]
 
     # def get_rates_ini_phi(name, ini_list, phi_list):
     #    rates = []
@@ -107,8 +141,8 @@
 #+RESULTS:
 
 #+begin_src ipython
-  def load_data_ini_phi(name, ini_list, phi_list):
-      rates = get_rates_ini_phi(name, ini_list, phi_list)
+  def load_data_ini_phi(name, ini_list, phi_list, index):
+      rates = get_rates_ini_phi(name, ini_list, phi_list, index)
       df = get_df_ini_phi(rates)
       return df
 #+end_src
@@ -135,10 +169,10 @@
         for phi in phi_list:
             session = "%s_phi_%d_ini_%d" % (name, phi, ini)
             data_path = REPO_PATH + '/data/simul/' + session
-            update_conf(REPO_PATH + '/conf/config_EI', 'DATA_PATH', data_path)
-            update_conf(REPO_PATH + '/conf/config_EI', 'PHI_STIM', float(phi), axis=0)
-            update_conf(REPO_PATH + '/conf/config_EI', 'Iext', float(Ie), axis=0)
-            
+            update_conf(REPO_PATH + '/conf/config_LR', 'DATA_PATH', data_path)
+            update_conf(REPO_PATH + '/conf/config_LR', 'PHI_STIM', float(phi), axis=0)
+            update_conf(REPO_PATH + '/conf/config_LR', 'Iext', float(Ie), axis=0)
+
             sleep(.2)
             run_cpp(session)
             sleep(.2)
@@ -146,7 +180,7 @@
             subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
             subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
 
-    restore_conf(REPO_PATH + '/conf/config_EI.yml')
+    restore_conf(REPO_PATH + '/conf/config_%s.yml' % name)
 #+end_src
 
 #+RESULTS:
@@ -155,8 +189,9 @@
 *** Simulation
 **** Parameters
 #+begin_src ipython
-  ini_list = np.arange(0, 50)
+  ini_list = np.arange(0, 10)
   phi_list = np.linspace(0, 315, 8)
+  phi_list = [0]
 #+end_src
 
 #+RESULTS:
@@ -164,33 +199,150 @@
 **** Control
 
 #+begin_src ipython
-  run_ini_phi('EI', ini_list, phi_list, Ie=0.004)
+  run_ini_phi('lowRank', ini_list, phi_list, Ie=0.004)
 #+end_src
 
 #+RESULTS:
-: File moved successfully!
+#+begin_example
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 8.47476: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 1.5625: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 8.77414: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 3.125: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 9.07022: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 4.6875: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 9.36669: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 4.6875: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 9.66451: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 5.46875: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 9.95924: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 7.03125: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 10.2573: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 7.03125: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 10.5547: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 7.8125: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 10.8521: invalid number
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 8.59375: invalid number
+  /home/leon/models/lif_cpp/src/mem_usage.sh: line 4: printf: 11.1505: invalid number
+  Error: Source file not found!
+  /home/leon/models/lif_cpp/src/cpu_usage.sh: line 12: printf: 9.375: invalid number
+#+end_example
 
 **** NB ON
 #+begin_src ipython
   run_ini_phi('EI_on', ini_list, phi_list, Ie=0.0045)
 #+end_src
 #+RESULTS:
-:  CPU_USAGE > 90.0 %, sleeping for a while ...
+:  CPU_USAGE >
+90.0 %, sleeping for a while ...
 : File moved successfully!
 
 *** Analysis
 #+begin_src ipython
-  df = load_data_ini_phi('EI', ini_list, phi_list)
+  df = load_data_ini_phi('LR', ini_list, phi_list, index_order)
   df_code, end_point = get_code(df)
 #+end_src
 
 #+RESULTS:
-:       trial  phi        m0        m1     phase
-: 7200      0    0  3.409733  2.225020  0.170233
-: 7201      0    1  3.454667  2.237920  5.637768
-: 7202      0    2  3.400667  2.114004  4.709411
-: 7203      0    3  3.325467  2.120749  3.815238
-: 7204      0    4  3.396800  2.253675  3.118514
+:RESULTS:
+# [goto error]
+#+begin_example
+  [0;31m---------------------------------------------------------------------------[0m
+  [0;31m_RemoteTraceback[0m                          Traceback (most recent call last)
+  [0;31m_RemoteTraceback[0m: 
+  """
+  Traceback (most recent call last):
+    File "/home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/externals/loky/process_executor.py", line 463, in _process_worker
+      r = call_item()
+    File "/home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/externals/loky/process_executor.py", line 291, in __call__
+      return self.fn(*self.args, **self.kwargs)
+    File "/home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py", line 588, in __call__
+      return [func(*args, **kwargs)
+    File "/home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py", line 588, in <listcomp>
+      return [func(*args, **kwargs)
+    File "/tmp/ipykernel_3195270/784505813.py", line 3, in get_rate
+    File "/tmp/ipykernel_3195270/1828273468.py", line 3, in get_data
+    File "/home/leon/mambaforge/envs/dual_data/lib/python3.8/site-packages/IPython/core/interactiveshell.py", line 284, in _modified_open
+      return io_open(file, *args, **kwargs)
+  FileNotFoundError: [Errno 2] No such file or directory: '/home/leon/models/lif_cpp/data/simul//LR_phi_0_ini_0//rates.txt'
+  """
+
+  The above exception was the direct cause of the following exception:
+
+  [0;31mFileNotFoundError[0m                         Traceback (most recent call last)
+  Cell [0;32mIn[43], line 1[0m
+  [0;32m----> 1[0m df [38;5;241m=[39m [43mload_data_ini_phi[49m[43m([49m[38;5;124;43m'[39;49m[38;5;124;43mLR[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex_order[49m[43m)[49m
+  [1;32m      2[0m df_code, end_point [38;5;241m=[39m get_code(df)
+
+  Cell [0;32mIn[40], line 2[0m, in [0;36mload_data_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
+  [1;32m      1[0m [38;5;28;01mdef[39;00m [38;5;21mload_data_ini_phi[39m(name, ini_list, phi_list, index):
+  [0;32m----> 2[0m     rates [38;5;241m=[39m [43mget_rates_ini_phi[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex[49m[43m)[49m
+  [1;32m      3[0m     df [38;5;241m=[39m get_df_ini_phi(rates)
+  [1;32m      4[0m     [38;5;28;01mreturn[39;00m df
+
+  Cell [0;32mIn[38], line 7[0m, in [0;36mget_rates_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
+  [1;32m      6[0m [38;5;28;01mdef[39;00m [38;5;21mget_rates_ini_phi[39m(name, ini_list, phi_list, index[38;5;241m=[39m[38;5;28;01mNone[39;00m):
+  [0;32m----> 7[0m      rates [38;5;241m=[39m [43mParallel[49m[43m([49m[43mn_jobs[49m[38;5;241;43m=[39;49m[38;5;241;43m-[39;49m[38;5;241;43m1[39;49m[43m)[49m[43m([49m[43mdelayed[49m[43m([49m[43mget_rate[49m[43m)[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini[49m[43m,[49m[43m [49m[43mphi[49m[43m)[49m[43m [49m[38;5;28;43;01mfor[39;49;00m[43m [49m[43mini[49m[43m [49m[38;5;129;43;01min[39;49;00m[43m [49m[43mini_list[49m[43m [49m[38;5;28;43;01mfor[39;49;00m[43m [49m[43mphi[49m[43m [49m[38;5;129;43;01min[39;49;00m[43m [49m[43mphi_list[49m[43m)[49m
+  [1;32m      8[0m      rates [38;5;241m=[39m np[38;5;241m.[39marray(rates)
+  [1;32m      9[0m      rates [38;5;241m=[39m rates[38;5;241m.[39mreshape([38;5;28mlen[39m(ini_list), [38;5;28mlen[39m(phi_list), [38;5;241m30000[39m, [38;5;241m-[39m[38;5;241m1[39m)
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:1944[0m, in [0;36mParallel.__call__[0;34m(self, iterable)[0m
+  [1;32m   1938[0m [38;5;66;03m# The first item from the output is blank, but it makes the interpreter[39;00m
+  [1;32m   1939[0m [38;5;66;03m# progress until it enters the Try/Except block of the generator and[39;00m
+  [1;32m   1940[0m [38;5;66;03m# reach the first `yield` statement. This starts the aynchronous[39;00m
+  [1;32m   1941[0m [38;5;66;03m# dispatch of the tasks to the workers.[39;00m
+  [1;32m   1942[0m [38;5;28mnext[39m(output)
+  [0;32m-> 1944[0m [38;5;28;01mreturn[39;00m output [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mreturn_generator [38;5;28;01melse[39;00m [38;5;28;43mlist[39;49m[43m([49m[43moutput[49m[43m)[49m
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:1587[0m, in [0;36mParallel._get_outputs[0;34m(self, iterator, pre_dispatch)[0m
+  [1;32m   1584[0m     [38;5;28;01myield[39;00m
+  [1;32m   1586[0m     [38;5;28;01mwith[39;00m [38;5;28mself[39m[38;5;241m.[39m_backend[38;5;241m.[39mretrieval_context():
+  [0;32m-> 1587[0m         [38;5;28;01myield from[39;00m [38;5;28mself[39m[38;5;241m.[39m_retrieve()
+  [1;32m   1589[0m [38;5;28;01mexcept[39;00m [38;5;167;01mGeneratorExit[39;00m:
+  [1;32m   1590[0m     [38;5;66;03m# The generator has been garbage collected before being fully[39;00m
+  [1;32m   1591[0m     [38;5;66;03m# consumed. This aborts the remaining tasks if possible and warn[39;00m
+  [1;32m   1592[0m     [38;5;66;03m# the user if necessary.[39;00m
+  [1;32m   1593[0m     [38;5;28mself[39m[38;5;241m.[39m_exception [38;5;241m=[39m [38;5;28;01mTrue[39;00m
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:1691[0m, in [0;36mParallel._retrieve[0;34m(self)[0m
+  [1;32m   1684[0m [38;5;28;01mwhile[39;00m [38;5;28mself[39m[38;5;241m.[39m_wait_retrieval():
+  [1;32m   1685[0m 
+  [1;32m   1686[0m     [38;5;66;03m# If the callback thread of a worker has signaled that its task[39;00m
+  [1;32m   1687[0m     [38;5;66;03m# triggered an exception, or if the retrieval loop has raised an[39;00m
+  [1;32m   1688[0m     [38;5;66;03m# exception (e.g. `GeneratorExit`), exit the loop and surface the[39;00m
+  [1;32m   1689[0m     [38;5;66;03m# worker traceback.[39;00m
+  [1;32m   1690[0m     [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39m_aborting:
+  [0;32m-> 1691[0m         [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_raise_error_fast[49m[43m([49m[43m)[49m
+  [1;32m   1692[0m         [38;5;28;01mbreak[39;00m
+  [1;32m   1694[0m     [38;5;66;03m# If the next job is not ready for retrieval yet, we just wait for[39;00m
+  [1;32m   1695[0m     [38;5;66;03m# async callbacks to progress.[39;00m
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:1726[0m, in [0;36mParallel._raise_error_fast[0;34m(self)[0m
+  [1;32m   1722[0m [38;5;66;03m# If this error job exists, immediatly raise the error by[39;00m
+  [1;32m   1723[0m [38;5;66;03m# calling get_result. This job might not exists if abort has been[39;00m
+  [1;32m   1724[0m [38;5;66;03m# called directly or if the generator is gc'ed.[39;00m
+  [1;32m   1725[0m [38;5;28;01mif[39;00m error_job [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
+  [0;32m-> 1726[0m     [43merror_job[49m[38;5;241;43m.[39;49m[43mget_result[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtimeout[49m[43m)[49m
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:735[0m, in [0;36mBatchCompletionCallBack.get_result[0;34m(self, timeout)[0m
+  [1;32m    729[0m backend [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mparallel[38;5;241m.[39m_backend
+  [1;32m    731[0m [38;5;28;01mif[39;00m backend[38;5;241m.[39msupports_retrieve_callback:
+  [1;32m    732[0m     [38;5;66;03m# We assume that the result has already been retrieved by the[39;00m
+  [1;32m    733[0m     [38;5;66;03m# callback thread, and is stored internally. It's just waiting to[39;00m
+  [1;32m    734[0m     [38;5;66;03m# be returned.[39;00m
+  [0;32m--> 735[0m     [38;5;28;01mreturn[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_return_or_raise[49m[43m([49m[43m)[49m
+  [1;32m    737[0m [38;5;66;03m# For other backends, the main thread needs to run the retrieval step.[39;00m
+  [1;32m    738[0m [38;5;28;01mtry[39;00m:
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/joblib/parallel.py:753[0m, in [0;36mBatchCompletionCallBack._return_or_raise[0;34m(self)[0m
+  [1;32m    751[0m [38;5;28;01mtry[39;00m:
+  [1;32m    752[0m     [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mstatus [38;5;241m==[39m TASK_ERROR:
+  [0;32m--> 753[0m         [38;5;28;01mraise[39;00m [38;5;28mself[39m[38;5;241m.[39m_result
+  [1;32m    754[0m     [38;5;28;01mreturn[39;00m [38;5;28mself[39m[38;5;241m.[39m_result
+  [1;32m    755[0m [38;5;28;01mfinally[39;00m:
+
+  [0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: '/home/leon/models/lif_cpp/data/simul//LR_phi_0_ini_0//rates.txt'
+#+end_example
+:END:
 
 #+begin_src ipython
   df_on = load_data_ini_phi('EI_on', ini_list, phi_list)
@@ -198,18 +350,18 @@
 #+end_src
 
 #+RESULTS:
-:       trial  phi        m0        m1     phase
-: 7200      0    0  5.276000  1.133127  0.156087
-: 7201      0    1  5.275200  0.987646  5.690710
-: 7202      0    2  5.396667  0.907474  4.738047
-: 7203      0    3  5.351333  1.050085  3.804462
-: 7204      0    4  5.200400  1.033460  3.125820
+:      trial  phi        m0        m1     phase
+: 180      0    0  5.276000  0.017211  0.247445
+: 181      1    0  5.323867  0.115265  5.213179
+: 182      2    0  5.317867  0.122799  5.659189
+: 183      3    0  5.082000  0.125831  6.069443
+: 184      4    0  5.133200  0.151286  5.809910
 
 *** Phases 
 #+begin_src ipython
   fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
 
-  # sns.lineplot(data=df_code, x='time', y=df_code['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], hue='phi', alpha=0.25)
+  sns.lineplot(data=df_code, x='time', y=df_code['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], hue='phi', alpha=0.25)
 
   # sns.lineplot(data=df_code_on, x='time', y=df_code_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], hue='phi', alpha=0.25)
 
@@ -219,7 +371,7 @@
   ax[0].set_yticks([0, 90, 180, 270, 360])
 
   sns.histplot(data=end_point, x=end_point['phase']*180/np.pi, legend=False, ax=ax[1], bins=200, kde=False, stat='density')
-  sns.histplot(data=end_point_on, x=end_point_on['phase']*180/np.pi, legend=False, ax=ax[1], bins=200, kde=False, stat='density')
+  # sns.histplot(data=end_point_on, x=end_point_on['phase']*180/np.pi, legend=False, ax=ax[1], bins=200, kde=False, stat='density')
 
   ax[1].set_xlabel('$\phi$ (°)')
   ax[1].set_ylabel('$Count$')
@@ -228,7 +380,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/dc69c98a6f5dcbb174efc90df76db26b20ebd193.png]]
+[[file:./.ob-jupyter/016efb5f3d862656d48bee14cd9bc0e7c71f6833.png]]
 
 *** Endpoint Errors
 
@@ -253,9 +405,11 @@
   7203      0    3  3.325467  2.120749  3.815238  3.762878  -0.027849
   7204      0    4  3.396800  2.253675  3.118514  3.048701   0.001258
   /tmp/ipykernel_2026003/216822297.py:2: FutureWarning: Not prepending group keys to the result index of transform-like apply. In the future, the group keys will be included in the index, regardless of whether the applied function returns a like-indexed object.
-  To preserve the previous behavior, use
-
-  	>>> .groupby(..., group_keys=False)
+  To preserve the previous behavior, use>
+  
+  
+  
+  >> .groupby(..., group_keys=False)
 
   To adopt the future behavior and silence this warning, use 
 
@@ -297,7 +451,57 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/724bfd7ba5c0f501a89626dbabc912ceed09c5b7.png]]
+:RESULTS:
+# [goto error]
+#+begin_example
+  [0;31m---------------------------------------------------------------------------[0m
+  [0;31mKeyError[0m                                  Traceback (most recent call last)
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/pandas/core/indexes/base.py:3802[0m, in [0;36mIndex.get_loc[0;34m(self, key, method, tolerance)[0m
+  [1;32m   3801[0m [38;5;28;01mtry[39;00m:
+  [0;32m-> 3802[0m     [38;5;28;01mreturn[39;00m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_engine[49m[38;5;241;43m.[39;49m[43mget_loc[49m[43m([49m[43mcasted_key[49m[43m)[49m
+  [1;32m   3803[0m [38;5;28;01mexcept[39;00m [38;5;167;01mKeyError[39;00m [38;5;28;01mas[39;00m err:
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/pandas/_libs/index.pyx:138[0m, in [0;36mpandas._libs.index.IndexEngine.get_loc[0;34m()[0m
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/pandas/_libs/index.pyx:165[0m, in [0;36mpandas._libs.index.IndexEngine.get_loc[0;34m()[0m
+
+  File [0;32mpandas/_libs/hashtable_class_helper.pxi:5745[0m, in [0;36mpandas._libs.hashtable.PyObjectHashTable.get_item[0;34m()[0m
+
+  File [0;32mpandas/_libs/hashtable_class_helper.pxi:5753[0m, in [0;36mpandas._libs.hashtable.PyObjectHashTable.get_item[0;34m()[0m
+
+  [0;31mKeyError[0m: 'accuracy'
+
+  The above exception was the direct cause of the following exception:
+
+  [0;31mKeyError[0m                                  Traceback (most recent call last)
+  Cell [0;32mIn[20], line 9[0m
+  [1;32m      6[0m ax[[38;5;241m0[39m][38;5;241m.[39mset_ylabel([38;5;124m'[39m[38;5;124mDensity[39m[38;5;124m'[39m)
+  [1;32m      7[0m ax[[38;5;241m0[39m][38;5;241m.[39mset_xticks([[38;5;241m0[39m, [38;5;241m90[39m, [38;5;241m180[39m, [38;5;241m270[39m, [38;5;241m360[39m])
+  [0;32m----> 9[0m sns[38;5;241m.[39mhistplot(data[38;5;241m=[39mend_point, x[38;5;241m=[39m[43mend_point[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43maccuracy[39;49m[38;5;124;43m'[39;49m[43m][49m[38;5;241m*[39m[38;5;241m180[39m[38;5;241m/[39mnp[38;5;241m.[39mpi, legend[38;5;241m=[39m[38;5;28;01mFalse[39;00m, lw[38;5;241m=[39m[38;5;241m2[39m, ax[38;5;241m=[39max[[38;5;241m1[39m], kde[38;5;241m=[39m[38;5;28;01mFalse[39;00m, bins[38;5;241m=[39m[38;5;241m200[39m, stat[38;5;241m=[39m[38;5;124m'[39m[38;5;124mdensity[39m[38;5;124m'[39m)
+  [1;32m     10[0m sns[38;5;241m.[39mhistplot(data[38;5;241m=[39mend_point_on, x[38;5;241m=[39mend_point_on[[38;5;124m'[39m[38;5;124maccuracy[39m[38;5;124m'[39m][38;5;241m*[39m[38;5;241m180[39m[38;5;241m/[39mnp[38;5;241m.[39mpi, legend[38;5;241m=[39m[38;5;28;01mFalse[39;00m, lw[38;5;241m=[39m[38;5;241m2[39m, ax[38;5;241m=[39max[[38;5;241m1[39m], kde[38;5;241m=[39m[38;5;28;01mFalse[39;00m, bins[38;5;241m=[39m[38;5;241m200[39m, stat[38;5;241m=[39m[38;5;124m'[39m[38;5;124mdensity[39m[38;5;124m'[39m)
+  [1;32m     11[0m ax[[38;5;241m1[39m][38;5;241m.[39mset_xlabel([38;5;124m'[39m[38;5;124m$[39m[38;5;124m\[39m[38;5;124mphi - [39m[38;5;124m\[39m[38;5;124mphi_[39m[38;5;132;01m{stim}[39;00m[38;5;124m$ (°)[39m[38;5;124m'[39m)
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/pandas/core/frame.py:3807[0m, in [0;36mDataFrame.__getitem__[0;34m(self, key)[0m
+  [1;32m   3805[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mcolumns[38;5;241m.[39mnlevels [38;5;241m>[39m [38;5;241m1[39m:
+  [1;32m   3806[0m     [38;5;28;01mreturn[39;00m [38;5;28mself[39m[38;5;241m.[39m_getitem_multilevel(key)
+  [0;32m-> 3807[0m indexer [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mcolumns[49m[38;5;241;43m.[39;49m[43mget_loc[49m[43m([49m[43mkey[49m[43m)[49m
+  [1;32m   3808[0m [38;5;28;01mif[39;00m is_integer(indexer):
+  [1;32m   3809[0m     indexer [38;5;241m=[39m [indexer]
+
+  File [0;32m~/mambaforge/envs/dual_data/lib/python3.8/site-packages/pandas/core/indexes/base.py:3804[0m, in [0;36mIndex.get_loc[0;34m(self, key, method, tolerance)[0m
+  [1;32m   3802[0m     [38;5;28;01mreturn[39;00m [38;5;28mself[39m[38;5;241m.[39m_engine[38;5;241m.[39mget_loc(casted_key)
+  [1;32m   3803[0m [38;5;28;01mexcept[39;00m [38;5;167;01mKeyError[39;00m [38;5;28;01mas[39;00m err:
+  [0;32m-> 3804[0m     [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m(key) [38;5;28;01mfrom[39;00m [38;5;21;01merr[39;00m
+  [1;32m   3805[0m [38;5;28;01mexcept[39;00m [38;5;167;01mTypeError[39;00m:
+  [1;32m   3806[0m     [38;5;66;03m# If we have a listlike key, _check_indexing_error will raise[39;00m
+  [1;32m   3807[0m     [38;5;66;03m#  InvalidIndexError. Otherwise we fall through and re-raise[39;00m
+  [1;32m   3808[0m     [38;5;66;03m#  the TypeError.[39;00m
+  [1;32m   3809[0m     [38;5;28mself[39m[38;5;241m.[39m_check_indexing_error(key)
+
+  [0;31mKeyError[0m: 'accuracy'
+#+end_example
+[[file:./.ob-jupyter/6435c83b6e7a0c27d2f2aae58aac5d24411f4556.png]]
+:END:
 
 #+begin_src ipython
 

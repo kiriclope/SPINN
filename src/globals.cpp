@@ -1,14 +1,22 @@
 #include <vector>
+#include <array>
 #include <string>
 #include <cmath>
 #include <yaml-cpp/yaml.h>
+#include <random>
+// #define ARMA_DONT_PRINT_FAST_MATH_WARNING
+// #include <armadillo>
 
 #include "globals.hpp"
+
+std::normal_distribution<float> white(0.0, 1.0);
+std::uniform_real_distribution<float> unif(0.0, 1.0);
 
 std::string DATA_PATH;
 std::string MAT_PATH;
 
 int CHECK_BISTABILITY;
+std::vector<int> BUMP_SWITCH;
 
 int VERBOSE;
 int N;
@@ -47,8 +55,24 @@ int IF_SAVE_MAT;
 int IF_SAVE_DATA;
 float T_SAVE;
 
-std::string PROBA;
+std::vector<std::string> PROBA;
+// std::string PROBA;
 std::vector<float> KAPPA;
+
+// LOW RANK
+// arma::mat ksi;
+int LR_RANK;
+int LR_SEED;
+int LR_LOAD;
+
+std::vector<float> LR_MEAN;
+std::vector<float> LR_STD;
+std::vector<float> LR_RHO;
+std::vector<float> LR_FF_RHO;
+
+std::vector<float> ksi_0(N);
+std::vector<float> ksi_1(N);
+std::vector<float> ksi_2(N);
 
 int IF_NMDA;
 std::vector<float> TAU_NMDA;
@@ -66,6 +90,13 @@ std::vector<float> A_STIM ;
 std::vector<float> STD_STIM ;
 std::vector<float> PHI_STIM ;
 std::vector<float> KAPPA_STIM ;
+
+std::vector<float> T_DIST ;
+int* N_DIST ;
+std::vector<float> A_DIST ;
+std::vector<float> STD_DIST ;
+std::vector<float> PHI_DIST ;
+std::vector<float> KAPPA_DIST ;
 
 int IF_FF_NOISE;
 std::vector<float> STD_FF;
@@ -90,6 +121,7 @@ void loadConfig(std::string configname){
   
   VERBOSE = config["verbose"].as<int>();
   CHECK_BISTABILITY = config["CHECK_BISTABILITY"].as<int>();
+  BUMP_SWITCH = config["BUMP_SWITCH"].as<std::vector<int>>();
   
   // Assign variables from configuration file
   N = config["N"].as<int>();
@@ -105,8 +137,8 @@ void loadConfig(std::string configname){
 
   for(int i=0; i<N_POP; ++i) {
     Na[i] = (int) (FRAC[i] * N);
-    Ka[i] = K;
-    // Ka[i] = FRAC[i] * K;
+    // Ka[i] = K;
+    Ka[i] = FRAC[i] * K;
   }
 
   cNa[0] = 0;
@@ -152,7 +184,7 @@ void loadConfig(std::string configname){
     EXP_DT_TAU_MEM[i] = std::exp(-DT / TAU_MEM[i]);
   }
 
-  PROBA = config["PROBA"].as<std::string>();
+  PROBA = config["PROBA"].as<std::vector<std::string>>();
   KAPPA = config["KAPPA"].as<std::vector<float>>();
 
   IF_NMDA = config["IF_NMDA"].as<int>();
@@ -178,12 +210,36 @@ void loadConfig(std::string configname){
   PHI_STIM = config["PHI_STIM"].as<std::vector<float>>();
   KAPPA_STIM = config["KAPPA_STIM"].as<std::vector<float>>();
 
+  T_DIST = config["T_DIST"].as<std::vector<float>>();
+  N_DIST = new int[N_POP]();
+  for(int i=0; i<N_POP; ++i)
+    N_DIST[i] = (int) ((T_DIST[i] + T_STEADY) / DT);
+  
+  A_DIST = config["A_DIST"].as<std::vector<float>>();
+  STD_DIST = config["STD_DIST"].as<std::vector<float>>();
+  PHI_DIST = config["PHI_DIST"].as<std::vector<float>>();
+  KAPPA_DIST = config["KAPPA_DIST"].as<std::vector<float>>();
+  
   IF_FF_NOISE = config["IF_FF_NOISE"].as<int>();
   STD_FF = config["STD_FF"].as<std::vector<float>>();
 
   IF_FF_CORR = config["IF_FF_CORR"].as<int>();
   CORR_FF = config["CORR_FF"].as<std::vector<float>>();
   A_CORR = config["A_CORR"].as<std::vector<float>>();
+
+  
+  LR_RANK = config["LR_RANK"].as<int>();
+  LR_SEED = config["LR_SEED"].as<int>();
+  LR_LOAD = config["LR_LOAD"].as<int>();
+  
+  LR_MEAN = config["LR_MEAN"].as<std::vector<float>>();
+  LR_STD = config["LR_STD"].as<std::vector<float>>();
+  LR_RHO = config["LR_RHO"].as<std::vector<float>>();
+  LR_FF_RHO = config["LR_FF_RHO"].as<std::vector<float>>();
+
+  if(PHI_STIM[0] == 180.0)
+    LR_FF_RHO[0] *= -1;
+  
 }
 
 void ensureDirExists(std::string &path) {

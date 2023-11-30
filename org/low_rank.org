@@ -51,36 +51,13 @@
 
 #+begin_src ipython
   def get_times():
-       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_LR.yml", "r"))
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_EI.yml", "r"))
        
        times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
        times -= config['T_STEADY']
        times /= 1000.0
 
        return times
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  def gram_schmidt(a, b):
-      e1 = a / np.linalg.norm(a)
-      v = b - np.dot(b, e1) * e1
-      e2 = v / np.linalg.norm(v)
-
-      return np.arctan2(e2, e1)
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  def get_index():
-      ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
-      ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32) 
-      # theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
-      theta = gram_schmidt(ksi_1, ksi_2)
-
-      return theta.argsort()
 #+end_src
 
 #+RESULTS:
@@ -104,25 +81,20 @@
 * Compilation
 #+begin_src sh
   cd $HOME/models/lif_cpp
-  make clean
+  # make clean
   make
 #+end_src
 
 #+RESULTS:
-| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |            |                  |       |                     |          |                   |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/globals.cpp     | -o       | obj/globals.o     |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/lif_network.cpp | -o       | obj/lif_network.o |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/main.cpp        | -o       | obj/main.o        |    |            |
-| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/sparse_mat.cpp  | -o       | obj/sparse_mat.o  |    |            |
-| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o | obj/sparse_mat.o | -Wall | -std=c++17          | -pthread | -Ofast            | -s | -lyaml-cpp |
+| g++ | -Wall | -std=c++17   | -pthread      | -Ofast            | -s         | -lyaml-cpp       | -c    | src/sparse_mat.cpp | -o       | obj/sparse_mat.o |    |            |
+| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o | obj/sparse_mat.o | -Wall | -std=c++17         | -pthread | -Ofast           | -s | -lyaml-cpp |
 
 * Single trial
 ** Simulation
 
 #+begin_src ipython
   session = 'single_trial'
-  conf_path = REPO_PATH + '/conf/config_LR.yml'
-  run_cpp(session, conf_path=conf_path)
+  run_cpp(session)
 #+end_src
 
 #+RESULTS:
@@ -132,7 +104,6 @@
 
 #+begin_src ipython
   session = '/'
-  # session = '/LR_Go_ortho_phi_0_ini_3'
   data = get_data(session)
   print('data', data.shape)
   rates = data[:32000]
@@ -140,11 +111,60 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 36)
-: rates 2.58225 9.250059
+: data (40000, 38)
+: rates 2.818079 9.862171
 
 #+begin_src ipython  
-  index_order = get_index()
+  theta = np.linspace(0, 360, 32000)
+  times = get_times()
+  print(times.shape)
+  im = plt.imshow(rates, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 1, 0, 30000], origin='lower')
+  
+  plt.xlabel('Time (s)')
+  plt.ylabel('Pref. Location (°)')
+  plt.yticks([0, 32000/4, 32000/2, 3*32000/4, 32000], [0, 90, 180, 270, 360])
+  cbar = plt.colorbar(im)
+  cbar.set_label("Firing Rates")
+  cbar.set_ticks([0, 5, 10])
+
+  plt.show()
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+: (40,)
+[[file:./.ob-jupyter/759174e7858d0783481e78683905398eda4aa521.png]]
+:END:
+
+**** Low rank
+
+#+begin_src ipython
+  ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
+  ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32) 
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def gram_schmidt(a, b):
+      e1 = a / np.linalg.norm(a)
+      v = b - np.dot(b, e1) * e1      
+      # Normalize the vectors (make them unit vectors)
+      # e1 = u / np.linalg.norm(u)
+      e2 = v / np.linalg.norm(v)
+
+      theta = np.arctan2(e2, e1)
+      return theta
+#+end_src
+#+RESULTS:
+
+#+begin_src ipython
+  theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
+  theta = gram_schmidt(ksi_1, ksi_2)
+
+  index_order = theta.argsort()
+  # index_order = ksi_1.argsort()
+  # print(index_order)
   rates_ordered = rates[index_order]
 #+end_src
 
@@ -157,19 +177,16 @@
 
   time = np.linspace(0, 12, 28)
   print(time.shape)
-  im = ax[0].imshow(rates, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 32000])
+  im = ax[0].imshow(rates, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 30000], origin='lower')
 
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('Neuron #')
-  ax[0].set_yticks([0, 32000/4, 32000/2, 3*32000/4, 32000])
-  ax[0].set_title('Unordered')
+  ax[0].set_yticks([0, 30000/4, 30000/2, 3*30000/4, 30000])
 
-  im = ax[1].imshow(rates_ordered, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 32000])
+  im = ax[1].imshow(rates_ordered, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 30000], origin='lower')
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('Pref. Location (°)')
-  ax[1].set_yticks([0, 32000/4, 32000/2, 3*32000/4, 32000], [0, 90, 180, 270, 360])
-  ax[1].set_title('Ordered')
-  
+  ax[1].set_yticks([0, 30000/4, 30000/2, 3*30000/4, 30000], [0, 90, 180, 270, 360])
   cbar = plt.colorbar(im, ax=ax[1])
   cbar.set_label("Firing Rate (Hz)")
   cbar.set_ticks([0, 5, 10])
@@ -180,7 +197,7 @@
 #+RESULTS:
 :RESULTS:
 : (28,)
-[[file:./.ob-jupyter/7c2483f87fbe25f3457611ea54ac8bedfe55f46c.png]]
+[[file:./.ob-jupyter/b760c18cd0dae8835ca06d48a8a70415aa89def8.png]]
 :END:
 
 **** Fourier vs Time
@@ -201,10 +218,10 @@
   # ax[0].set_yticks([0, 1, ])
   # ax[0].set_ylim([0, 5])
 
-  ax[1].plot(times, m1 / m0)
+  ax[1].plot(times, m1)
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
-  # ax[1].set_yticks([0, 0.5, 1, 1.5])
+  ax[1].set_yticks([0, 0.5, 1, 1.5])
   # ax[1].set_ylim([0, 1])
 
   ax[2].plot(times, phi * 180 / np.pi)
@@ -213,26 +230,28 @@
   ax[2].set_yticks([0, 90, 180, 270, 360])
   plt.tight_layout()
   plt.show()
-  #+end_src
+#+end_src
 
 #+RESULTS:
-:RESULTS:
-: /tmp/ipykernel_3988353/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
-:   ax[1].plot(times, m1 / m0)
-[[file:./.ob-jupyter/3fcc917f72f668facd29bb42953c276a2497bd07.png]]
-:END:
+[[file:./.ob-jupyter/ee5c5d85df844761da7c26d5ec102edbcf1bbaa8.png]]
+
+#+begin_src ipython
+  theta_A_Go = [ -m1 * np.cos(phi), -m1 * np.sin(phi)]
+#+end_src
+
+#+RESULTS:
 
 #+begin_src ipython
   from matplotlib.patches import Circle
 
   fig, ax = plt.subplots()
 
-  theta = [ m1 * np.cos(phi), m1 * np.sin(phi)]
+  theta = [ -m1 * np.cos(phi), -m1 * np.sin(phi)]
   ax.plot(theta[0], theta[1], color='b')
   ax.plot(theta[0][0], theta[1][0], '*', ms=10, color='b')
   ax.plot(theta[0][-1], theta[1][-1], 'o', ms=10, color='r')
   ax.axis('off')
-  # ax.set_title('Dual Go')
+  ax.set_title('Dual Go')
   # Create a circle patch
   circle = Circle((0, 0), radius=2.5, color='blue', fill=False, lw=20, alpha=0.1)
 
@@ -246,10 +265,9 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/8f069a5398b31057b9ccb6306cf2741a5ce63ec1.png]]
+[[file:./.ob-jupyter/1b77dd1f0191b07835b3755be9612f7510730d5b.png]]
 
 **** Spatial profile
-
 
 #+begin_src ipython
   smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
@@ -264,7 +282,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/3071aa03e77a11a12bba00b1333ac85ccd295079.png]]
+[[file:./.ob-jupyter/13644770941aa81d90db169e8ebe19fdaae435fb.png]]
 
 #+BEGIN_SRC ipython
 

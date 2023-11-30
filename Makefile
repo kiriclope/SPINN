@@ -2,10 +2,10 @@
 CC = g++
 
 # Compiler flags
-CFLAGS = -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
-
-#Include directories
-# INCLUDES = -I./include
+CFLAGS = -Wall -std=c++17 -pthread -Ofast -s
+# INCLUDES = -I ~/mambaforge/include 
+LIBS = -lyaml-cpp
+# LIBS = -L ~/mambaforge/lib -Wl,--disable-new-dtags,-rpath,~/mambaforge/lib -llapack -lblas -larmadillo -lyaml-cpp
 
 # Source and build directories
 SRCDIR = ./src
@@ -25,10 +25,10 @@ OBJS := $(SRCS:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $(TARGETDIR)/$@ $^ $(CFLAGS) $(INCLUDES)
+	$(CC) -o $(TARGETDIR)/$@ $^ $(CFLAGS) $(INCLUDES) $(LIBS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) -c $< -o $@
 
 clean:
 	rm -rf $(BUILDDIR)/*.o $(TARGETDIR)/$(TARGET)

@@ -18,7 +18,7 @@ DT: 0.05
 # total simulation time in ms
 DURATION: 15000.0
 # time to start showing simulation result ms
-T_STEADY: 5000.0
+T_STEADY: 0.0
 # Saving to files every T_WINDOW in ms
 T_WINDOW: 250.
 
@@ -47,17 +47,17 @@ STD_STIM: [0.0, 0.0]
 # Phase of the 1st stimulus
 PHI_STIM: [0.0, 0.0]
 # Tuning of the stimulus
-KAPPA_STIM: [0.5, 0.0]
+KAPPA_STIM: [0.0, 0.0]
 
 T_DIST: [3500.0, 4500.0]
 # amplitude of the stimulus
-A_DIST: [0.05, 0.0]
+A_DIST: [0.1, 0.0]
 # std of the stimulus
 STD_DIST: [0.0, 0.0]
 # Phase of the 1st stimulus
-PHI_DIST: [270.0, 0.0]
+PHI_DIST: [90.0, 0.0]
 # Tuning of the stimulus
-KAPPA_DIST: [0.5, 0.0]
+KAPPA_DIST: [0.0, 0.0]
 
 CHECK_BISTABILITY: 0
 BUMP_SWITCH: [1, 0]
@@ -102,7 +102,7 @@ Jab: [22.0, -1.4, 2.8, -1.7]
 # to load connectivity matrix from MAT_PATH
 IF_LOAD_MAT: 0
 # to save connectivity matrix from MAT_PATH
-IF_SAVE_MAT: 1
+IF_SAVE_MAT: 0
 
 # connectivity type
 # PROBA can be 'cos', 'spec', 'gauss', 'None'
@@ -119,13 +119,15 @@ PROBA: ['lr', 'rand', 'rand', 'rand']
 KAPPA: [3.5, 0.0, 0.0, 0.0]
 
 # Low rank
+LR_SEED: 3
 LR_LOAD: 1
-LR_RANK: 3
-LR_MEAN: [0.0, 0.0, 0.0]
-LR_STD: [1.0, 1.0, 1.0]
+
+LR_RANK: 2
+LR_MEAN: [0.0, 0.0]
+LR_STD: [1.0, 1.0]
 # xy, xz, yz
-LR_RHO: [0.0, 0.0, 0.0]
-LR_FF_RHO: [0.0, 0.0, 0.0]
+LR_RHO: [0.0, 0.0]
+
 COV_SD: 0.0
 
 ##############
@@ -136,7 +138,6 @@ IF_STP: 1
 USE: [0.03, 0.03]
 TAU_FAC: [650, 650]
 TAU_REC: [200, 200]
-
 ##############
 # Feed Forward
 ##############
