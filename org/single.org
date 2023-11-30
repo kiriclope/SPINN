@@ -132,7 +132,7 @@
 
 #+begin_src ipython
   session = '/'
-  session = '/LR_Go_early_phi_0_ini_0'
+  session = '/LR_DPA_last_phi_0_ini_0'
   data = get_data(session)
   print('data', data.shape)
   rates = data[:32000]
@@ -140,8 +140,8 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 17)
-: rates 1.4341692 5.6550074
+: data (40000, 51)
+: rates 2.766571 8.920941
 
 #+begin_src ipython  
   index_order = get_index()
@@ -180,9 +180,8 @@
 #+RESULTS:
 :RESULTS:
 : (28,)
-[[file:./.ob-jupyter/ae684e2e9c23ba7afe3cc1406197d361785a5c1a.png]]
+[[file:./.ob-jupyter/4628222e04d47afa3a228e158a8d1087ac2a0784.png]]
 :END:
-
 **** Fourier vs Time
 
 #+begin_src ipython
@@ -217,9 +216,9 @@
 
 #+RESULTS:
 :RESULTS:
-: /tmp/ipykernel_962795/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
+: /tmp/ipykernel_1249738/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
 :   ax[1].plot(times, m1 / m0)
-[[file:./.ob-jupyter/fd338dc9e8fcc2d2831b43f41e9df081ee48965d.png]]
+[[file:./.ob-jupyter/6bdadf16492dd9fede5f1ea606fb73aaeef60ddd.png]]
 :END:
 
 #+begin_src ipython
@@ -246,7 +245,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/460520178b0dd946d25406256bc43e005add4b40.png]]
+[[file:./.ob-jupyter/fd4ac829b05778fc4520ccfe90d779aade39dad4.png]]
 
 **** Spatial profile
 
@@ -263,7 +262,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/513294c611b7436f612df12a8621a8bd50955160.png]]
+[[file:./.ob-jupyter/d9c20b120453159e49209a24eade763200262e52.png]]
 
 #+BEGIN_SRC ipython
 

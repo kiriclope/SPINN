@@ -179,12 +179,19 @@ Low rank
 **** Parameters
 
 #+begin_src ipython
-  ini_list = np.arange(0, 50)
+  ini_list = np.arange(0, 25)
   phi_list = [0, 180]
-  name = 'LR_Go_ortho'
+  name = 'LR_DPA_last'
 #+end_src
 
 #+RESULTS:
+
+#+begin_src ipython
+1/np.sqrt(3200)
+#+end_src
+
+#+RESULTS:
+: 0.017677669529663688
 
 **** simulation
 
@@ -204,46 +211,15 @@ Low rank
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
-  [0;31m---------------------------------------------------------------------------[0m
-  [0;31mValueError[0m                                Traceback (most recent call last)
-  Cell [0;32mIn[144], line 2[0m
-  [1;32m      1[0m index_order [38;5;241m=[39m get_index()
-  [0;32m----> 2[0m df [38;5;241m=[39m [43mload_data_ini_phi[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex_order[49m[43m)[49m
-  [1;32m      3[0m df_code, end_point [38;5;241m=[39m get_code(df)
+:       trial  phi   m0   m1  phase
+: 2500      0    0  0.0  0.0    0.0
+: 2501      0    1  0.0  0.0    0.0
+: 2502      1    0  0.0  0.0    0.0
+: 2503      1    1  0.0  0.0    0.0
+: 2504      2    0  0.0  0.0    0.0
 
-  Cell [0;32mIn[8], line 2[0m, in [0;36mload_data_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
-  [1;32m      1[0m [38;5;28;01mdef[39;00m [38;5;21mload_data_ini_phi[39m(name, ini_list, phi_list, index):
-  [0;32m----> 2[0m     rates [38;5;241m=[39m [43mget_rates_ini_phi[49m[43m([49m[43mname[49m[43m,[49m[43m [49m[43mini_list[49m[43m,[49m[43m [49m[43mphi_list[49m[43m,[49m[43m [49m[43mindex[49m[43m)[49m
-  [1;32m      3[0m     df [38;5;241m=[39m get_df_ini_phi(rates)
-  [1;32m      4[0m     [38;5;28;01mreturn[39;00m df
+*** Phases
 
-  Cell [0;32mIn[6], line 8[0m, in [0;36mget_rates_ini_phi[0;34m(name, ini_list, phi_list, index)[0m
-  [1;32m      6[0m [38;5;28;01mdef[39;00m [38;5;21mget_rates_ini_phi[39m(name, ini_list, phi_list, index[38;5;241m=[39m[38;5;28;01mNone[39;00m):
-  [1;32m      7[0m      rates [38;5;241m=[39m Parallel(n_jobs[38;5;241m=[39m[38;5;241m-[39m[38;5;241m1[39m)(delayed(get_rate)(name, ini, phi) [38;5;28;01mfor[39;00m ini [38;5;129;01min[39;00m ini_list [38;5;28;01mfor[39;00m phi [38;5;129;01min[39;00m phi_list)
-  [0;32m----> 8[0m      rates [38;5;241m=[39m np[38;5;241m.[39marray(rates)
-  [1;32m      9[0m      rates [38;5;241m=[39m rates[38;5;241m.[39mreshape([38;5;28mlen[39m(ini_list), [38;5;28mlen[39m(phi_list), [38;5;241m32000[39m, [38;5;241m-[39m[38;5;241m1[39m)
-  [1;32m     10[0m      [38;5;28;01mreturn[39;00m rates[[38;5;241m.[39m[38;5;241m.[39m[38;5;241m.[39m, index, :]
-
-  [0;31mValueError[0m: setting an array element with a sequence. The requested array has an inhomogeneous shape after 2 dimensions. The detected shape was (100, 32000) + inhomogeneous part.
-#+end_example
-:END:
-
-#+begin_src ipython
-  print(end_point.head())
-#+end_src
-
-#+RESULTS:
-:       trial  phi        m0        m1     phase
-: 3000      0    0  3.550875  3.105146  1.779070
-: 3001      0    1  3.479250  3.330270  2.245522
-: 3002      1    0  3.473750  3.219861  0.194016
-: 3003      1    1  3.637000  3.703045  2.282712
-: 3004      2    0  3.458125  2.993749  0.749735
-
-*** Phases 
 #+begin_src ipython
   import warnings
 
@@ -252,7 +228,7 @@ Low rank
 
   fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
 
-  sns.lineplot(data=df_code, x='time', y=df_code['m1'], legend=False, lw=2, ax=ax[0], hue='phi', alpha=0.1)
+  sns.lineplot(data=df_code, x='time', y=df_code['m1'], legend=False, lw=2, ax=ax[0], hue='trial', alpha=0.1)
 
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('m1 (Hz)')
@@ -273,13 +249,25 @@ Low rank
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/f8ebcaa796d218aee7db8b4eb81e67536166f07b.png]]
+[[file:./.ob-jupyter/3f0029e24e7948d13188bf790e2a12f027dfa731.png]]
 
 
 #+begin_src ipython
   from matplotlib.patches import Circle
 
   fig, ax = plt.subplots()
+
+  for i in range(len(phi_list)):
+      for j in range(len(ini_list)):
+          phi = df_code[(df_code.trial==j) & (df_code.phi==i)].phase
+          m1 = df_code[(df_code.trial==j) & (df_code.phi==i)].m1
+
+          theta = np.array([m1 * np.cos(phi), m1 * np.sin(phi)])
+
+          if i==0:
+              ax.plot(theta[0], theta[1], 'r', alpha=.1)
+          else:
+              ax.plot(theta[0], theta[1], 'b', alpha=.1)
 
   phi = end_point[end_point.phi==0].phase
   m1 = end_point[end_point.phi==0].m1
@@ -293,12 +281,12 @@ Low rank
 
   ax.plot(theta[0], theta[1], 'ob', label='B')
 
-  # ax.plot(theta[0][0], theta[1][0], '*', ms=10, color='b')
+  ax.plot(0, 0, 'o', ms=10, color='k')
   # ax.plot(theta[0][-1], theta[1][-1], 'o', ms=10, color='r')
   ax.axis('off')
   # ax.set_title('Dual Go')
   # Create a circle patch
-  circle = Circle((0, 0), radius=2.5, color='blue', fill=False, lw=20, alpha=0.1)
+  circle = Circle((0, 0), radius=3, color='blue', fill=False, lw=10, alpha=0.1)
   # Add the circle to the current Axes
   ax.add_patch(circle)
   plt.axvline(x=0, ls='--', color='k', alpha=0.1)
@@ -311,7 +299,7 @@ Low rank
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/00fbd97ce74733dfd9a4b14338917ef31ae36615.png]]
+[[file:./.ob-jupyter/760281152ca0e24e66b347c5a4675bea0b504017.png]]
 
 #+begin_src ipython
   sample_A = end_point[end_point.phi==0].phase * 180 / np.pi

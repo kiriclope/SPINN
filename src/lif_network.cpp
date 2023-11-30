@@ -56,16 +56,22 @@ void odr_stimuli(float* &ff_inputs) {
 
 void dual_task_stimuli(float* &ff_inputs, int FLAG) {
 
-  if(FLAG ==0) {
-    for (int i = 0; i < Na[0]; i++)
-      ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_STIM[0] * ksi_0[i]);
+  if(CHECK_BISTABILITY){
+      for (int i = 0; i < Na[0]; i++)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_STIM[0] * white(gen));
   }
   else {
-    for (int i = 0; i < Na[0]; i++) {
-      if(PHI_DIST[0]==270)
-        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 - A_DIST[which_pop[i]] * ksi_2[i]);
-      if(PHI_DIST[0]==90)
-        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_DIST[which_pop[i]] * ksi_2[i]);
+    if(FLAG == 0) {
+      for (int i = 0; i < Na[0]; i++)
+        ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_STIM[0] * ksi_0[i]);
+    }
+    else {
+      for (int i = 0; i < Na[0]; i++) {
+        if(PHI_DIST[0]==270)
+          ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 - A_DIST[which_pop[i]] * ksi_2[i]);
+        if(PHI_DIST[0]==90)
+          ff_inputs[i] = Iext_scaled[which_pop[i]] * (1.0 + A_DIST[which_pop[i]] * ksi_2[i]);
+      }
     }
   }
 }

@@ -38,21 +38,19 @@ std::array<float, 3> generateTrivariateGaussian(std::vector<float>means,
   // std::cout << deter << std::endl;
     
   // Cholesky decomposition of the covariance matrix
-  float L11 = 1.0;
-  float L21 = rho_21;
-  float L22 = sqrt(1.0 - L21 * L21);
-  // float L31 = rho_xz / L11;
-  float L31 = rho_31;
-  // float L32 = (rho_32 - L31 * L21) / L22 ;
-  float L32 = rho_32;
-  float L33 = sqrt(1.0 - L31 * L31 - L32 * L32);
+  float L11 = stds[0] ;
+  float L21 = rho_21 / L11;
+  float L22 = sqrt(stds[1] - L21 * L21);
+  float L31 = rho_31 / L11;
+  float L32 = (rho_32 - L31 * L21) / L22 ;
+  float L33 = sqrt(stds[2] - L31 * L31 - L32 * L32);
   
   // Generating correlated variables
   float X1 = L11 * Z1 + means[0];
   float X2 = L21 * Z1 + L22 * Z2 + means[1];
   float X3 = L31 * Z1 + L32 * Z2 + L33 * Z3 + means[2];
   
-  return {X3, X1, X2};
+  return {X1, X2, X3};
 }
 
 std::array<float, 3> generateBivariateGaussian(std::vector<float> means, std::vector<float> stds, std::vector<float> correlation) {  
@@ -115,9 +113,9 @@ void generate_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, st
   if(LR_RANK==3) {    
     for (int i = 0; i < Nb; i++) {
       samples = generateTrivariateGaussian(LR_MEAN, LR_STD, LR_RHO);
-      sample_0.push_back(samples[0]); // Input
-      sample_1.push_back(samples[1]); // ksi_1
-      sample_2.push_back(samples[2]); // ksi_2
+      sample_1.push_back(samples[0]); // ksi_1
+      sample_2.push_back(samples[1]); // ksi_2
+      sample_0.push_back(samples[2]); // input
     }
   }
   std::cout <<" ksi ";
