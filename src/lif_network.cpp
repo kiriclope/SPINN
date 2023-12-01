@@ -162,7 +162,8 @@ void initNetwork() {
     for(int j=0; j < N_POP; j++)
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP];
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / Ka[j] * sqrt(Ka[0]);
-      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
+      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
+      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] * sqrt(Ka[0]) / Ka[j];
       // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
 
   if(IF_NMDA) {
@@ -196,8 +197,8 @@ void initNetwork() {
   std::cout << " Done" << std::endl;
 
   // network initialization
-  for(int i=0; i<N; i++)
-    volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
+  // for(int i=0; i<N; i++)
+  //   volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
   
   updateSpikes(-1); // must come before updateRecInputs in this implementation
   updateFFinputs(-1); // must come before updateNetInputs in this implementation
@@ -466,14 +467,14 @@ void runSimul(){
   std::ofstream ustpFile(DATA_PATH + "/u_stp.txt", std::ios::app | std::ios::binary);
   std::ofstream AstpFile(DATA_PATH + "/A_stp.txt", std::ios::app | std::ios::binary);
   
-  int N_STEPS = (int) (DURATION/DT);
-  int N_STEADY = (int) T_STEADY / DT;
-  int N_WINDOW = (int) T_WINDOW / DT;
+  int N_STEPS = (int) (DURATION / DT);
+  int N_STEADY = (int) (T_STEADY / DT);
+  int N_WINDOW = (int) (T_WINDOW / DT);
   // int N_SAVE = (int)  (DURATION - T_SAVE) / DT;
+  
+  std::cout << "Running Simulation" << " N_STEPS " << N_STEPS << " N_STEADY " << N_STEADY << " N_WINDOW " << N_WINDOW << std::endl;
+  for(int step = 0; step < N_STEPS + N_STEADY; step++) {
     
-  std::cout << "Running Simulation" << std::endl;
-  for(int step = 0; step < N_STEPS; step++) {
-
     updateVolts();
     updateSpikes(step); // must come before updateRecInputs in this implementation
     updateFFinputs(step); // must come before updateNetInputs in this implementation
@@ -484,13 +485,14 @@ void runSimul(){
       for(int i=0; i<N; i++)
         rates[i] = 0.0 ;
     
-    if(step % N_WINDOW == 0 && step > N_STEADY) {
+    if(step % N_WINDOW == 0 && step >= N_STEADY+1) {
+      
       for(int i=0; i<N; i++)
         rates[i] *= dum;
       
       if (VERBOSE) {
-        std::cout << std::setprecision(3);
-        std::cout << "time " << step * DT << "s";
+        std::cout << std::setprecision(2);
+        std::cout << "time " << step << "s";
         
         std::cout << "| Rates ";
         for (int i = 0; i < N_POP; i++)

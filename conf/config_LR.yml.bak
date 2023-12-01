@@ -16,7 +16,7 @@ verbose: 1
 # Time step in ms
 DT: 0.05
 # total simulation time in ms
-DURATION: 13000.0
+DURATION: 15000.0
 # time to start showing simulation result ms
 T_STEADY: 5.0
 # Saving to files every T_WINDOW in ms
@@ -39,7 +39,7 @@ FRAC: [0.8, 0.2]
 ##########################################
 # stimulus has a cosine shape
 # time for stimulus onset/offset in ms 
-T_STIM: [1000.0, 2000.0]
+T_STIM: [5000.0, 6000.0]
 # amplitude of the stimulus
 A_STIM: [0.1, 0.0]
 # std of the stimulus
@@ -60,7 +60,7 @@ PHI_DIST: [90.0, 0.0]
 KAPPA_DIST: [0.0, 0.0]
 
 CHECK_BISTABILITY: 0
-BUMP_SWITCH: [1, 0]
+BUMP_SWITCH: [0, 0]
 ##############
 # Network Dynamics
 ##############
@@ -89,7 +89,8 @@ GAIN: 1.0
 # Feedforward inputs strengths
 Iext: [.004, 0.002]
 # Synaptic strengths 
-Jab: [22.0, -1.4, 2.8, -1.7]
+# Jab: [22.0, -1.4, 2.8, -1.7]
+Jab: [15.0, -1.11, 3.24, -1.64]
 
 # # External inputs strengths
 # Iext: [.004, .001]
@@ -100,7 +101,7 @@ Jab: [22.0, -1.4, 2.8, -1.7]
 # CONNECTIVITY
 ##############
 # to load connectivity matrix from MAT_PATH
-IF_LOAD_MAT: 0
+IF_LOAD_MAT: 1
 # to save connectivity matrix from MAT_PATH
 IF_SAVE_MAT: 0
 
@@ -127,7 +128,8 @@ LR_MEAN: [0.0, 0.0, 0.0]
 LR_STD: [1.0, 1.0, 1.0]
 # ksi_1 ksi_2, ksi_1 h_s, ksi_2 h_s
 # LR_RHO: [0.05, 0.8, 0.2]
-LR_RHO: [0.0, 1.0, -0.2]
+# LR_RHO: [0.0, 0.8, -0.2]
+LR_RHO: [0.0, 0., 0.]
 
 ##############
 # STP

@@ -118,9 +118,20 @@ void generate_ksi(std::vector<float> &sample_0, std::vector<float> &sample_1, st
       sample_0.push_back(samples[2]); // input
     }
   }
+
   std::cout <<" ksi ";
   for (int i=0; i<5; i++)
     std::cout << sample_1[i] << " ";
+  std::cout << std::endl;
+
+  std::cout <<" ksi_1 ";
+  for (int i=0; i<5; i++)
+    std::cout << sample_2[i] << " ";
+  std::cout << std::endl;
+
+  std::cout <<" h_s ";
+  for (int i=0; i<5; i++)
+    std::cout << sample_0[i] << " ";
   std::cout << std::endl;
 
   std::cout << "Saving LR Vec to:" << MAT_PATH;

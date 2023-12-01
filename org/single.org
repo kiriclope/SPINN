@@ -52,9 +52,9 @@
 #+begin_src ipython
   def get_times():
        config = safe_load(open("/home/leon/models/lif_cpp/conf/config_LR.yml", "r"))
-       
-       times = np.arange(config['T_STEADY'], config['DURATION'], config['T_WINDOW'])
-       times -= config['T_STEADY']
+
+       times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
+       # times -= config['T_STEADY']
        times /= 1000.0
 
        return times
@@ -99,7 +99,7 @@
 #+end_src
 
 #+RESULTS:
-: [20002519 20103263 20148192 ... 39849837 39803895 39915849]
+: [        0      4018      8047 ... 159988477 159992510 159996569]
 
 * Compilation
 #+begin_src sh
@@ -117,6 +117,7 @@
 | g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
 
 * Single trial
+
 ** Simulation
 
 #+begin_src ipython
@@ -132,47 +133,45 @@
 
 #+begin_src ipython
   session = '/'
-  session = '/LR_DPA_last_phi_0_ini_0'
+  # session = '/LR_search_phi_0_ini_3'
   data = get_data(session)
   print('data', data.shape)
   rates = data[:32000]
   print('rates', np.mean(data[:32000]), np.mean(data[8000:]))
-#+end_src
 
-#+RESULTS:
-: data (40000, 51)
-: rates 2.766571 8.920941
-
-#+begin_src ipython  
   index_order = get_index()
   rates_ordered = rates[index_order]
 #+end_src
 
 #+RESULTS:
+: data (40000, 21)
+: rates 1.7096666 3.9928572
 
 #+begin_src ipython
   width = 7
   golden_ratio = (5**.5 - 1) / 2
   fig, ax = plt.subplots(1, 2, figsize= [1.5*width, width * golden_ratio])
 
+  r_min = 0
+  r_max = 1.25 * np.mean(data[:32000])
   time = np.linspace(0, 12, 28)
   print(time.shape)
-  im = ax[0].imshow(rates, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 32000])
+  im = ax[0].imshow(rates, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[0, 12, 0, 32000])
 
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('Neuron #')
   ax[0].set_yticks([0, 32000/4, 32000/2, 3*32000/4, 32000])
   ax[0].set_title('Unordered')
 
-  im = ax[1].imshow(rates_ordered, aspect='auto', vmin=0, vmax=10, cmap='jet', extent=[0, 12, 0, 32000])
+  im = ax[1].imshow(rates_ordered, aspect='auto', vmin=0, vmax=r_max, cmap='jet', extent=[0, 12, 0, 32000])
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('Pref. Location (°)')
   ax[1].set_yticks([0, 32000/4, 32000/2, 3*32000/4, 32000], [0, 90, 180, 270, 360])
   ax[1].set_title('Ordered')
-  
+
   cbar = plt.colorbar(im, ax=ax[1])
   cbar.set_label("Firing Rate (Hz)")
-  cbar.set_ticks([0, 5, 10])
+  # cbar.set_ticks([0, 5, 10])
   plt.savefig('./neurons.svg', dpi=300)
   plt.show()
 #+end_src
@@ -180,8 +179,9 @@
 #+RESULTS:
 :RESULTS:
 : (28,)
-[[file:./.ob-jupyter/4628222e04d47afa3a228e158a8d1087ac2a0784.png]]
+[[file:./.ob-jupyter/ef362bbdb160796ec9ace4e15eb60a47bc091ee8.png]]
 :END:
+
 **** Fourier vs Time
 
 #+begin_src ipython
@@ -192,35 +192,38 @@
 
   times = get_times()
   times = times[:data.shape[1]]
-
   fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
   ax[0].plot(times, m0)
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('$\mathcal{F}^0$')
+  ax[0].set_xticks([0, 2, 4, 6, 8, 10])
   # ax[0].set_yticks([0, 1, ])
   # ax[0].set_ylim([0, 5])
 
   ax[1].plot(times, m1 / m0)
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
-  # ax[1].set_yticks([0, 0.5, 1, 1.5])
-  # ax[1].set_ylim([0, 1])
+  ax[1].set_xticks([0, 2, 4, 6, 8, 10])
 
   ax[2].plot(times, phi * 180 / np.pi)
   ax[2].set_xlabel('Time (s)')
   ax[2].set_ylabel('$\phi$')
   ax[2].set_yticks([0, 90, 180, 270, 360])
+  ax[2].set_xticks([0, 2, 4, 6, 8, 10])
   plt.tight_layout()
   plt.show()
   #+end_src
 
 #+RESULTS:
-:RESULTS:
-: /tmp/ipykernel_1249738/3551809589.py:16: RuntimeWarning: invalid value encountered in divide
-:   ax[1].plot(times, m1 / m0)
-[[file:./.ob-jupyter/6bdadf16492dd9fede5f1ea606fb73aaeef60ddd.png]]
-:END:
+[[file:./.ob-jupyter/cdfbd30940550c48a4dbfb3398f85d4a9cb12237.png]]
 
+#+begin_src ipython
+
+#+end_src
+
+#+RESULTS:
+
+**** Circle
 #+begin_src ipython
   from matplotlib.patches import Circle
 
@@ -245,14 +248,14 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/fd4ac829b05778fc4520ccfe90d779aade39dad4.png]]
+[[file:./.ob-jupyter/b961121add1b3d41f4385b1bf706a925729b1b83.png]]
 
 **** Spatial profile
 
 #+begin_src ipython
   smooth_E = circcvl(rates_E, windowSize=3000, axis=0)
   theta = np.linspace(0, 360, rates_E.shape[0])
-  plt.plot(theta, smooth_E[:, 0])
+  plt.plot(theta, smooth_E[:, 4])
   plt.plot(theta, smooth_E[:, -1])
   
   plt.xlabel('Prefered Location (°)')
@@ -262,7 +265,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/d9c20b120453159e49209a24eade763200262e52.png]]
+[[file:./.ob-jupyter/6da956b7114f05d1f09ffc76de1d0577d6ef21bf.png]]
 
 #+BEGIN_SRC ipython
 
