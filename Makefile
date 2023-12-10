@@ -5,7 +5,8 @@ CC = g++
 CFLAGS = -Wall -std=c++17 -Ofast -s -march=native -funroll-loops -ftree-vectorize -ffast-math -fomit-frame-pointer -fexpensive-optimizations
 CFLAGS_DEBUG = -Wall -Wextra -std=c++17 -O0 -g
 
-# INCLUDES = -I ~/mambaforge/include 
+# INCLUDES = -I ~/home/leon/models/lif_cpp/include
+# LIBS = -I/home/leon/homebrew/Cellar/yaml-cpp/0.8.0/include -L/home/leon/homebrew/Cellar/yaml-cpp/0.8.0/lib -lyaml-cpp
 LIBS = -lyaml-cpp
 # LIBS = -L ~/mambaforge/lib -Wl,--disable-new-dtags,-rpath,~/mambaforge/lib -llapack -lblas -larmadillo -lyaml-cpp
 

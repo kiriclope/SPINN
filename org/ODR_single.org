@@ -1,0 +1,716 @@
+#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif :kernel dual_data
+# #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
+
+* Notebook Configuration
+** Settings
+#+begin_src ipython
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+
+  %run /home/leon/models/lif_cpp/notebooks/setup.py
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+
+** Imports
+#+begin_src ipython
+  import sys
+  sys.path.insert(0, '/home/leon/models/lif_cpp')  
+  REPO_PATH = "/home/leon/models/lif_cpp"
+
+  import subprocess
+  import pandas as pd
+  from time import sleep
+  from yaml import safe_load
+  from scipy.stats import circmean
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.decode import decode_bump, circcvl  
+#+end_src
+
+#+RESULTS:
+
+* Helpers
+#+begin_src ipython
+  def get_data(session='/'):
+    # Open the file in binary mode and read the data
+    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T
+ #+end_src
+
+ #+RESULTS:
+
+#+begin_src ipython
+  def get_times():
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
+
+       times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
+       # times -= config['T_STEADY']
+       times /= 1000.0
+
+       return times
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def gram_schmidt(a, b):
+      e1 = a / np.linalg.norm(a)
+      v = b - np.dot(b, e1) * e1
+      e2 = v / np.linalg.norm(v)
+
+      return np.arctan2(e2, e1)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_index():
+      ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
+      ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32) 
+      # theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
+      theta = gram_schmidt(ksi_1, ksi_2)
+
+      return theta.argsort()
+#+end_src
+
+#+RESULTS:
+
+* Connectivity
+#+begin_src sh
+  cd $HOME/models/lif_cpp/src
+  nvcc -lyaml-cpp mat.cu globals.cpp
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  arr = np.fromfile('../data/matrix/colptr.txt', dtype=np.uint)  # specify the dtype according to your data
+  print(arr)
+#+end_src
+
+#+RESULTS:
+: [        0      4924      9974 ... 319975042 319994998 320015005]
+
+* Compilation
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make clean
+  make
+#+end_src
+
+#+RESULTS:
+| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |               |                  |                  |             |                      |                           |               |                |                     |             |                      |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/globals.cpp     | -o          | obj/globals.o        |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/main.cpp        | -o          | obj/main.o           |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/sparse_mat.cpp  | -o          | obj/sparse_mat.o     |                           |            |
+| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
+
+* Single trial
+** Simulation
+#+begin_src ipython
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
+  
+  Iext = np.array(config['Iext']) * 1000
+  Jab = np.array(config['Jab'])
+
+  BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
+  print('Balance', BALANCE)
+
+  BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
+  print(BALANCE)
+
+  rates = -np.dot(np.linalg.inv(Jab.reshape((2 ,2))), Iext)
+  print('rates', rates)
+
+  J = Jab[1] * Jab[2] / (Jab[0] * Jab[3])
+  Q = (Jab[3] * Jab[1] * Iext[0] - Iext[1]) / Jab[2]
+
+  print('stp G', J)
+  print('stp Q', Q)
+#+end_src
+
+#+RESULTS:
+: Balance True
+: True
+: rates [-0.09687308  0.92131617]
+: stp G 0.10384615384615385
+: stp Q 2.3069047619047622
+
+#+begin_src ipython
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  conf_path = REPO_PATH + '/conf/config_ODR.yml'
+  
+  session = 'odr_off'
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')  
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+#+begin_src ipython 
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+  
+  session = 'odr_on'
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Iext', float(config['Iext'][0] * 1.25), axis=0)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+** Analysis
+*** Rates
+
+#+begin_src ipython
+  session = 'odr_off'
+  data_off = get_data(session)
+  print('data', data_off.shape)
+  rates_off = data_off[:32000]
+  print('rates', np.mean(data_off[:32000]), np.mean(data_off[8000:]))
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+: rates 2.5356195 4.645875
+
+#+begin_src ipython  
+  session = 'odr_on'
+  data_on = get_data(session)
+  print('data', data_on.shape)
+  rates_on = data_on[:32000]
+  print('rates', np.mean(data_on[:32000]), np.mean(data_on[8000:]))
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+: rates 3.9033315 6.456342
+
+#+begin_src ipython
+  width = 7
+  golden_ratio = (5**.5 - 1) / 2
+  fig, ax = plt.subplots(1, 2, figsize= [1.5*width, width * golden_ratio])
+
+  N_E = 32000
+  r_min = 0
+  r_max = 3 * np.max((np.mean(rates_off), np.mean(rates_on)))
+
+  times = get_times()
+  times_off = times[:data_off.shape[1]]
+  times_on = times[:data_on.shape[1]]
+
+  im = ax[0].imshow(rates_off, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times_off[0], times_off[-1], 0, N_E])
+
+  ax[0].set_xlabel('Time (s)')
+  ax[0].set_xticks(np.arange(int(times_off[0]), int(times_off[-1]), 2))
+  ax[0].set_ylabel('Prefered Location (°)')
+  ax[0].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  ax[0].set_title('Control')
+
+  im = ax[1].imshow(rates_on, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times_on[0], times_on[-1], 0, N_E])
+
+  ax[1].set_xlabel('Time (s)')
+  ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+  # ax[1].set_ylabel('Prefered Location (°)')
+  ax[1].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  ax[1].set_title('NB Stim')
+
+  cbar = plt.colorbar(im, ax=ax[1])
+  cbar.set_label("Firing Rate (Hz)")
+  cbar.set_ticks([0, 2, 4, 6, 8])
+  plt.savefig('./neurons.svg', dpi=300)
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/68a9ba1e53beae9ea41ce4a9243cf8216e3dce66.png]]
+
+*** Fourier vs Time
+
+#+begin_src ipython
+  m0, m1, phi = decode_bump(rates_off, axis=0)
+  m0_on, m1_on, phi_on = decode_bump(rates_on, axis=0)
+
+  times = get_times()
+  times_off = times[:data_off.shape[1]]
+  times_on = times[:data_on.shape[1]]
+
+  fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
+  ax[0].plot(times_off, m0)
+  ax[0].plot(times_on, m0_on)
+
+  ax[0].set_xlabel('Time (s)')
+  ax[0].set_ylabel('$\mathcal{F}^0$')
+  ax[0].set_xticks([0, 1, 2, 3, 4, 5])
+  ax[0].set_ylim([0, r_max])
+
+  ax[1].plot(times_off, m1 / m0)
+  ax[1].plot(times_on, m1_on / m0_on)
+
+  ax[1].set_xlabel('Time (s)')
+  ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
+  ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+
+  ax[2].plot(times_off, phi * 180 / np.pi)
+  ax[2].plot(times_on, phi_on * 180 / np.pi)
+
+  ax[2].set_xlabel('Time (s)')
+  ax[2].set_ylabel('$\phi$')
+  ax[2].set_yticks([0, 90, 180, 270, 360])
+  ax[2].set_xticks([0, 1, 2, 3, 4, 5])
+  plt.tight_layout()
+  plt.show()
+  #+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/733c0e5a40e537e52e70d35b6152dc6b3799b8ef.png]]
+
+*** Spatial profile
+
+#+begin_src ipython
+  smooth_off = circcvl(rates_off, windowSize=320, axis=0)
+  smooth_on = circcvl(rates_on, windowSize=320, axis=0)
+  theta = np.linspace(0, 360, rates_off.shape[0])
+
+  plt.plot(theta, smooth_off[:, -1] , 'b', label='off')
+  plt.plot(theta, smooth_on[:, -1], 'r', label='on')
+
+  plt.xlabel('Prefered Location (°)')
+  plt.ylabel('Rate (Hz)')
+  plt.legend(frameon=0, fontsize=12)
+  # plt.yticks([5, 10])
+  plt.xticks([0, 90, 180, 270, 360]);
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/b3c0198d51f5f2d04cc3092a0ac65406a18bd471.png]]
+
+*** Raster
+
+#+begin_src ipython
+  import pandas as pd
+  import matplotlib.pyplot as plt
+
+  # Read the file into a DataFrame
+  filename = '/home/leon/models/lif_cpp/data/simul/spikes.txt'
+  df = pd.read_csv(filename, names=['neuron_id', 'spike_time'], sep=' ')
+
+  # Group by 'neuron_id' and aggregate the 'spike_time' into lists
+  grouped = df.groupby('neuron_id')['spike_time'].apply(list)
+  
+  # Now 'grouped' is a DataFrame with 'neuron_id' and a list of 'spike_time's
+  # You can print it out to verify its structure
+  print(grouped.head())
+#+end_src
+
+#+begin_src ipython
+  # If you want to visualize this in a raster plot:
+  fig, ax = plt.subplots()
+  
+  plt.eventplot(grouped, lineoffsets=grouped.index, linelengths=1)
+
+  ax.set_xlabel('Spike Time')
+  ax.set_ylabel('Neuron ID')
+  ax.set_title('Raster Plot')
+
+  # Display the plot
+  plt.show()
+#+end_src
+
+#+RESULTS:
+** other
+*** On m0
+
+#+begin_src ipython 
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  Iext = [.004*1.15, 0.002*1.15]
+
+  session = 'odr_on_m0'
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Iext', Iext)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jee
+
+#+begin_src ipython
+
+  session = 'odr_on_Jee'
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+  
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(20), axis=0)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jei
+
+
+#+begin_src ipython
+
+  session = 'odr_on_Jei'
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+  
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(-1.55), axis=1)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jie
+
+#+begin_src ipython
+
+  session = 'odr_on_Jie'
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+  
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(2.15), axis=2)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jii
+
+
+
+#+begin_src ipython
+
+  session = 'odr_on_Jii'
+  
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(-1.75), axis=3)
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Gain
+
+#+begin_src ipython
+
+  session = 'odr_on_gain'
+  
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'GAIN', float(1.15))
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jae
+
+#+begin_src ipython
+  perc = 1.15
+  
+  conf_path = REPO_PATH + '/conf/config_ODR.yml'
+  session = 'odr_on_Jae'
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', [17*perc, -1.5, 2.1*perc, -1.7])
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** On Jai
+
+#+begin_src ipython
+  perc = 1.1
+  
+  conf_path = REPO_PATH + '/conf/config_ODR.yml'
+  session = 'odr_on_Jai'
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
+               REPO_PATH + '/conf/config_ODR.yml.bak')
+
+  data_path = REPO_PATH + '/data/simul/' + session
+  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', [17, -1.5*perc, 2.1, -1.7*perc])
+  sleep(.2)
+  run_cpp(session, conf_path=conf_path)
+  sleep(.2)
+
+  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
+               REPO_PATH + '/conf/config_ODR.yml')
+
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+*** Other
+
+#+begin_src ipython
+  session = 'odr_on_m0'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_m0 = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jei'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jei = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jee'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jee = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jii'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jii = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_gain'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_gain = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jie'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jie = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jae'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jae = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  session = 'odr_on_Jai'
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on_Jai = data[:32000]
+#+end_src
+
+#+RESULTS:
+: data (40000, 23)
+
+#+begin_src ipython
+  smooth_off = circcvl(rates_off, windowSize=3200, axis=0)
+  smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
+  smooth_on_Jee = circcvl(rates_on_Jee, windowSize=3200, axis=0)
+  smooth_on_Jie = circcvl(rates_on_Jie, windowSize=3200, axis=0)
+  smooth_on_Jei = circcvl(rates_on_Jei, windowSize=3200, axis=0)
+  smooth_on_Jii = circcvl(rates_on_Jii, windowSize=3200, axis=0)
+  smooth_on_m0 = circcvl(rates_on_m0, windowSize=3200, axis=0)
+  smooth_on_gain = circcvl(rates_on_gain, windowSize=3200, axis=0)
+  smooth_on_Jae = circcvl(rates_on_Jae, windowSize=3200, axis=0)
+  smooth_on_Jai = circcvl(rates_on_Jai, windowSize=3200, axis=0)
+
+  theta = np.linspace(0, 360, rates_off.shape[0])
+
+  width = 7
+  golden_ratio = (5**.5 - 1) / 2
+  fig, ax = plt.subplots(2, 4, figsize= [2.25*width, 2*width * golden_ratio])
+
+  ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
+  ax[0][0].plot(theta, smooth_on[:, -1], 'r')
+
+  ax[0][0].set_xlabel('Prefered Location (°)')
+  ax[0][0].set_ylabel('Rate (Hz)')
+  ax[0][0].set_xticks([0, 90, 180, 270, 360]);
+  ax[0][0].set_title(r'$I^{ext}_E \nearrow$')
+
+  ax[0][1].plot(theta, smooth_off[:, -1] , 'b')
+  ax[0][1].plot(theta, smooth_on_m0[:, -1], 'r')
+
+  ax[0][1].set_xlabel('Prefered Location (°)')
+  ax[0][1].set_xticks([0, 90, 180, 270, 360]);
+  ax[0][1].set_title(r' $I^{ext}_E \nearrow, I^{ext}_I \nearrow$')
+
+  ax[0][2].plot(theta, smooth_off[:, -1] , 'b')
+  ax[0][2].plot(theta, smooth_on_gain[:, -1], 'r')
+
+  ax[0][2].set_xlabel('Prefered Location (°)')
+  ax[0][2].set_xticks([0, 90, 180, 270, 360]);
+  ax[0][2].set_title(r' $I^{ext}\nearrow, J_{ab} \nearrow$')
+
+  ax[1][0].plot(theta, smooth_off[:, -1] , 'b')
+  ax[1][0].plot(theta, smooth_on_Jee[:, -1], 'r')
+
+  ax[1][0].set_xlabel('Prefered Location (°)')
+  ax[1][0].set_ylabel('Rate (Hz)')
+  ax[1][0].set_xticks([0, 90, 180, 270, 360]);
+  ax[1][0].set_title(r'$J_{EE} \nearrow$')
+
+  ax[1][1].plot(theta, smooth_off[:, -1] , 'b', label='off')
+  ax[1][1].plot(theta, smooth_on_Jei[:, -1], 'r', label='on')
+
+  ax[1][1].set_xlabel('Prefered Location (°)')
+  ax[1][1].set_xticks([0, 90, 180, 270, 360]);
+  ax[1][1].set_title(r'$J_{EI} \nearrow$')
+
+  ax[1][2].plot(theta, smooth_off[:, -1] , 'b', label='off')
+  ax[1][2].plot(theta, smooth_on_Jie[:, -1], 'r', label='on')
+
+  ax[1][2].set_xlabel('Prefered Location (°)')
+  ax[1][2].set_xticks([0, 90, 180, 270, 360]);
+  ax[1][2].set_title(r'$J_{IE} \nearrow$')
+  
+  ax[1][3].plot(theta, smooth_off[:, -1] , 'b', label='off')
+  ax[1][3].plot(theta, smooth_on_Jii[:, -1], 'r', label='on')
+
+  ax[1][3].set_xlabel('Prefered Location (°)')
+  ax[1][3].set_xticks([0, 90, 180, 270, 360]);
+  ax[1][3].set_title(r'$J_{II} \nearrow$')
+  ax[1][3].legend(fontsize=12, frameon=0)
+
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/cf0ede6e99015f601276ba02e1d4b0b28ee46074.png]]
+

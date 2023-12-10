@@ -1,41 +1,41 @@
 A_CORR:
-- 0.0001
-- 0.0001
+- 0.0025
+- 0.0025
 A_DIST:
 - 0.0
 - 0.0
 A_STIM:
-- 0.5
+- 0.2
 - 0.0
 BUMP_SWITCH:
 - 0
 - 0
 CHECK_BISTABILITY: 0
 CORR_FF:
-- 0.5
-- 0.5
-DATA_PATH: /home/leon/models/lif_cpp/data/simul/odr_off_phi_180_ini_9
-DT: 0.05
-DURATION: 10000.0
+- 0.25
+- 0.25
+DATA_PATH: /home/leon/models/lif_cpp/data/simul/odr_Ie_2.80_phi_180_ini_32
+DT: 0.1
+DURATION: 6000.0
 FRAC:
 - 0.8
 - 0.2
 GAIN: 1.0
 IF_FF_CORR: 0
-IF_FF_NOISE: 0
+IF_FF_NOISE: 1
 IF_LOAD_MAT: 1
 IF_NMDA: 1
 IF_SAVE_DATA: 1
 IF_SAVE_MAT: 0
 IF_STP: 1
 Iext:
-- 0.004
-- 0.0
+- 0.0028
+- 0.00175
 Jab:
-- 20.0
-- -1.5
-- 2.8
-- -1.7
+- 7.5
+- -1.35
+- 1.25
+- -2.0
 K: 4000.0
 KAPPA:
 - 0.5
@@ -84,13 +84,13 @@ STD_DIST:
 - 0.0
 - 0.0
 STD_FF:
-- 1.0e-05
-- 1.0e-05
+- 2.5e-05
+- 2.5e-05
 STD_STIM:
 - 0.0
 - 0.0
 TAU_FAC:
-- 650
+- 550
 - 850
 TAU_MEM:
 - 20.0
@@ -105,13 +105,13 @@ TAU_SYN:
 - 4.0
 - 2.0
 T_DIST:
-- 3500.0
-- 4500.0
+- 13500.0
+- 14500.0
 T_SAVE: 500.0
 T_STEADY: 5000.0
 T_STIM:
-- 3000.0
-- 4000.0
+- 1000.0
+- 1500.0
 T_WINDOW: 250.0
 USE:
 - 0.03

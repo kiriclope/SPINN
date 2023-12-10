@@ -2,6 +2,7 @@
 #+PROPERTY: header-args:ipython :results both :exports both :async yes :session dual_data :kernel dual_data
 
 * Notebook Settings
+
 #+begin_src ipython
   %load_ext autoreload
   %autoreload 2
@@ -25,7 +26,7 @@
 #+end_src
 
 #+RESULTS:
-: g++ -o ./bin/LifNet obj/sparse_mat.o obj/lif_network.o obj/globals.o obj/main.o -Wall -lyaml-cpp -std=c++17 -pthread -Ofast -s
+: g++ -o ./bin/LifNet obj/globals.o obj/lif_network.o obj/main.o obj/sparse_mat.o -Wall -std=c++17 -Ofast -s -march=native -funroll-loops -ftree-vectorize -ffast-math -fomit-frame-pointer -fexpensive-optimizations  -lyaml-cpp
 
 * Imports
 
@@ -168,10 +169,10 @@
 
 #+begin_src ipython
   name = 'odr'
-  Ie_list = np.linspace(2, 5, 11)
-  ini_list = np.arange(1, 10)
+  Ie_list = np.linspace(2, 4, 11)
+  ini_list = np.arange(25, 50)
   phi_list = np.linspace(0, 315, 8)
-  phi_list = [180]
+  # phi_list = [180]
 #+end_src
 
 #+RESULTS:
@@ -179,9 +180,10 @@
 **** Simulation
 
 #+begin_src ipython
-  Iext = [2., 2]
-  
-  Jab = np.array([10, -1.3, 2.1, -2.0])
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
+
+  Iext = np.array(config['Iext'])  
+  Jab = np.array(config['Jab'])
 
   BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
   print('Balance', BALANCE)
@@ -202,18 +204,94 @@
 #+RESULTS:
 : Balance True
 : True
-: rates [-0.08106543  0.9148813 ]
-: stp G 0.1365
-: stp Q 1.5238095238095237
+: rates [-0.00019812  0.00075117]
+: stp G 0.1125
+: stp Q 0.004000000000000001
 
 #+begin_src ipython
   run_loop_Ie(name, Ie_list, ini_list, phi_list)
 #+end_src
 
 #+RESULTS:
-: File moved successfully!
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-: File moved successfully!
+#+begin_example
+  File moved successfully!
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+   MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+#+end_example
+
 
 **** Analysis
 ***** Load Data
@@ -224,24 +302,21 @@
 #+end_src
 
 #+RESULTS:
-:    trial  phi   Ie  neuron  time  rates
-: 0      0    0  2.0       0  0.00    0.0
-: 1      0    0  2.0       0  0.05    0.0
-: 2      0    0  2.0       0  0.10    0.0
-: 3      0    0  2.0       0  0.15    0.0
-: 4      0    0  2.0       0  0.20    0.0
+: Empty DataFrame
+: Columns: [trial, phi, Ie, neuron, time, rates]
+: Index: []
 
 #+begin_src ipython
   df_code, end_point = get_df_code(df, 'Ie')
 #+end_src
 
 #+RESULTS:
-:       trial  phi   Ie        m0        m1     phase
-: 2178      0    0  2.0  0.096875  0.014434  3.219512
-: 2179      0    0  2.3  0.245500  0.027993  3.033322
-: 2180      0    0  2.6  0.431375  0.046010  3.035711
-: 2181      0    0  2.9  0.708375  0.122849  3.098158
-: 2182      0    0  3.2  1.251000  0.328690  3.081831
+:        trial  phi   Ie        m0        m1     phase
+: 48400      0    0  2.0  0.275875  0.066284  0.135753
+: 48401      0    0  2.2  1.041000  0.744426  6.224310
+: 48402      0    0  2.4  2.873375  2.630152  0.010769
+: 48403      0    0  2.6  3.701000  2.649389  6.240334
+: 48404      0    0  2.8  4.496250  2.549315  0.004834
 
 ***** Bifurcation
 
@@ -259,16 +334,18 @@
 
   plt.show()
 #+end_src
+
 #+RESULTS:
-[[file:./.ob-jupyter/88d4946830f1d646c9a533cdfe2bf76429e59fa7.png]]
+[[file:./.ob-jupyter/cb8d1a23ef1a52b24ed8665ea19cd97ea0cf804b.png]]
 
 ***** Tuning Profile
+
 #+begin_src ipython
-np.array((20, 2.8)) * .75
+  np.array([15, 2.5]) * .5
 #+end_src
 
 #+RESULTS:
-: array([15. ,  2.1])
+: array([7.5 , 1.25])
 
 #+begin_src ipython
   df_smooth = df.groupby(['time', 'trial', 'phi', 'Ie'])['rates'].apply(circcvl).reset_index()
@@ -284,15 +361,17 @@ np.array((20, 2.8)) * .75
 #+RESULTS:
 
 #+begin_src ipython
-  print(Ie_list.shape)
-  idx_off = Ie_list[7]
-  idx_on = Ie_list[-1]
+  idx_off = Ie_list[2]
+  idx_on = Ie_list[4]
+  
+  end0 = endpoint[endpoint.Ie==idx_off].reset_index()
+  end1 = endpoint[endpoint.Ie==idx_on].reset_index()
 
-  end0 = endpoint[end_point.Ie==idx_off].reset_index()
-  end1 = endpoint[end_point.Ie==idx_on].reset_index()
   N_E = 32000
+
   plt.plot(end0.rates[4])
   plt.plot(end1.rates[4])
+
   plt.xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   plt.ylabel('Firing Rate (Hz)')
   plt.xlabel('Pref. Location (°)')
@@ -301,14 +380,9 @@ np.array((20, 2.8)) * .75
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: (11,)
-[[file:./.ob-jupyter/f0a76627ed0452e722d9269767224deee986f1e0.png]]
-:END:
+[[file:./.ob-jupyter/576ce2b1705823f8a902bc63930aed35286469ab.png]]
 
 ***** Errors
-
-#+RESULTS:
 
 #+begin_src ipython
   end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
@@ -318,12 +392,12 @@ np.array((20, 2.8)) * .75
 #+end_src
 
 #+RESULTS:
-:        trial  phi   Ie        m0        m1     phase  accuracy     precision
-: 17424      0    0  3.0  5.733750  8.440430  6.204830  6.204830 -8.881784e-16
-: 17425      0    0  3.2  5.558375  8.171744  6.177527  6.177527  0.000000e+00
-: 17426      0    0  3.4  3.673250  5.100291  6.223021  6.223021  0.000000e+00
-: 17427      0    0  3.6  3.800750  5.068103  6.237380  6.237380  0.000000e+00
-: 17428      0    0  3.8  4.091875  4.887424  6.268088  6.268088  0.000000e+00
+:        trial  phi   Ie        m0        m1     phase  accuracy  precision
+: 48400      0    0  2.0  0.275875  0.066284  0.135753  0.135753   0.116924
+: 48401      0    0  2.2  1.041000  0.744426  6.224310  6.224310  -0.041568
+: 48402      0    0  2.4  2.873375  2.630152  0.010769  0.010769   0.005525
+: 48403      0    0  2.6  3.701000  2.649389  6.240334  6.240334   6.226007
+: 48404      0    0  2.8  4.496250  2.549315  0.004834  0.004834  -0.052115
 
 #+begin_src ipython
   fig, ax = plt.subplots()
@@ -341,7 +415,7 @@ np.array((20, 2.8)) * .75
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/54a7df98677f5ff22d253d4afe2ee8e2ed31cbd8.png]]
+[[file:./.ob-jupyter/6089818298e4639aca38d38b55c6843e66bbcda1.png]]
 
 #+begin_src ipython
 point = end_point[end_point.Ie==idx_off]
@@ -352,30 +426,30 @@ point_on = end_point[end_point.Ie==idx_on]
 
 #+begin_src ipython
   fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
-
-  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='b')
-  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='r')
+  
+  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins='auto', stat='density', color='b')
+  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins='auto', stat='density', color='r')
   ax[0].set_xlabel('$\phi$(°)')
   ax[0].set_ylabel('Density')
-  ax[0].set_xticks([0, 90, 180, 270, 360])
+  # ax[0].set_xticks([0, 90, 180, 270, 360])
 
-  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='b')
-  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='r')
+  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins='auto', stat='density', color='b')
+  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins='auto', stat='density', color='r')
   ax[1].set_xlabel('$\phi - \phi_{stim}$ (°)')
   ax[1].set_ylabel('Density')
-  ax[1].set_xticks([0, 90, 180, 270, 360])
+  # ax[1].set_xticks([0, 90, 180, 270, 360])
 
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=True, stat='density', element='step', alpha=0., color='r')
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=False, stat='density', element='step', alpha=0,color = 'b')
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins='auto', kde=False, stat='density', element='step', alpha=0., color='r')
   ax[2].set_xlabel('$\phi - <\phi>_{trials}$ (°)')
   ax[2].set_ylabel('Density')
-  ax[2].set_xlim([-20, 20])
+  ax[2].set_xlim([-10, 10])
 
   plt.show()  
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/b2282de7ac11f8151d136c2a9e5f08392808f6ee.png]]
+[[file:./.ob-jupyter/ee6da1639b21c3dae51158380ebcad9d0ed73d96.png]]
 
 *** Varying Jee
 **** Parameters

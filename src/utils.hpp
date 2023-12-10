@@ -120,10 +120,13 @@ void saveVectorOfPairsToFile(std::ofstream& outFile, const std::vector<std::pair
     std::cerr << "Error: could not write to file" << std::endl;
     return;
   }
-
+  
+  // for (const auto& element : vec) {
+  //   outFile.write(reinterpret_cast<const char*>(&element.first), sizeof(element.first));
+  //   outFile.write(reinterpret_cast<const char*>(&element.second), sizeof(element.second));
+  // }
   for (const auto& element : vec) {
-    outFile.write(reinterpret_cast<const char*>(&element.first), sizeof(element.first));
-    outFile.write(reinterpret_cast<const char*>(&element.second), sizeof(element.second));
+    outFile << element.first << " " << element.second << '\n';
   }
 }
 

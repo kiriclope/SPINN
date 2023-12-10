@@ -1,29 +1,32 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 
-calc(){ awk "BEGIN { print "$*" *100 }"; } 
+calc() { 
+    awk "BEGIN { print $* * 100 }"; 
+}
 
-cpu_use () {
+cpu_use() {
+    n_cpu=$(nproc --all)
+    n_threads=$(top -bn1 | grep "ni," | awk '{print $2}' | cut -d ',' -f1)
 
-    n_cpu=$(nproc --all) ;
-    n_threads=$(top -bn1 | awk 'NR==2{print $4}') ;
+    if [[ "$n_threads" == "" ]]; then
+        n_threads=0
+    fi
+
+    cpu_usage=$(calc $n_threads/$n_cpu)
     
-    cpu_usage=$( calc $n_threads/$n_cpu) ;
-
-    cpu_usage=$( printf "%.0f" $cpu_usage )
+    # Use LC_NUMERIC=C to ensure that printf recognizes the period as the decimal separator
+    cpu_usage=$(LC_NUMERIC=C printf "%.0f" $cpu_usage)
     
-    # echo "n_cpu" $n_cpu ", n_threads" $n_threads ", usage" $cpu_usage "%" ;
-    echo $cpu_usage ;
+    echo $cpu_usage
 }
 
 cpu_usage=$(cpu_use)
-# echo " cpu_usage" $cpu_usage "%"
- 
+
 if [ $cpu_usage -gt 90 ]; then
     echo " CPU_USAGE > 90.0 %, sleeping for a while ..." 
 fi
 
-while [ $cpu_usage -gt 90 ]; 
-do
-    sleep 5s ;
+while [ $cpu_usage -gt 90 ]; do
+    sleep 5s
     cpu_usage=$(cpu_use)    
 done
