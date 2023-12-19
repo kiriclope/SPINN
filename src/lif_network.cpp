@@ -164,26 +164,20 @@ void initNetwork() {
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
   for(int i=0; i < N_POP; i++)
-    for(int j=0; j < N_POP; j++)
-      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP];
-      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] / TAU_SYN[j] / Ka[j] * sqrt(Ka[0]);
-      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(Ka[j]);
-      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] * sqrt(Ka[0]) / Ka[j];
-      // Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] / sqrt(K);
-
+    for(int j=0; j < N_POP; j++)      
+      // This is the correct scaling when Ka is frac * K
+      // and for some reason it helps increasing fluctuations
+      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] * sqrt(Ka[0]) / Ka[j];
+  
   if(IF_NMDA) {
     for(int i=0; i < N_POP; i++)
-      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] ;
-      // Jab_NMDA[i] = GAIN * Jab[i * N_POP] / TAU_NMDA[i] / Ka[0] * sqrt(Ka[0]);
       Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
-
+    
     Jab_NMDA[0] *= (1.0 - R_NMDA[0]) / R_NMDA[0];
     Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
   }
   
   for(int i=0; i < N_POP; i++)
-    // Iext_scaled[i] = GAIN * Iext[i] ;
-    // // Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) ;
     Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
   
   for(int i=0; i<N; i++)
@@ -197,6 +191,7 @@ void initNetwork() {
   if(IF_FF_CORR)
     for(int i=0; i < N_POP; i++)
       // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
+      // A_CORR[i] = A_CORR[i] * GAIN * (V_THRESH - V_REST);
       A_CORR[i] = A_CORR[i] / sqrt(Ka[0]);
   
   std::cout << " Done" << std::endl;
