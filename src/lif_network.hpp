@@ -35,7 +35,7 @@ void updateFFinputs(int step);
 void updateRecInputs();
 void updateNetInputs();
 void updateSpikes(int step);
-void updateStp(int i, int step);
+void updateStp(int i, float isi);
 void runSimul();
 
 void odr_stimuli(float* &ff_inputs, int FLAG);

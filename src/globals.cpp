@@ -23,6 +23,7 @@ int N;
 int N_POP;
 float K;
 
+float M0;
 std::vector<float> FRAC;
 int* Na ;
 int* cNa ;
@@ -46,6 +47,7 @@ float V_THRESH;
 float V_REST;
 float V_LEAK;
 
+std::vector<float> TAU_REF;
 std::vector<float> TAU_MEM;
 float* DT_TAU_MEM;
 float* EXP_DT_TAU_MEM;
@@ -128,7 +130,8 @@ void loadConfig(std::string configname){
   K = config["K"].as<float>();
 
   FRAC = config["FRAC"].as<std::vector<float>>();
-
+  M0 = config["M0"].as<float>() / 1000.0;
+  
   Na = new int[N_POP]() ;
   Ka = new float[N_POP]() ;
   cNa = new int[N_POP+1]() ;
@@ -173,6 +176,7 @@ void loadConfig(std::string configname){
   V_REST = config["V_REST"].as<float>();
   V_LEAK = config["V_LEAK"].as<float>();
 
+  TAU_REF = config["TAU_REF"].as<std::vector<float>>();
   TAU_MEM = config["TAU_MEM"].as<std::vector<float>>();
 
   DT_TAU_MEM = new float[N_POP]();

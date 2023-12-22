@@ -8,7 +8,7 @@ IF_LOAD_MAT: 1
 IF_SAVE_MAT: 0
 
 # saving the last T_SAVE ms
-T_SAVE: 10000.0
+T_SAVE: 20000.0
 
 # path for the output files of the simulation
 DATA_PATH: /home/leon/models/lif_cpp/data/simul
@@ -21,9 +21,9 @@ verbose: 1
 # Time step in ms
 DT: 0.1
 # total simulation time in ms
-DURATION: 6000.0
+DURATION: 20000.0
 # time to start showing simulation result ms
-T_STEADY: 0.0
+T_STEADY: 5000.0
 # Saving to files every T_WINDOW in ms
 T_WINDOW: 250.0
 
@@ -35,7 +35,7 @@ N: 40000
 # Number of populations
 N_POP: 2
 # Average number of presynaptic inputs
-K: 8000.0
+K: 4000.0
 # K: 4000.0
 # Fraction of neurons in each population
 FRAC: [0.8, 0.2]
@@ -77,8 +77,6 @@ V_REST: -70.0
 # Leak in mV
 V_LEAK: 0.0
 
-# Refractory period
-TAU_REF: [1.0, 1.0]
 # Membrane time constants in ms
 TAU_MEM: [20.0, 10.0]
 # Synaptic time constants in ms
@@ -98,9 +96,9 @@ GAIN: 1.0
 Iext: [2.4, 1.75]
 M0: 1.0
 # Synaptic strengths 
-# Jab: [15.0, -1.35, 2.5, -2.0]
+Jab: [22.0, -1.4, 2.8, -1.7]
 # Jab: [9.5, -1.15, 1.25, -1.7]
-Jab: [8.4, -1.35, 1.26, -1.95]
+#Jab: [8.4, -1.35, 1.26, -2.025]
 # Jab: [14, -1.35, 2.1, -1.95]
 
 ##############
@@ -112,8 +110,8 @@ Jab: [8.4, -1.35, 1.26, -1.95]
 # Pij = (1 + KAPPA cos(theta_ij) / sqrt(Kb)), Cij = 1 with proba Pij
 # 'spec' gives a sparse matrix with weak cosine structure,
 # Pij = (1 + KAPPA cos(theta_ij) / sqrt(Kb)) , Cij = 1 with proba Pij
-PROBA: ['cos', 'cos', 'cos', 'cos']
-KAPPA: [1.0, 0.9, 1.0, 1.0]
+PROBA: ['cos_spec', 'None', 'None', 'None']
+KAPPA: [30.0, 0.0, 0.0, 0.0]
 # KAPPA: [0.5, 0.425, 0.5, 0.5]
 
 # PROBA: ['lr', 'rand', 'rand', 'rand']
@@ -137,7 +135,7 @@ IF_FF_NOISE: 0
 STD_FF: [0.01, 0.01]
 
 # adds cosine correlation to the feedforward
-IF_FF_CORR: 1
+IF_FF_CORR: 0 
 # amplitude of the correlations
 A_CORR: [0.0001, 0.0001]
 # tuning of the correlations

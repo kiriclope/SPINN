@@ -15,6 +15,7 @@ float *rates;
 float *volts;
 float *spikes;
 float *spike_times;
+float *ISI;
 
 float *ff_inputs;
 float **inputs;
@@ -39,7 +40,7 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 std::uniform_real_distribution<float> unif_theta(0.0, twoPi);
-std::vector<std::pair<int, float>> spike_pair;
+// std::vector<std::pair<int, float>> spike_pair;
 
 void odr_stimuli(float* &ff_inputs, int FLAG) {
   if(FLAG==0) 
@@ -86,6 +87,10 @@ void init_lif() {
   volts = new float[N]();
   spikes = new float[N]();
   spike_times= new float[N]();
+  ISI = new float[N]();
+  
+  for (int i = 0; i < N; i++)
+    ISI[i] = TAU_REF[which_pop[i]];
   
   ff_inputs = new float[N]();
   inputs = new float*[N_POP]();
@@ -178,15 +183,15 @@ void initNetwork() {
   }
   
   for(int i=0; i < N_POP; i++)
-    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
+    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST) * M0;
   
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
 
   if(IF_FF_NOISE)
     for(int i=0; i < N_POP; i++)
-      STD_FF[i] *= GAIN * (V_THRESH - V_REST);
-  // STD_FF[i] = sqrt(Iext_scaled[i] / sqrt(Ka[0]) ) ;
+      // STD_FF[i] *= GAIN * (V_THRESH - V_REST);
+      STD_FF[i] = STD_FF[i] / sqrt(Ka[0]);
   
   if(IF_FF_CORR)
     for(int i=0; i < N_POP; i++)
@@ -197,8 +202,8 @@ void initNetwork() {
   std::cout << " Done" << std::endl;
 
   // network initialization
-  // for(int i=0; i<N; i++)
-  //   volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
+  for(int i=0; i<N; i++)
+    volts[i] = (V_THRESH - V_REST) * unif(gen) + V_REST;
   
   updateSpikes(-1); // must come before updateRecInputs in this implementation
   updateFFinputs(-1); // must come before updateNetInputs in this implementation
@@ -332,53 +337,37 @@ void updateNetInputs(){
 
 void updateSpikes(int step){
   for (int i = 0; i < N; i++)
-    if (volts[i] >= V_THRESH) {
+    if (volts[i] >= V_THRESH) {      
+
       volts[i] = V_REST;
-      spikes[i] = 1.0;
       
-      // spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
-      
-      // if (IF_RK2) {
-      //   dt2 = DT * (V_THRESH - vold[i]) / (volts[i] - vold[i] );
-      //   volts[i] = (volts[i] - V_THRESH)
-      //     * (1.0 + DT_TAU_MEM[pop] * (vold[i] - V_REST)
-      //        / (volts[i] - vold[i])) + V_REST;
-      // }
-      
-      if (IF_STP && i < Na[0]) updateStp(i, step);
-      
-      rates[i] += spikes[i];
+      if (abs(ISI[i])>=TAU_REF[which_pop[i]]) {
+        
+        // update ISI
+        ISI[i] = step - spike_times[i];
+        spike_times[i] = step;
+        
+        spikes[i] = 1.0;
+        rates[i] += spikes[i];        
+        // spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
+        
+        if (IF_STP && i < Na[0])
+          updateStp(i, ISI[i] * DT);        
+      }
     }
     else {
       spikes[i] = 0.0;
     }
 }
 
-void updateStp(int i, int step){
-  // This is the Mato & Hansel stp model
-  float ISI = step * DT - spike_times[i];
-  spike_times[i] = step * DT;
-
+void updateStp(int i, float isi){
+  // This is the Mato & Hansel stp model  
   int pre_pop = which_pop[i];
   
+  u_stp[i] = u_stp[i] * exp(-isi / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-isi / TAU_FAC[pre_pop]));
+  x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-isi / TAU_REC[pre_pop]) + 1.0 - exp(-isi / TAU_REC[pre_pop]);
   A_stp[i] = u_stp[i] * x_stp[i];
-  u_stp[i] = u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-ISI / TAU_FAC[pre_pop]));
-  x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-ISI / TAU_REC[pre_pop]) + 1.0 - exp(-ISI / TAU_REC[pre_pop]);
-
-  // // This is the Mongillo et al. 2012 model
-  // if (dist(gen) < U) { // calcium binding with proba U
-  //   u_stp[i] = 1.0;
-  //   if (x_stp[i] == 1.0) { // neurotransmitter release if available
-  //     A_stp[i] = 1.0; // spike
-  //     x_stp[i] = 0.0;
-  //   }
-  // }
-
-  // // In between spikes
-  // if (u_stp[i]==1.0 && dist(gen) < 1.0 / TAU_FAC[pre_pop])  // calcium unbinds with proba 1/TAU_FAC
-  //   u_stp[i] = 0.0;
-  // if (x_stp[i]==0.0 && dist(gen) < 1.0 / TAU_FAC[pre_pop])  // neurotransmitter refill with proba 1/TAU_REC
-  //   x_stp[i] = 1.0;
+  
 }
 
 void printParam(){
@@ -420,6 +409,12 @@ void printParam(){
     for(int j=0; j < N_POP; j++)
       std::cout << Jab_scaled[j + i * N_POP] << " ";
   std::cout << std::endl;
+
+  std::cout << "TAU_REF ";
+  for(int i=0; i < N_POP; i++)
+    std::cout << TAU_REF[i] << " ";
+  std::cout << std::endl;
+  
 }
 
 void runSimul(){
@@ -476,7 +471,7 @@ void runSimul(){
   int N_STEPS = (int) (DURATION / DT);
   int N_STEADY = (int) (T_STEADY / DT);
   int N_WINDOW = (int) (T_WINDOW / DT);
-  // int N_SAVE = (int)  (DURATION - T_SAVE) / DT;
+  int N_SAVE = (int) (DURATION - T_SAVE) / DT + N_STEADY;
   
   std::cout << "Running Simulation" << " N_STEPS " << N_STEPS;
   std::cout << " N_STEADY " << N_STEADY;
@@ -515,21 +510,21 @@ void runSimul(){
       }
       
       if (IF_SAVE_DATA) {
-        // if (step>N_SAVE) {
-        saveArrayToFile(spikesFile, spikes, N);
-        saveArrayToFile(ratesFile, rates, N);        
-        saveArrayToFile(voltsFile, volts, N);
+        if (step>N_SAVE) {
+          // saveArrayToFile(spikesFile, spikes, N);
+          saveArrayToFile(ratesFile, rates, N);
+          // saveArrayToFile(voltsFile, volts, N);
         
-        saveArrayToFile(inputsEfile, inputs[0], N);
-        saveArrayToFile(inputsIfile, inputs[1], N);
-        
+          // saveArrayToFile(inputsEfile, inputs[0], N);
+          // saveArrayToFile(inputsIfile, inputs[1], N);
+          
         // if (IF_STP) {
         //   saveArrayToFile(xstpFile, x_stp, Na[0]);
         //   saveArrayToFile(ustpFile, u_stp, Na[0]);
         //   saveArrayToFile(AstpFile, A_stp, Na[0]);
         // }
       }
-      
+      }
       for(int i=0; i<N; i++)
         rates[i] = 0.0 ;
     } // end window

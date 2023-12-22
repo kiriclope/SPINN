@@ -44,7 +44,13 @@
 * Helpers
 #+begin_src ipython
   def get_precision(x):
-      return x - circmean(x)
+
+      cmean =  (x - circmean(x, low=-np.pi, high=np.pi)) % (2* np.pi) - np.pi
+
+      cmean[cmean > np.pi/2] -= np.pi
+      cmean[cmean < -np.pi/2] += np.pi
+      
+      return cmean
 #+end_src
 
 #+RESULTS:
@@ -120,29 +126,31 @@
 #+RESULTS:
 
 #+begin_src ipython
-  def run_ini_phi(name, ini_list, phi_list, Ie=.004):
-      restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-                   REPO_PATH + '/conf/config_ODR.yml.bak')
+  def run_ini_phi(conf_name, name, ini_list, phi_list, Ie=.004, Jab=0, axis=0):
+      restore_conf(REPO_PATH + '/conf/'+ conf_name +'.yml',
+                   REPO_PATH + '/conf/'+ conf_name + '.yml.bak')
 
-      conf_path = REPO_PATH + '/conf/config_ODR.yml'
+      conf_path = REPO_PATH + '/conf/'+ conf_name +'.yml'
 
       for ini in ini_list:
           for phi in phi_list:
               session = "%s_phi_%d_ini_%d" % (name, phi, ini)
               data_path = REPO_PATH + '/data/simul/' + session
-              update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-              update_conf(REPO_PATH + '/conf/config_ODR', 'PHI_STIM', float(phi), axis=0)
-              update_conf(REPO_PATH + '/conf/config_ODR', 'Iext', float(Ie), axis=0)
-
+              update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
+              update_conf(REPO_PATH + '/conf/' + conf_name, 'PHI_STIM', float(phi), axis=0)
+              update_conf(REPO_PATH + '/conf/' + conf_name, 'Iext', float(Ie), axis=0)
+              if Jab>0:
+                  update_conf(REPO_PATH + '/conf/' + conf_name, 'Jab', float(Jab), axis=axis)
+              
               sleep(.2)
               run_cpp(session, conf_path=conf_path)
               sleep(.2)
 
               subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
               subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
-              
-      restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-                   REPO_PATH + '/conf/config_ODR.yml')
+
+      restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                   REPO_PATH + '/conf/' + conf_name + '.yml')
 
 #+end_src
 
@@ -154,7 +162,7 @@
 
 #+begin_src ipython
   config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
-  
+  conf_name = 'config_ODR_multi'
   ini_list = np.arange(0, 10)
   phi_list = np.linspace(0, 315, 8)
   # phi_list = [180]
@@ -165,18 +173,22 @@
 **** Control
 
 #+begin_src ipython
-  run_ini_phi('odr_off', ini_list, phi_list, Ie=config['Iext'][0])
+  run_ini_phi(conf_name, 'odr_off', ini_list, phi_list, Ie=config['Iext'][0])
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
 :  MEM_USAGE > 85.0%, sleeping for a while ...
 : File moved successfully!
 
 **** NB ON
 
 #+begin_src ipython
-  run_ini_phi('odr_on', ini_list, phi_list, Ie=config['Iext'][0]*1.2)
+  run_ini_phi(conf_name, 'odr_on', ini_list, phi_list, Ie=config['Iext'][0]*1.2)
 #+end_src
 
 #+RESULTS:
@@ -184,6 +196,37 @@
 :  MEM_USAGE > 85.0%, sleeping for a while ...
 :  MEM_USAGE > 85.0%, sleeping for a while ...
 : File moved successfully!
+
+**** Jee
+
+#+begin_src ipython
+  run_ini_phi(conf_name, 'odr_Jee', ini_list, phi_list, Ie=config['Iext'][0] * 1.2, Jab=config['Jab'][0] * 1.2)
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+: File moved successfully!
+
+**** Jei
+
+#+begin_src ipython
+  run_ini_phi(conf_name, 'odr_Jei', ini_list, phi_list, Ie=config['Iext'][0] * 1.2, Jab=config['Jab'][1] * 0.9, axis=1)
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+: File moved successfully!
+
 
 *** Analysis
 
@@ -194,24 +237,24 @@
 
 #+RESULTS:
 :       trial  phi        m0        m1     phase
-: 1760      0    0  4.705375  2.465093  0.040084
-: 1761      0    1  4.694125  2.591641  5.619467
-: 1762      0    2  4.777000  2.554842  4.812631
-: 1763      0    3  4.756125  2.429053  3.955498
-: 1764      0    4  4.804500  2.509983  3.099345
+: 3040      0    0  0.500375  0.074867  6.225282
+: 3041      0    1  0.501125  0.036558  6.209045
+: 3042      0    2  0.497500  0.032575  5.093944
+: 3043      0    3  0.488125  0.046029  4.430990
+: 3044      0    4  0.495375  0.021653  3.442677
 
 #+begin_src ipython
-  df_on = load_data_ini_phi('odr_on', ini_list, phi_list)
+  df_on = load_data_ini_phi('odr_Jee', ini_list, phi_list)
   df_code_on, end_point_on = get_code(df_on)
 #+end_src
 
 #+RESULTS:
-:       trial  phi        m0        m1     phase
-: 1760      0    0  3.431625  2.708803  0.078577
-: 1761      0    1  3.501875  2.830915  5.543344
-: 1762      0    2  3.419750  2.588437  4.912407
-: 1763      0    3  3.514875  2.696450  3.869674
-: 1764      0    4  3.590500  2.757695  3.153989
+:       trial  phi         m0        m1     phase
+: 3040      0    0   9.820250  0.425701  1.238873
+: 3041      0    1  10.042500  0.517968  1.011137
+: 3042      0    2  10.059875  0.683268  0.578462
+: 3043      0    3  10.146750  0.306271  0.414573
+: 3044      0    4   9.943875  0.397438  6.090778
 
 *** Phases 
 
@@ -238,7 +281,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/751b01471d03b19536bc12c0cafb782f045e7f58.png]]
+[[file:./.ob-jupyter/e6bde7b0ffc5d38f09fde611d17edb540c515080.png]]
 
 *** Endpoint Errors
 
@@ -254,11 +297,11 @@
 
 #+RESULTS:
 :       trial  phi        m0        m1     phase  accuracy  precision
-: 1760      0    0  4.705375  2.465093  0.040084  0.040084  -0.014937
-: 1761      0    1  4.694125  2.591641  5.619467  5.602014  -0.006565
-: 1762      0    2  4.777000  2.554842  4.812631  4.777724  -0.006507
-: 1763      0    3  4.756125  2.429053  3.955498  3.903138   0.026824
-: 1764      0    4  4.804500  2.509983  3.099345  3.029532  -0.001021
+: 3040      0    0  0.500375  0.074867  6.225282  6.225282  -0.099011
+: 3041      0    1  0.501125  0.036558  6.209045  6.191592   0.330141
+: 3042      0    2  0.497500  0.032575  5.093944  5.059038   0.008580
+: 3043      0    3  0.488125  0.046029  4.430990  4.378630   0.082864
+: 3044      0    4  0.495375  0.021653  3.442677  3.372864   0.433607
 
 #+begin_src ipython
   fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
@@ -285,7 +328,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/ded456a84b84cc26420f1d1bd669317132cd7f57.png]]
+[[file:./.ob-jupyter/9419009c3d98bfe1b1bf1f0037a83bd8fd116825.png]]
 
 #+begin_src ipython
 

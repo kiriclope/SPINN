@@ -23,6 +23,7 @@ extern int N;
 extern int N_POP;
 extern float K;
 
+extern float M0;
 extern std::vector<float> FRAC;
 extern int* Na ;
 extern int* cNa ;
@@ -46,6 +47,7 @@ extern float V_THRESH;
 extern float V_REST;
 extern float V_LEAK;
 
+extern std::vector<float> TAU_REF;
 extern std::vector<float> TAU_MEM;
 extern float* DT_TAU_MEM;
 extern float* EXP_DT_TAU_MEM;

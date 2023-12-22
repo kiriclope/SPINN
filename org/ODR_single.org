@@ -15,10 +15,13 @@
 #+end_src
 
 #+RESULTS:
+:RESULTS:
 : The autoreload extension is already loaded. To reload it, use:
 :   %reload_ext autoreload
 : Python exe
 : /home/leon/mambaforge/envs/dual_data/bin/python
+: <Figure size 700x432.624 with 0 Axes>
+:END:
 
 ** Imports
 
@@ -51,8 +54,8 @@
  #+RESULTS:
 
 #+begin_src ipython
-  def get_times():
-       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
+  def get_times(conf_name):
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/"+conf_name+".yml", "r"))
 
        times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
        # times -= config['T_STEADY']
@@ -100,29 +103,28 @@
 #+end_src
 
 #+RESULTS:
-: [        0      4924      9974 ... 319975042 319994998 320015005]
+: [        0      3980      8010 ... 160007536 160011577 160015483]
 
 * Compilation
 #+begin_src sh
   cd $HOME/models/lif_cpp
-  make clean
+  # make clean
   make
 #+end_src
 
 #+RESULTS:
-| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |               |                  |                  |             |                      |                           |               |                |                     |             |                      |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/globals.cpp     | -o          | obj/globals.o        |                           |            |
 | g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/main.cpp        | -o          | obj/main.o           |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/sparse_mat.cpp  | -o          | obj/sparse_mat.o     |                           |            |
 | g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
 
 * Single trial
 ** Simulation
 
 #+begin_src ipython
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
-  
+  conf_name = 'config_ODR'
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
+
+  N_E = int(config['N'] * 0.8)
+  print(N_E)
   Iext = np.array(config['Iext']) * 1000
   Jab = np.array(config['Jab'])
 
@@ -143,27 +145,29 @@
 #+end_src
 
 #+RESULTS:
+: 32000
 : Balance True
 : True
-: rates [-0.02309582  1.28587224]
-: stp G 0.21579961464354527
-: stp Q 1.1125
+: rates [-157.87860208  795.42203147]
+: stp G 0.10384615384615385
+: stp Q 3625.396825396826
 
 #+begin_src ipython
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  conf_path = REPO_PATH + '/conf/config_ODR.yml'
-  
   session = 'odr_off'
+  
+  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
+               REPO_PATH + '/conf/' + conf_name + '.yml.bak')
+
+  conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
+
   data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'DATA_PATH', data_path)
   sleep(.2)
   run_cpp(session, conf_path=conf_path)
   sleep(.2)
 
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')  
+  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+               REPO_PATH + '/conf/' + conf_name + '.yml')  
 #+end_src
 
 #+RESULTS:
@@ -171,21 +175,21 @@
 : File moved successfully!
 
 #+begin_src ipython 
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
   session = 'odr_on'
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/" + conf_name + ".yml", "r"))
+  
+  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
+               REPO_PATH + '/conf/' + conf_name + '.yml.bak')
+
   data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Iext', float(config['Iext'][0] * 1.15), axis=0)
+  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'DATA_PATH', data_path)
+  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.15), axis=0)
   sleep(.2)
   run_cpp(session, conf_path=conf_path)
   sleep(.2)
 
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
+  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+               REPO_PATH + '/conf/' + conf_name + '.yml')
 
 #+end_src
 
@@ -200,36 +204,35 @@
   session = 'odr_off'
   data_off = get_data(session)
   print('data', data_off.shape)
-  rates_off = data_off[:32000]
+  rates_off = data_off[:N_E]
   print('rates', np.mean(data_off[:32000]), np.mean(data_off[8000:]))
 #+end_src
 
 #+RESULTS:
-: data (40000, 79)
-: rates 3.8610222 6.511418
+: data (40000, 23)
+: rates 4.0424566 5.792212
 
 #+begin_src ipython  
   session = 'odr_on'
   data_on = get_data(session)
   print('data', data_on.shape)
-  rates_on = data_on[:32000]
+  rates_on = data_on[:N_E]
   print('rates', np.mean(data_on[:32000]), np.mean(data_on[8000:]))
 #+end_src
 
 #+RESULTS:
-: data (40000, 79)
-: rates 4.6436853 7.4399004
+: data (40000, 23)
+: rates 4.8841577 6.617223
 
 #+begin_src ipython
   width = 7
   golden_ratio = (5**.5 - 1) / 2
   fig, ax = plt.subplots(1, 2, figsize= [1.5*width, width * golden_ratio])
 
-  N_E = 32000
   r_min = 0
   r_max = 1.5 * np.max((np.mean(rates_off), np.mean(rates_on)))
 
-  times = get_times()
+  times = get_times(conf_name)
   times_off = times[:data_off.shape[1]]
   times_on = times[:data_on.shape[1]]
 
@@ -257,7 +260,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/6cfb1688a97d5775ea994cba74a34e563f2b0778.png]]
+[[file:./.ob-jupyter/3c3fe52197c13be011af96077cda7479232512b7.png]]
 
 *** Fourier vs Time
 
@@ -265,7 +268,7 @@
   m0, m1, phi = decode_bump(rates_off, axis=0)
   m0_on, m1_on, phi_on = decode_bump(rates_on, axis=0)
 
-  times = get_times()
+  times = get_times(conf_name)
   times_off = times[:data_off.shape[1]]
   times_on = times[:data_on.shape[1]]
 
@@ -274,8 +277,8 @@
   ax[0].plot(times_on, m0_on)
 
   ax[0].set_xlabel('Time (s)')
-  ax[0].set_ylabel('$\mathcal{F}^0$')
-  ax[0].set_xticks([0, 1, 2, 3, 4, 5])
+  ax[0].set_ylabel('$\mathcal{F}^0$ (Hz)')
+  # ax[0].set_xticks([0, 1, 2, 3, 4, 5])
   ax[0].set_ylim([0, r_max])
 
   ax[1].plot(times_off, m1 / m0)
@@ -283,21 +286,22 @@
 
   ax[1].set_xlabel('Time (s)')
   ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
-  ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+  # ax[1].set_xticks([0, 1, 2, 3, 4, 5])
 
   ax[2].plot(times_off, phi * 180 / np.pi)
   ax[2].plot(times_on, phi_on * 180 / np.pi)
 
   ax[2].set_xlabel('Time (s)')
-  ax[2].set_ylabel('$\phi$')
+  ax[2].set_ylabel('$\phi$ (°)')
   ax[2].set_yticks([0, 90, 180, 270, 360])
-  ax[2].set_xticks([0, 1, 2, 3, 4, 5])
+  # ax[2].set_xticks([0, 1, 2, 3, 4, 5])
   plt.tight_layout()
   plt.show()
   #+end_src
 
-#+RESULTS:
-[[file:./.ob-jupyter/95468cc99ad783dbfeebe7f1a65ce75208d2a047.png]]
+  #+RESULTS:
+  [[file:./.ob-jupyter/7c144e9c77b447f31afb633fac81fcfc691dad5e.png]]
+
 
 *** Spatial profile
 
@@ -324,7 +328,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/5d53c1ece2243ec7675720c661d961455fa988a9.png]]
+[[file:./.ob-jupyter/b5123596727a5ade7bd32c64b3885e0b4340b27a.png]]
 
 #+begin_src ipython
 
