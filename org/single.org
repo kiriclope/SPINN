@@ -50,8 +50,8 @@
  #+RESULTS:
 
 #+begin_src ipython
-  def get_times():
-       config = safe_load(open("/home/leon/models/lif_cpp/conf/config_LR.yml", "r"))
+  def get_times(conf_name):
+       config = safe_load(open("/home/leon/models/lif_cpp/conf/" + conf_name + ".yml", "r"))
 
        times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
        # times -= config['T_STEADY']
@@ -132,6 +132,7 @@
 
 #+begin_src ipython
   session = '/'
+  conf_name = 'config_ODR'
   data = get_data(session)
   print('data', data.shape)
   rates = data[:32000]
@@ -139,26 +140,25 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 39)
-: rates 2.2210736 4.4029293
+: data (40000, 23)
+: rates 5.299837 7.0409184
 
 #+begin_src ipython
   fig, ax = plt.subplots()
 
   N_E = 32000
   r_min = 0
-  r_max = 1.25 * np.mean(data[:N_E])
+  r_max = 1.5 * np.mean(data[:N_E])
 
-  times = get_times()
+  times = get_times(conf_name)
   times = times[:data.shape[1]]
 
-  print(time.shape)
   im = ax.imshow(rates, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times[0], times[-1], 0, N_E])
 
   ax.set_xlabel('Time (s)')
   ax.set_ylabel('Prefered Location (°)')
   ax.set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
-  
+
   cbar = plt.colorbar(im, ax=ax)
   cbar.set_label("Firing Rate (Hz)")
   # cbar.set_ticks([0, 5, 10])
@@ -167,17 +167,14 @@
 #+end_src
 
 #+RESULTS:
-:RESULTS:
-: (28,)
-[[file:./.ob-jupyter/7eaab77ba2f8413d377ab519b5446e5dd6ae685e.png]]
-:END:
+[[file:./.ob-jupyter/67d163fb439e7ba3a126f7aa4036ae9de59b9b80.png]]
 
 **** Fourier vs Time
 
 #+begin_src ipython
   m0, m1, phi = decode_bump(rates, axis=0)
 
-  times = get_times()
+  times = get_times(conf_name)
   times = times[:data.shape[1]]
   fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
   ax[0].plot(times, m0)
@@ -202,17 +199,10 @@
   #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/63dfc66ed0038f1037324000be8fe81f23d78743.png]]
+[[file:./.ob-jupyter/80397ae7df4f2dee492fd728ffb108131deb4dab.png]]
 
 
 **** Spatial profile
-
-#+begin_src ipython
-  np.array([22, 2.8])*0.75
-#+end_src
-
-#+RESULTS:
-: array([16.5,  2.1])
 
 #+begin_src ipython
   smooth_E = circcvl(rates, windowSize=3200, axis=0)
@@ -228,7 +218,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/47df170566d16459ee769c09d2b85a75acf7efc2.png]]
+[[file:./.ob-jupyter/c926be2793e543b3b52c15612025d23031248f22.png]]
 
 **** Raster
 

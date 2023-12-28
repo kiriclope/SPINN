@@ -46,8 +46,16 @@ extern float* EXP_DT_TAU_SYN;
 extern float V_THRESH;
 extern float V_REST;
 extern float V_LEAK;
+extern std::vector<float> V_REV;
 
+extern int IF_COND_BASE;
+extern int IF_THRESH_DYN;
+extern float DELTA_THRESH;
+extern std::vector<float> TAU_AREF;
 extern std::vector<float> TAU_REF;
+extern float* DT_TAU_REF;
+extern float* EXP_DT_TAU_REF;
+
 extern std::vector<float> TAU_MEM;
 extern float* DT_TAU_MEM;
 extern float* EXP_DT_TAU_MEM;

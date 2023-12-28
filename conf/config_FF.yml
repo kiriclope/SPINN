@@ -23,7 +23,7 @@ DT: 0.1
 # total simulation time in ms
 DURATION: 5000.0
 # time to start showing simulation result ms
-T_STEADY: 5000.0
+T_STEADY: 1000.0
 # Saving to files every T_WINDOW in ms
 T_WINDOW: 250.0
 

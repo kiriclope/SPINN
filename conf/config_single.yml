@@ -1,0 +1,135 @@
+A_CORR:
+- 0.01
+- 0.01
+A_DIST:
+- 0.0
+- 0.0
+A_STIM:
+- 0.2
+- 0.0
+BUMP_SWITCH:
+- 0
+- 0
+CHECK_BISTABILITY: 0
+CORR_FF:
+- 0.02
+- 0.02
+DATA_PATH: /home/leon/models/lif_cpp/data/simul/odr_M0_0.600_phi_0_ini_8
+DELTA_THRESH: 5.0
+DT: 0.1
+DURATION: 5000.0
+FRAC:
+- 0.8
+- 0.2
+GAIN: 1.0
+IF_COND_BASE: 0
+IF_FF_CORR: 1
+IF_FF_NOISE: 0
+IF_LOAD_MAT: 1
+IF_NMDA: 1
+IF_SAVE_DATA: 1
+IF_SAVE_MAT: 0
+IF_STP: 1
+IF_THRESH_DYN: 0
+Iext:
+- 2.0
+- 1.75
+Jab:
+- 8.65
+- -1.15
+- 1.25
+- -1.7
+K: 4000.0
+KAPPA:
+- 1.0
+- 0.95
+- 1.0
+- 1.0
+KAPPA_DIST:
+- 0.0
+- 0.0
+KAPPA_STIM:
+- 1.0
+- 0.0
+LR_LOAD: 0
+LR_MEAN:
+- 0.0
+- 0.0
+- 0.0
+LR_RANK: 3
+LR_RHO:
+- 0.0
+- 1.0
+- 0.0
+LR_SEED: 1
+LR_STD:
+- 1.0
+- 1.0
+- 1.0
+M0: 0.6
+MAT_PATH: /home/leon/models/lif_cpp/data/matrix
+N: 40000
+N_POP: 2
+PHI_DIST:
+- 90.0
+- 0.0
+PHI_STIM:
+- 0.0
+- 0.0
+PROBA:
+- cos
+- cos
+- cos
+- cos
+R_NMDA:
+- 0.5
+- 0.5
+STD_DIST:
+- 0.0
+- 0.0
+STD_FF:
+- 0.01
+- 0.01
+STD_STIM:
+- 0.0
+- 0.0
+TAU_AREF:
+- 2.0
+- 2.0
+TAU_FAC:
+- 550
+- 850
+TAU_MEM:
+- 20.0
+- 10.0
+TAU_NMDA:
+- 80.0
+- 40.0
+TAU_REC:
+- 250
+- 200
+TAU_REF:
+- 10.0
+- 10.0
+TAU_SYN:
+- 4.0
+- 2.0
+T_DIST:
+- 135000.0
+- 145000.0
+T_SAVE: 0.0
+T_STEADY: 0.0
+T_STIM:
+- 1000.0
+- 1500.0
+T_WINDOW: 250.0
+USE:
+- 0.03
+- 0.03
+V_LEAK: -50.0
+V_REST: -70.0
+V_REV:
+- -20.0
+- -20.0
+V_THRESH: -50.0
+verbose: 1

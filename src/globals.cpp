@@ -46,8 +46,16 @@ float* EXP_DT_TAU_SYN;
 float V_THRESH;
 float V_REST;
 float V_LEAK;
+std::vector<float> V_REV;
 
+int IF_COND_BASE;
+int IF_THRESH_DYN;
+float DELTA_THRESH;
+std::vector<float> TAU_AREF;
 std::vector<float> TAU_REF;
+float* DT_TAU_REF;
+float* EXP_DT_TAU_REF;
+
 std::vector<float> TAU_MEM;
 float* DT_TAU_MEM;
 float* EXP_DT_TAU_MEM;
@@ -175,10 +183,18 @@ void loadConfig(std::string configname){
   V_THRESH = config["V_THRESH"].as<float>();
   V_REST = config["V_REST"].as<float>();
   V_LEAK = config["V_LEAK"].as<float>();
-
+  V_REV = config["V_REV"].as<std::vector<float>>();
+  
+  IF_COND_BASE = config["IF_COND_BASE"].as<int>();
+  IF_THRESH_DYN = config["IF_THRESH_DYN"].as<int>();
+  DELTA_THRESH = config["DELTA_THRESH"].as<float>();
+  
+  TAU_AREF = config["TAU_AREF"].as<std::vector<float>>();
   TAU_REF = config["TAU_REF"].as<std::vector<float>>();
-  TAU_MEM = config["TAU_MEM"].as<std::vector<float>>();
+  DT_TAU_REF = new float[N_POP]();
+  EXP_DT_TAU_REF = new float[N_POP]();
 
+  TAU_MEM = config["TAU_MEM"].as<std::vector<float>>();
   DT_TAU_MEM = new float[N_POP]();
   EXP_DT_TAU_MEM = new float[N_POP]();
 

@@ -15,13 +15,10 @@
 #+end_src
 
 #+RESULTS:
-:RESULTS:
 : The autoreload extension is already loaded. To reload it, use:
 :   %reload_ext autoreload
 : Python exe
 : /home/leon/mambaforge/envs/dual_data/bin/python
-: <Figure size 700x432.624 with 0 Axes>
-:END:
 
 ** Imports
 
@@ -37,11 +34,37 @@
   from scipy.stats import circmean
   from run_model import run_cpp, update_conf, restore_conf
   from analysis.decode import decode_bump, circcvl  
+  pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
 #+end_src
 
 #+RESULTS:
 
 * Helpers
+#+begin_src ipython
+  def run_sim(conf_name, session, X_str=None, axis=0, gain=1):
+
+    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
+                 REPO_PATH + '/conf/'+ conf_name +'.yml.bak')
+
+    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
+
+    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
+    data_path = REPO_PATH + '/data/simul/' + session
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
+    if X_str is not None:
+      update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
+    # update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.25), axis=0)
+
+    sleep(.2)
+    run_cpp(session, conf_path=conf_path)
+    sleep(.2)
+
+    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                 REPO_PATH + '/conf/'+ conf_name +'.yml')
+#+end_src
+
+#+RESULTS:
+
 #+begin_src ipython
   def get_data(session='/'):
     # Open the file in binary mode and read the data
@@ -120,12 +143,12 @@
 ** Simulation
 
 #+begin_src ipython
-  conf_name = 'config_ODR'
+  conf_name = 'config_single'
   config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
 
   N_E = int(config['N'] * 0.8)
   print(N_E)
-  Iext = np.array(config['Iext']) * 1000
+  Iext = np.array(config['Iext'])
   Jab = np.array(config['Jab'])
 
   BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
@@ -148,26 +171,13 @@
 : 32000
 : Balance True
 : True
-: rates [-157.87860208  795.42203147]
-: stp G 0.10384615384615385
-: stp Q 3625.396825396826
+: rates [-0.09430756  0.96006797]
+: stp G 0.08900928792569661
+: stp Q 1.7279999999999998
 
 #+begin_src ipython
   session = 'odr_off'
-  
-  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
-               REPO_PATH + '/conf/' + conf_name + '.yml.bak')
-
-  conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'DATA_PATH', data_path)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-               REPO_PATH + '/conf/' + conf_name + '.yml')  
+  run_sim(conf_name, session)
 #+end_src
 
 #+RESULTS:
@@ -176,21 +186,7 @@
 
 #+begin_src ipython 
   session = 'odr_on'
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/" + conf_name + ".yml", "r"))
-  
-  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
-               REPO_PATH + '/conf/' + conf_name + '.yml.bak')
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.15), axis=0)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-               REPO_PATH + '/conf/' + conf_name + '.yml')
-
+  run_sim(conf_name, session, X_str='Iext', axis=0, gain=1.05)
 #+end_src
 
 #+RESULTS:
@@ -209,8 +205,8 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 23)
-: rates 4.0424566 5.792212
+: data (40000, 36)
+: rates 4.9260244 7.482698
 
 #+begin_src ipython  
   session = 'odr_on'
@@ -221,8 +217,8 @@
 #+end_src
 
 #+RESULTS:
-: data (40000, 23)
-: rates 4.8841577 6.617223
+: data (40000, 35)
+: rates 5.4278607 7.9760036
 
 #+begin_src ipython
   width = 7
@@ -252,15 +248,25 @@
   ax[1].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   ax[1].set_title('NB Stim')
 
-  cbar = plt.colorbar(im, ax=ax[1])
-  cbar.set_label("Firing Rate (Hz)")
-  cbar.set_ticks([0, 2, 4, 6, 8])
-  plt.savefig('./neurons.svg', dpi=300)
+  # fig.subplots_adjust(right=0.85)  # Create space on the right side of the subplots
+
+  # Define the new axis for the colorbar
+  # cbar_ax = fig.add_axes([1.0, 0.25, 0.02, 0.6])  # This adds a new axes for the colorbar
+  # [left, bottom, width, height] in normalized (0,1) units
+
+  # Create the colorbar in the new axes
+  # cbar = fig.colorbar(im, cax=cbar_ax)
+
+  # cbar = plt.colorbar(im, ax=ax.ravel().tolist(), pad=0.2)
+  # cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.1)
+  # cbar.set_label("Firing Rate (Hz)")
+  # cbar.set_ticks([0, 2, 4, 6, 8])
+  # plt.savefig('./neurons.svg', dpi=300)
   plt.show()
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/3c3fe52197c13be011af96077cda7479232512b7.png]]
+[[file:./.ob-jupyter/039354fa413534aa208835c19b4d0baf81b4a1aa.png]]
 
 *** Fourier vs Time
 
@@ -299,8 +305,8 @@
   plt.show()
   #+end_src
 
-  #+RESULTS:
-  [[file:./.ob-jupyter/7c144e9c77b447f31afb633fac81fcfc691dad5e.png]]
+#+RESULTS:
+[[file:./.ob-jupyter/2a31c1696db76190ebd24316dfeb2bce02aaae28.png]]
 
 
 *** Spatial profile
@@ -312,13 +318,16 @@
   m0, m1, phase = decode_bump(smooth_off[:, -1])
   smooth_off = np.roll(smooth_off[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_off.shape[0]))
 
+
+  theta = np.linspace(0, 360, rates_off.shape[0])
+  plt.plot(theta, m0 + m1 * np.cos(theta * np.pi / 180- np.pi), 'b')
+  plt.plot(theta, smooth_off, 'b', label='off')
+
   m0, m1, phase =decode_bump(smooth_on[:, -1])
   smooth_on = np.roll(smooth_on[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_on.shape[0]))
-  
-  theta = np.linspace(0, 360, rates_off.shape[0])
 
-  plt.plot(theta, smooth_off, 'b', label='off')
   plt.plot(theta, smooth_on, 'r', label='on')
+  plt.plot(theta, m0 + m1 * np.cos(theta * np.pi / 180- np.pi), 'r')
 
   plt.xlabel('Prefered Location (°)')
   plt.ylabel('Rate (Hz)')
@@ -328,133 +337,13 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/b5123596727a5ade7bd32c64b3885e0b4340b27a.png]]
+[[file:./.ob-jupyter/4923bf76d59ee9c4e852f850b0715b07509c268a.png]]
 
 #+begin_src ipython
 
 #+end_src
 
 #+RESULTS:
-
-*** Raster
-
-#+begin_src ipython
-  import pandas as pd
-  import matplotlib.pyplot as plt
-
-  # Read the file into a DataFrame
-  filename = '/home/leon/models/lif_cpp/data/simul/spikes.txt'
-  df = pd.read_csv(filename, names=['neuron_id', 'spike_time'], sep=' ')
-
-  # Group by 'neuron_id' and aggregate the 'spike_time' into lists
-  grouped = df.groupby('neuron_id')['spike_time'].apply(list)
-  
-  # Now 'grouped' is a DataFrame with 'neuron_id' and a list of 'spike_time's
-  # You can print it out to verify its structure
-  print(grouped.head())
-#+end_src
-
-#+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
-  [0;31m---------------------------------------------------------------------------[0m
-  [0;31mFileNotFoundError[0m                         Traceback (most recent call last)
-  Cell [0;32mIn[17], line 6[0m
-  [1;32m      4[0m [38;5;66;03m# Read the file into a DataFrame[39;00m
-  [1;32m      5[0m filename [38;5;241m=[39m [38;5;124m'[39m[38;5;124m/home/leon/models/lif_cpp/data/simul/spikes.txt[39m[38;5;124m'[39m
-  [0;32m----> 6[0m df [38;5;241m=[39m [43mpd[49m[38;5;241;43m.[39;49m[43mread_csv[49m[43m([49m[43mfilename[49m[43m,[49m[43m [49m[43mnames[49m[38;5;241;43m=[39;49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mneuron_id[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43mspike_time[39;49m[38;5;124;43m'[39;49m[43m][49m[43m,[49m[43m [49m[43msep[49m[38;5;241;43m=[39;49m[38;5;124;43m'[39;49m[38;5;124;43m [39;49m[38;5;124;43m'[39;49m[43m)[49m
-  [1;32m      8[0m [38;5;66;03m# Group by 'neuron_id' and aggregate the 'spike_time' into lists[39;00m
-  [1;32m      9[0m grouped [38;5;241m=[39m df[38;5;241m.[39mgroupby([38;5;124m'[39m[38;5;124mneuron_id[39m[38;5;124m'[39m)[[38;5;124m'[39m[38;5;124mspike_time[39m[38;5;124m'[39m][38;5;241m.[39mapply([38;5;28mlist[39m)
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/pandas/io/parsers/readers.py:948[0m, in [0;36mread_csv[0;34m(filepath_or_buffer, sep, delimiter, header, names, index_col, usecols, dtype, engine, converters, true_values, false_values, skipinitialspace, skiprows, skipfooter, nrows, na_values, keep_default_na, na_filter, verbose, skip_blank_lines, parse_dates, infer_datetime_format, keep_date_col, date_parser, date_format, dayfirst, cache_dates, iterator, chunksize, compression, thousands, decimal, lineterminator, quotechar, quoting, doublequote, escapechar, comment, encoding, encoding_errors, dialect, on_bad_lines, delim_whitespace, low_memory, memory_map, float_precision, storage_options, dtype_backend)[0m
-  [1;32m    935[0m kwds_defaults [38;5;241m=[39m _refine_defaults_read(
-  [1;32m    936[0m     dialect,
-  [1;32m    937[0m     delimiter,
-  [0;32m   (...)[0m
-  [1;32m    944[0m     dtype_backend[38;5;241m=[39mdtype_backend,
-  [1;32m    945[0m )
-  [1;32m    946[0m kwds[38;5;241m.[39mupdate(kwds_defaults)
-  [0;32m--> 948[0m [38;5;28;01mreturn[39;00m [43m_read[49m[43m([49m[43mfilepath_or_buffer[49m[43m,[49m[43m [49m[43mkwds[49m[43m)[49m
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/pandas/io/parsers/readers.py:611[0m, in [0;36m_read[0;34m(filepath_or_buffer, kwds)[0m
-  [1;32m    608[0m _validate_names(kwds[38;5;241m.[39mget([38;5;124m"[39m[38;5;124mnames[39m[38;5;124m"[39m, [38;5;28;01mNone[39;00m))
-  [1;32m    610[0m [38;5;66;03m# Create the parser.[39;00m
-  [0;32m--> 611[0m parser [38;5;241m=[39m [43mTextFileReader[49m[43m([49m[43mfilepath_or_buffer[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwds[49m[43m)[49m
-  [1;32m    613[0m [38;5;28;01mif[39;00m chunksize [38;5;129;01mor[39;00m iterator:
-  [1;32m    614[0m     [38;5;28;01mreturn[39;00m parser
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/pandas/io/parsers/readers.py:1448[0m, in [0;36mTextFileReader.__init__[0;34m(self, f, engine, **kwds)[0m
-  [1;32m   1445[0m     [38;5;28mself[39m[38;5;241m.[39moptions[[38;5;124m"[39m[38;5;124mhas_index_names[39m[38;5;124m"[39m] [38;5;241m=[39m kwds[[38;5;124m"[39m[38;5;124mhas_index_names[39m[38;5;124m"[39m]
-  [1;32m   1447[0m [38;5;28mself[39m[38;5;241m.[39mhandles: IOHandles [38;5;241m|[39m [38;5;28;01mNone[39;00m [38;5;241m=[39m [38;5;28;01mNone[39;00m
-  [0;32m-> 1448[0m [38;5;28mself[39m[38;5;241m.[39m_engine [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_make_engine[49m[43m([49m[43mf[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mengine[49m[43m)[49m
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/pandas/io/parsers/readers.py:1705[0m, in [0;36mTextFileReader._make_engine[0;34m(self, f, engine)[0m
-  [1;32m   1703[0m     [38;5;28;01mif[39;00m [38;5;124m"[39m[38;5;124mb[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m mode:
-  [1;32m   1704[0m         mode [38;5;241m+[39m[38;5;241m=[39m [38;5;124m"[39m[38;5;124mb[39m[38;5;124m"[39m
-  [0;32m-> 1705[0m [38;5;28mself[39m[38;5;241m.[39mhandles [38;5;241m=[39m [43mget_handle[49m[43m([49m
-  [1;32m   1706[0m [43m    [49m[43mf[49m[43m,[49m
-  [1;32m   1707[0m [43m    [49m[43mmode[49m[43m,[49m
-  [1;32m   1708[0m [43m    [49m[43mencoding[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moptions[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mencoding[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
-  [1;32m   1709[0m [43m    [49m[43mcompression[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moptions[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mcompression[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
-  [1;32m   1710[0m [43m    [49m[43mmemory_map[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moptions[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mmemory_map[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mFalse[39;49;00m[43m)[49m[43m,[49m
-  [1;32m   1711[0m [43m    [49m[43mis_text[49m[38;5;241;43m=[39;49m[43mis_text[49m[43m,[49m
-  [1;32m   1712[0m [43m    [49m[43merrors[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moptions[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mencoding_errors[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mstrict[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m,[49m
-  [1;32m   1713[0m [43m    [49m[43mstorage_options[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43moptions[49m[38;5;241;43m.[39;49m[43mget[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mstorage_options[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[38;5;28;43;01mNone[39;49;00m[43m)[49m[43m,[49m
-  [1;32m   1714[0m [43m[49m[43m)[49m
-  [1;32m   1715[0m [38;5;28;01massert[39;00m [38;5;28mself[39m[38;5;241m.[39mhandles [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m
-  [1;32m   1716[0m f [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mhandles[38;5;241m.[39mhandle
-
-  File [0;32m~/mambaforge/envs/dual_data/lib/python3.11/site-packages/pandas/io/common.py:863[0m, in [0;36mget_handle[0;34m(path_or_buf, mode, encoding, compression, memory_map, is_text, errors, storage_options)[0m
-  [1;32m    858[0m [38;5;28;01melif[39;00m [38;5;28misinstance[39m(handle, [38;5;28mstr[39m):
-  [1;32m    859[0m     [38;5;66;03m# Check whether the filename is to be opened in binary mode.[39;00m
-  [1;32m    860[0m     [38;5;66;03m# Binary mode does not support 'encoding' and 'newline'.[39;00m
-  [1;32m    861[0m     [38;5;28;01mif[39;00m ioargs[38;5;241m.[39mencoding [38;5;129;01mand[39;00m [38;5;124m"[39m[38;5;124mb[39m[38;5;124m"[39m [38;5;129;01mnot[39;00m [38;5;129;01min[39;00m ioargs[38;5;241m.[39mmode:
-  [1;32m    862[0m         [38;5;66;03m# Encoding[39;00m
-  [0;32m--> 863[0m         handle [38;5;241m=[39m [38;5;28;43mopen[39;49m[43m([49m
-  [1;32m    864[0m [43m            [49m[43mhandle[49m[43m,[49m
-  [1;32m    865[0m [43m            [49m[43mioargs[49m[38;5;241;43m.[39;49m[43mmode[49m[43m,[49m
-  [1;32m    866[0m [43m            [49m[43mencoding[49m[38;5;241;43m=[39;49m[43mioargs[49m[38;5;241;43m.[39;49m[43mencoding[49m[43m,[49m
-  [1;32m    867[0m [43m            [49m[43merrors[49m[38;5;241;43m=[39;49m[43merrors[49m[43m,[49m
-  [1;32m    868[0m [43m            [49m[43mnewline[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43m"[39;49m[43m,[49m
-  [1;32m    869[0m [43m        [49m[43m)[49m
-  [1;32m    870[0m     [38;5;28;01melse[39;00m:
-  [1;32m    871[0m         [38;5;66;03m# Binary mode[39;00m
-  [1;32m    872[0m         handle [38;5;241m=[39m [38;5;28mopen[39m(handle, ioargs[38;5;241m.[39mmode)
-
-  [0;31mFileNotFoundError[0m: [Errno 2] No such file or directory: '/home/leon/models/lif_cpp/data/simul/spikes.txt'
-#+end_example
-:END:
-
-#+begin_src ipython
-  # If you want to visualize this in a raster plot:
-  fig, ax = plt.subplots()
-  
-  plt.eventplot(grouped, lineoffsets=grouped.index, linelengths=1)
-
-  ax.set_xlabel('Spike Time')
-  ax.set_ylabel('Neuron ID')
-  ax.set_title('Raster Plot')
-
-  # Display the plot
-  plt.show()
-#+end_src
-
-#+RESULTS:
-:RESULTS:
-# [goto error]
-: [0;31m---------------------------------------------------------------------------[0m
-: [0;31mNameError[0m                                 Traceback (most recent call last)
-: Cell [0;32mIn[18], line 4[0m
-: [1;32m      1[0m [38;5;66;03m# If you want to visualize this in a raster plot:[39;00m
-: [1;32m      2[0m fig, ax [38;5;241m=[39m plt[38;5;241m.[39msubplots()
-: [0;32m----> 4[0m plt[38;5;241m.[39meventplot([43mgrouped[49m, lineoffsets[38;5;241m=[39mgrouped[38;5;241m.[39mindex, linelengths[38;5;241m=[39m[38;5;241m1[39m)
-: [1;32m      6[0m ax[38;5;241m.[39mset_xlabel([38;5;124m'[39m[38;5;124mSpike Time[39m[38;5;124m'[39m)
-: [1;32m      7[0m ax[38;5;241m.[39mset_ylabel([38;5;124m'[39m[38;5;124mNeuron ID[39m[38;5;124m'[39m)
-: 
-: [0;31mNameError[0m: name 'grouped' is not defined
-[[file:./.ob-jupyter/c23235fbf6ba6084d6d11d02b24f786b35477adb.png]]
-:END:
 
 * Neuromodulation
 *** On m0
@@ -482,341 +371,101 @@
 : File moved successfully!
 : File moved successfully!
 
-*** On Jee
+*** On Jab
 
 #+begin_src ipython
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ 'config_single' +".yml", "r"))
+  print(config['Iext'][0] * 1.25)
+#+end_src
 
-  session = 'odr_on_Jee'
+#+RESULTS:
+: 3.59375
 
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-  
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(config['Jab'][0] * 0.90), axis=0)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
+#+begin_src ipython
+  def run_sim(conf_name, session, X_str=None, axis=0, gain=1):
 
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
+    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
+                 REPO_PATH + '/conf/'+ conf_name +'.yml.bak')
 
+    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
+
+    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
+    data_path = REPO_PATH + '/data/simul/' + session
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
+    if X_str is not None:
+      update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
+    # update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.25), axis=0)
+
+    sleep(.2)
+    run_cpp(session, conf_path=conf_path)
+    sleep(.2)
+
+    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                 REPO_PATH + '/conf/'+ conf_name +'.yml')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  run_sim('config_single', 'odr_Jee', 'Jab', 0, 1.1)
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
 : File moved successfully!
 
-*** On Jei
-
-
 #+begin_src ipython
-
-  session = 'odr_on_Jei'
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-  
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(config['Jab'][1] * 0.90), axis=1)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
+  run_sim('config_single', 'odr_Jei', 'Jab', 1, 0.9)
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
 : File moved successfully!
 
-*** On Jie
-
 #+begin_src ipython
-
-  session = 'odr_on_Jie'
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-  
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(config['Jab'][3] * 0.90), axis=2)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
+  run_sim('config_single', 'odr_Jie', 'Jab', 2, 1.1)
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
 : File moved successfully!
 
-*** On Jii
-
 #+begin_src ipython
-
-  session = 'odr_on_Jii'
-  
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', float(config['Jab'][-1] * 0.90), axis=-1)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
+  run_sim('config_single', 'odr_Jii', 'Jab', 3, 0.9)
 #+end_src
 
 #+RESULTS:
 : File moved successfully!
 : File moved successfully!
 
-*** On Gain
-
 #+begin_src ipython
-
-  session = 'odr_on_gain'
-  
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'GAIN', float(1.15))
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-*** On Jae
-
-#+begin_src ipython
-  perc = 1.15
-  
-  conf_path = REPO_PATH + '/conf/config_ODR.yml'
-  session = 'odr_on_Jae'
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', [17*perc, -1.5, 2.1*perc, -1.7])
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-*** On Jai
-
-#+begin_src ipython
-  perc = 1.1
-  
-  conf_path = REPO_PATH + '/conf/config_ODR.yml'
-  session = 'odr_on_Jai'
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Jab', [17, -1.5*perc, 2.1, -1.7*perc])
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-*** Other
-
-#+begin_src ipython
-  session = 'odr_on_m0'
+  session = 'odr_off'
   data = get_data(session)
-  print('data', data.shape)
-  rates_on_m0 = data[:32000]
-#+end_src
+  rates_off = data[:32000]
 
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jei'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jei = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jee'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jee = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jii'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jii = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_gain'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_gain = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jie'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jie = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jae'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jae = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
-  session = 'odr_on_Jai'
-  data = get_data(session)
-  print('data', data.shape)
-  rates_on_Jai = data[:32000]
-#+end_src
-
-#+RESULTS:
-: data (40000, 23)
-
-#+begin_src ipython
   smooth_off = circcvl(rates_off, windowSize=3200, axis=0)
-  smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
-  smooth_on_Jee = circcvl(rates_on_Jee, windowSize=3200, axis=0)
-  smooth_on_Jie = circcvl(rates_on_Jie, windowSize=3200, axis=0)
-  smooth_on_Jei = circcvl(rates_on_Jei, windowSize=3200, axis=0)
-  smooth_on_Jii = circcvl(rates_on_Jii, windowSize=3200, axis=0)
-  smooth_on_m0 = circcvl(rates_on_m0, windowSize=3200, axis=0)
-  smooth_on_gain = circcvl(rates_on_gain, windowSize=3200, axis=0)
-  smooth_on_Jae = circcvl(rates_on_Jae, windowSize=3200, axis=0)
-  smooth_on_Jai = circcvl(rates_on_Jai, windowSize=3200, axis=0)
 
   theta = np.linspace(0, 360, rates_off.shape[0])
 
   width = 7
   golden_ratio = (5**.5 - 1) / 2
-  fig, ax = plt.subplots(2, 4, figsize= [2.25*width, 2*width * golden_ratio])
+  fig, ax = plt.subplots(1, 4, figsize= [2.25*width, width *golden_ratio])
 
-  ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
-  ax[0][0].plot(theta, smooth_on[:, -1], 'r')
+  # ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
+  # ax[0][0].plot(theta, smooth_on[:, -1], 'r')
 
-  ax[0][0].set_xlabel('Prefered Location (°)')
-  ax[0][0].set_ylabel('Rate (Hz)')
-  ax[0][0].set_xticks([0, 90, 180, 270, 360]);
-  ax[0][0].set_title(r'$I^{ext}_E \nearrow$')
+  sessions = ['Jee', 'Jei', 'Jie', 'Jii']
+  for i in range(4):
+      session = 'odr_' + sessions[i]
+      data = get_data(session)
+      rates_on = data[:32000]
+      smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
 
-  ax[0][1].plot(theta, smooth_off[:, -1] , 'b')
-  ax[0][1].plot(theta, smooth_on_m0[:, -1], 'r')
-
-  ax[0][1].set_xlabel('Prefered Location (°)')
-  ax[0][1].set_xticks([0, 90, 180, 270, 360]);
-  ax[0][1].set_title(r' $I^{ext}_E \nearrow, I^{ext}_I \nearrow$')
-
-  ax[0][2].plot(theta, smooth_off[:, -1] , 'b')
-  ax[0][2].plot(theta, smooth_on_gain[:, -1], 'r')
-
-  ax[0][2].set_xlabel('Prefered Location (°)')
-  ax[0][2].set_xticks([0, 90, 180, 270, 360]);
-  ax[0][2].set_title(r' $I^{ext}\nearrow, J_{ab} \nearrow$')
-
-  ax[1][0].plot(theta, smooth_off[:, -1] , 'b')
-  ax[1][0].plot(theta, smooth_on_Jee[:, -1], 'r')
-
-  ax[1][0].set_xlabel('Prefered Location (°)')
-  ax[1][0].set_ylabel('Rate (Hz)')
-  ax[1][0].set_xticks([0, 90, 180, 270, 360]);
-  ax[1][0].set_title(r'$J_{EE} \nearrow$')
-
-  ax[1][1].plot(theta, smooth_off[:, -1] , 'b', label='off')
-  ax[1][1].plot(theta, smooth_on_Jei[:, -1], 'r', label='on')
-
-  ax[1][1].set_xlabel('Prefered Location (°)')
-  ax[1][1].set_xticks([0, 90, 180, 270, 360]);
-  ax[1][1].set_title(r'$J_{EI} \nearrow$')
-
-  ax[1][2].plot(theta, smooth_off[:, -1] , 'b', label='off')
-  ax[1][2].plot(theta, smooth_on_Jie[:, -1], 'r', label='on')
-
-  ax[1][2].set_xlabel('Prefered Location (°)')
-  ax[1][2].set_xticks([0, 90, 180, 270, 360]);
-  ax[1][2].set_title(r'$J_{IE} \nearrow$')
-  
-  ax[1][3].plot(theta, smooth_off[:, -1] , 'b', label='off')
-  ax[1][3].plot(theta, smooth_on_Jii[:, -1], 'r', label='on')
-
-  ax[1][3].set_xlabel('Prefered Location (°)')
-  ax[1][3].set_xticks([0, 90, 180, 270, 360]);
-  ax[1][3].set_title(r'$J_{II} \nearrow$')
-  ax[1][3].legend(fontsize=12, frameon=0)
-
-  plt.show()
+      ax[i].plot(theta, smooth_off[:, -1] , color=pal[0])
+      ax[i].plot(theta, smooth_on[:, -1], color=pal[1])
+      ax[i].set_title(sessions[i])
+      ax[i].set_xticks([0, 90, 180, 270, 360]);
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/c417d6804e5f40d324832f1dc970bd62aa6e151d.png]]
-
+[[file:./.ob-jupyter/d1a2ce2fd8953ba0a7a7dd19355e3649452f85e1.png]]

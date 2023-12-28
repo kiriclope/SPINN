@@ -18,6 +18,14 @@
 :   %reload_ext autoreload
 : Python exe
 : /home/leon/mambaforge/envs/dual_data/bin/python
+ESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+: 0ed4f48d-0f8c-4886-aa89-11439b23adf0
+:END:
+:END:
 
 * Compilation
 #+begin_src sh
@@ -40,7 +48,7 @@
   import warnings
   # Ignore FutureWarning
   warnings.simplefilter(action='ignore', category=FutureWarning)
-  
+
   import sys
   sys.path.insert(0, '/home/leon/models/lif_cpp')  
   REPO_PATH = "/home/leon/models/lif_cpp"
@@ -51,7 +59,9 @@
   from yaml import safe_load
   from scipy.stats import circmean
   from run_model import run_cpp, update_conf, restore_conf
-  from analysis.decode import decode_bump, circcvl  
+  from analysis.decode import decode_bump, circcvl
+  
+  pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
 #+end_src
 
 #+RESULTS:
@@ -223,13 +233,14 @@
 **** Parameters
 
 #+begin_src ipython
-  name = 'odr'
-  conf_name = 'config_ODR'
+  name = 'odr_tau'
+  conf_name = 'config_single'
   TAU_FAC_list = np.linspace(400, 900, 11)
   print(TAU_FAC_list)
   ini_list = np.arange(0, 10)
-  # phi_list = np.linspace(0, 315, 8)
+  phi_list = np.linspace(0, 315, 8)
   phi_list = [180]
+  ini_list = [0]
 #+end_src
 
 #+RESULTS:
@@ -262,9 +273,9 @@
 #+RESULTS:
 : Balance True
 : True
-: rates [-0.16313933  0.76268861]
+: rates [-0.1366843   0.77914952]
 : stp G 0.09999999999999999
-: stp Q 3.818253968253968
+: stp Q 3.384325396825397
 
 #+begin_src ipython
   run_loop_X(conf_name, name, 'TAU_FAC', TAU_FAC_list, ini_list, phi_list, axis=0)
@@ -272,9 +283,6 @@
 
 #+RESULTS:
 : File moved successfully!
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
 : File moved successfully!
 
 **** Analysis
@@ -283,34 +291,34 @@
 #+begin_src ipython
   df = load_data(name, TAU_FAC_list, ini_list, phi_list, 'TAU_FAC')
   df_code, end_point = get_df_code(df, 'TAU_FAC')
-
+  
   end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
   end_point['precision'] = end_point.groupby(['phi', 'TAU_FAC'], group_keys=False)['phase'].apply(get_precision)
-  
+
   df_smooth = df.groupby(['time', 'trial', 'phi', 'TAU_FAC'])['rates'].apply(circcvl).reset_index()
 
 #+end_src
 
 #+RESULTS:
-: (110, 32000)
-: (10, 1, 11, 32000, 1)
+: (11, 32000)
+: (1, 1, 11, 32000, 1)
 :    trial  phi  TAU_FAC        m0        m1     phase
-: 0      0    0    400.0  0.767000  0.032620  3.118672
-: 1      0    0    450.0  0.826375  0.038535  3.471070
-: 2      0    0    500.0  1.099625  0.252970  3.318150
-: 3      0    0    550.0  3.410000  3.150199  3.411028
-: 4      0    0    600.0  4.126750  3.584418  3.466938
+: 0      0    0    400.0  0.723000  0.012084  4.092778
+: 1      0    0    450.0  0.759875  0.009839  6.211645
+: 2      0    0    500.0  0.798000  0.014380  3.477776
+: 3      0    0    550.0  0.835875  0.029859  3.959538
+: 4      0    0    600.0  5.198875  3.861332  3.055879
 
 ***** Tuning Profile
 
 #+begin_src ipython
-  idx_off = TAU_FAC_list[3]
-  idx_on = TAU_FAC_list[4]
+  idx_off = TAU_FAC_list[5]
+  idx_on = TAU_FAC_list[6]
   print('parameters', idx_off, idx_on)
 #+end_src
 
 #+RESULTS:
-: parameters 550.0 600.0
+: parameters 650.0 700.0
 
 #+begin_src ipython
   N_E = 32000
@@ -325,8 +333,8 @@
   ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
   
   sns.lineplot(end_point, x='TAU_FAC', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', color='k')
-  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='b') 
-  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[0]) 
+  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[1])
 
   ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax[1].set_xlabel('FF Input (Hz)')
@@ -341,8 +349,8 @@
   m0, m1, phase = decode_bump(point_on.rates[0])
   point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
 
-  ax[2].plot(point, color='b')
-  ax[2].plot(point_on, color='r')
+  ax[2].plot(point, color=pal[0])
+  ax[2].plot(point_on, color=pal[1])
 
   ax[2].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   ax[2].set_ylabel('Firing Rate (Hz)')
@@ -354,36 +362,36 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/b7f1d18297e460d7cf2c5768973bf6c8a9c5bbca.png]]
+[[file:./.ob-jupyter/5161c6020635ebf2d25cc1c2c39f90c0fedcc384.png]]
 
 ***** Diffusion
 
 #+begin_src ipython
   point = end_point[end_point.TAU_FAC==idx_off]
   point_on = end_point[end_point.TAU_FAC==idx_on]
-
+  
   fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
 
   sns.lineplot(end_point, x='TAU_FAC', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0])
 
-  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='b')
-  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='r')
+  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[0])
+  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[1])
 
   ax[0].set_xlabel('FF Input (Hz)')
   ax[0].set_ylabel('Diffusivity (°)')
-
+  ax[0].set_ylim([0, 10])
   ax1 = ax[0].twinx()
   sns.lineplot(end_point, x='TAU_FAC', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5, marker='o')
 
-  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color='b')
-  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[0])
+  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[1])
 
   ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax1.spines['right'].set_visible(True)
 
   bins = 'auto'
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color=pal[1])
   ax[1].set_xlabel('Angular Deviation (°)')
   ax[1].set_ylabel('Density')
   # ax[1].set_xlim([-20, 20])
@@ -393,7 +401,17 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/bbef27e3967c4678c9d19daa08d98d1d7bf58d79.png]]
+:RESULTS:
+# [goto error]
+: [0;31m---------------------------------------------------------------------------[0m
+: [0;31mNameError[0m                                 Traceback (most recent call last)
+: Cell [0;32mIn[17], line 1[0m
+: [0;32m----> 1[0m point [38;5;241m=[39m [43mend_point[49m[end_point[38;5;241m.[39mTAU_FAC[38;5;241m==[39midx_off]
+: [1;32m      2[0m point_on [38;5;241m=[39m end_point[end_point[38;5;241m.[39mTAU_FAC[38;5;241m==[39midx_on]
+: [1;32m      4[0m fig, ax [38;5;241m=[39m plt[38;5;241m.[39msubplots([38;5;241m1[39m, [38;5;241m2[39m, figsize[38;5;241m=[39m[[38;5;241m2[39m[38;5;241m*[39mwidth, height])
+: 
+: [0;31mNameError[0m: name 'end_point' is not defined
+:END:
 
 #+begin_src ipython
   idx_off = Ie_list[3]
@@ -405,26 +423,36 @@
 #+end_src
 
 #+RESULTS:
-: 1.95 2.4
+:RESULTS:
+# [goto error]
+: [0;31m---------------------------------------------------------------------------[0m
+: [0;31mNameError[0m                                 Traceback (most recent call last)
+: Cell [0;32mIn[18], line 1[0m
+: [0;32m----> 1[0m idx_off [38;5;241m=[39m [43mIe_list[49m[[38;5;241m3[39m]
+: [1;32m      2[0m idx_on [38;5;241m=[39m Ie_list[[38;5;241m6[39m]
+: [1;32m      4[0m [38;5;28mprint[39m(idx_off, idx_on)
+: 
+: [0;31mNameError[0m: name 'Ie_list' is not defined
+:END:
 
 #+begin_src ipython
   fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
 
-  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='b', alpha=0, element='step')
-  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='r', alpha=0, element='step')
+  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color=pal[0], alpha=0, element='step')
+  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color=pal[1], alpha=0, element='step')
   ax[0].set_xlabel('$\phi$(°)')
   ax[0].set_ylabel('Density')
   ax[0].set_xticks([0, 90, 180, 270, 360])
 
-  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='b')
-  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='r')
+  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color=pal[0])
+  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color=pal[1])
   ax[1].set_xlabel('$\phi - \phi_{stim}$ (°)')
   ax[1].set_ylabel('Density')
   ax[1].set_xticks([0, 90, 180, 270, 360])
 
   bins = 8
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0., color=pal[1])
   ax[2].set_xlabel('$\phi - <\phi>_{trials}$ (°)')
   ax[2].set_ylabel('Density')
   # ax[2].set_xlim([-20, 20])
@@ -433,32 +461,38 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/be8fcf6e4dc351c3b42667538300c5fac5b9c03f.png]]
+:RESULTS:
+# [goto error]
+: [0;31m---------------------------------------------------------------------------[0m
+: [0;31mNameError[0m                                 Traceback (most recent call last)
+: Cell [0;32mIn[19], line 3[0m
+: [1;32m      1[0m fig, ax [38;5;241m=[39m plt[38;5;241m.[39msubplots([38;5;241m1[39m, [38;5;241m3[39m, figsize[38;5;241m=[39m[[38;5;241m2[39m[38;5;241m*[39mwidth, height])
+: [0;32m----> 3[0m sns[38;5;241m.[39mhistplot(data[38;5;241m=[39m[43mpoint[49m, x[38;5;241m=[39mpoint[[38;5;124m'[39m[38;5;124mphase[39m[38;5;124m'[39m][38;5;241m*[39m[38;5;241m180[39m[38;5;241m/[39mnp[38;5;241m.[39mpi, legend[38;5;241m=[39m[38;5;28;01mFalse[39;00m, lw[38;5;241m=[39m[38;5;241m2[39m, ax[38;5;241m=[39max[[38;5;241m0[39m], kde[38;5;241m=[39m[38;5;28;01mFalse[39;00m, bins[38;5;241m=[39m[38;5;241m200[39m, stat[38;5;241m=[39m[38;5;124m'[39m[38;5;124mdensity[39m[38;5;124m'[39m, color[38;5;241m=[39mpal[[38;5;241m0[39m], alpha[38;5;241m=[39m[38;5;241m0[39m, element[38;5;241m=[39m[38;5;124m'[39m[38;5;124mstep[39m[38;5;124m'[39m)
+: [1;32m      4[0m sns[38;5;241m.[39mhistplot(data[38;5;241m=[39mpoint_on, x[38;5;241m=[39mpoint_on[[38;5;124m'[39m[38;5;124mphase[39m[38;5;124m'[39m][38;5;241m*[39m[38;5;241m180[39m[38;5;241m/[39mnp[38;5;241m.[39mpi, legend[38;5;241m=[39m[38;5;28;01mFalse[39;00m, lw[38;5;241m=[39m[38;5;241m2[39m, ax[38;5;241m=[39max[[38;5;241m0[39m], kde[38;5;241m=[39m[38;5;28;01mFalse[39;00m, bins[38;5;241m=[39m[38;5;241m200[39m, stat[38;5;241m=[39m[38;5;124m'[39m[38;5;124mdensity[39m[38;5;124m'[39m, color[38;5;241m=[39mpal[[38;5;241m1[39m], alpha[38;5;241m=[39m[38;5;241m0[39m, element[38;5;241m=[39m[38;5;124m'[39m[38;5;124mstep[39m[38;5;124m'[39m)
+: [1;32m      5[0m ax[[38;5;241m0[39m][38;5;241m.[39mset_xlabel([38;5;124m'[39m[38;5;124m$[39m[38;5;124m\[39m[38;5;124mphi$(°)[39m[38;5;124m'[39m)
+: 
+: [0;31mNameError[0m: name 'point' is not defined
+[[file:./.ob-jupyter/947ef9870e46cb047ee45bdc7b8c25aec394b586.png]]
+:END:
 
 *** Varying M0
-
 **** Parameters
 
 #+begin_src ipython
-50 * 8
-#+end_src
-
-#+RESULTS:
-: 400
-
-#+begin_src ipython
   name = 'odr'
-  conf_name = 'config_ODR'
-  M0_list = np.linspace(0.5, 1.5, 21)
+  conf_name = 'config_single'
+  M0_list = np.linspace(0.5, 1.5, 11)
   print(M0_list)
-  ini_list = np.arange(0, 50)
+
+  ini_list = np.arange(0, 10)
   phi_list = np.linspace(0, 315, 8)
+
+  # ini_list = [0]
   # phi_list = [180]
 #+end_src
 
 #+RESULTS:
-: [0.5  0.55 0.6  0.65 0.7  0.75 0.8  0.85 0.9  0.95 1.   1.05 1.1  1.15
-:  1.2  1.25 1.3  1.35 1.4  1.45 1.5 ]
+: [0.5 0.6 0.7 0.8 0.9 1.  1.1 1.2 1.3 1.4 1.5]
 
 **** Simulation
 
@@ -487,230 +521,12 @@
 #+RESULTS:
 : Balance True
 : True
-: rates [-0.16313933  0.76268861]
+: rates [-0.1366843   0.77914952]
 : stp G 0.09999999999999999
-: stp Q 3.818253968253968
+: stp Q 3.384325396825397
 
 #+begin_src ipython
   run_loop_X(conf_name, name, 'M0', M0_list, ini_list, phi_list, axis=None)
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-
-**** Analysis
-***** Load Data
-
-#+begin_src ipython
-  df = load_data(name, M0_list, ini_list, phi_list, 'M0')
-  df_code, end_point = get_df_code(df, 'M0')
-
-  end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
-  end_point['precision'] = end_point.groupby(['phi', 'M0'], group_keys=False)['phase'].apply(get_precision)
-  
-  df_smooth = df.groupby(['time', 'trial', 'phi', 'M0'])['rates'].apply(circcvl).reset_index()
-
-#+end_src
-
-#+RESULTS:
-: (1680, 32000)
-: (10, 8, 21, 32000, 1)
-:    trial  phi    M0        m0        m1     phase
-: 0      0    0  0.50  0.142875  0.008215  6.224455
-: 1      0    0  0.55  0.187375  0.012479  0.021958
-: 2      0    0  0.60  0.234500  0.015014  6.090205
-: 3      0    0  0.65  0.283000  0.021840  0.001536
-: 4      0    0  0.70  0.352250  0.021554  6.239707
-
-***** Tuning Profile
-
-#+begin_src ipython
-  idx_off = M0_list[8]
-  idx_on = M0_list[11]
-  print('parameters', idx_off, idx_on)
-#+end_src
-
-#+RESULTS:
-: parameters 0.9 1.05
-
-#+begin_src ipython
-  N_E = 32000
-
-  df_point = end_point[end_point.M0==idx_off]
-  df_point_on = end_point[end_point.M0==idx_on]
-
-  fig, ax = plt.subplots(1, 3, figsize=[2.25*width, height])
-
-  sns.lineplot(end_point, x='M0', y='m0', ax=ax[0], legend=False, marker='o', lw=0, hue='trial')
-  ax[0].set_xlabel('FF Input')
-  ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
-
-  sns.lineplot(end_point, x='M0', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', color='k')
-  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='b') 
-  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='r')
-
-  ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
-  ax[1].set_xlabel('FF Input (Hz)')
-  # ax[0].set_ylim([0.4, 1])
-
-
-  point = df_smooth[df_smooth.M0==idx_off].reset_index() 
-  m0, m1, phase = decode_bump(point.rates[0])
-  point = np.roll(point.rates[0], int(( phase / 2.0 / np.pi - 0.5) * point.rates[0].shape[0]))
-
-  point_on = df_smooth[df_smooth.M0==idx_on].reset_index()  
-  m0, m1, phase = decode_bump(point_on.rates[0])
-  point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
-
-  ax[2].plot(point, color='b')
-  ax[2].plot(point_on, color='r')
-
-  ax[2].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
-  ax[2].set_ylabel('Firing Rate (Hz)')
-  ax[2].set_xlabel('Pref. Location (°)')
-
-  plt.savefig(name + '_tuning.svg', dpi=300)
-
-  plt.show()
-#+end_src
-
-#+RESULTS:
-[[file:./.ob-jupyter/a072bea5db290d4471a8db6945507e94dacf8a90.png]]
-
-***** Diffusion
-
-#+begin_src ipython
-  point = end_point[end_point.M0==idx_off]
-  point_on = end_point[end_point.M0==idx_on]
-
-  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
-
-  sns.lineplot(end_point, x='M0', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0])
-
-  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='b')
-  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='r')
-
-  ax[0].set_xlabel('FF Input (Hz)')
-  ax[0].set_ylabel('Diffusivity (°)')
-
-  ax1 = ax[0].twinx()
-  sns.lineplot(end_point, x='M0', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5, marker='o')
-
-  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color='b')
-  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color='r')
-
-  ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
-  ax1.spines['right'].set_visible(True)
-
-  bins = 'auto'
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
-  ax[1].set_xlabel('Angular Deviation (°)')
-  ax[1].set_ylabel('Density')
-  # ax[1].set_xlim([-20, 20])
-
-  plt.savefig(name + '_diffusion.svg', dpi=300)
-  plt.show()
-#+end_src
-
-#+RESULTS:
-[[file:./.ob-jupyter/839e3130c78aaaa4e4f6b2d7873da94f9c562367.png]]
-
-#+begin_src ipython
-  idx_off = Ie_list[3]
-  idx_on = Ie_list[6]
-
-  print(idx_off, idx_on)
-  point = end_point[end_point.Ie==idx_off]
-  point_on = end_point[end_point.Ie==idx_on]
-#+end_src
-
-#+RESULTS:
-: 1.95 2.4
-
-#+begin_src ipython
-  fig, ax = plt.subplots(1, 3, figsize=[2*width, height])
-
-  sns.histplot(data=point, x=point['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='b', alpha=0, element='step')
-  sns.histplot(data=point_on, x=point_on['phase']*180/np.pi, legend=False, lw=2, ax=ax[0], kde=False, bins=200, stat='density', color='r', alpha=0, element='step')
-  ax[0].set_xlabel('$\phi$(°)')
-  ax[0].set_ylabel('Density')
-  ax[0].set_xticks([0, 90, 180, 270, 360])
-
-  sns.histplot(data=point, x=point['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='b')
-  sns.histplot(data=point_on, x=point_on['accuracy']*180/np.pi, legend=False, lw=2, ax=ax[1], kde=False, bins=200, stat='density', color='r')
-  ax[1].set_xlabel('$\phi - \phi_{stim}$ (°)')
-  ax[1].set_ylabel('Density')
-  ax[1].set_xticks([0, 90, 180, 270, 360])
-
-  bins = 8
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
-  ax[2].set_xlabel('$\phi - <\phi>_{trials}$ (°)')
-  ax[2].set_ylabel('Density')
-  # ax[2].set_xlim([-20, 20])
-
-  plt.show()  
-#+end_src
-
-#+RESULTS:
-[[file:./.ob-jupyter/be8fcf6e4dc351c3b42667538300c5fac5b9c03f.png]]
-
-*** Varying Ie
-**** Parameters
-
-#+begin_src ipython
-  name = 'odr'
-  conf_name = 'config_ODR'
-  Ie_list = np.linspace(2, 3., 11)
-  print(Ie_list)
-  ini_list = np.arange(0, 10)
-  print(ini_list)
-  phi_list = np.linspace(0, 315, 8)
-  print(phi_list)
-
-  # Ie_list=[3]
-  # ini_list = [9]
-  # phi_list = [180]
-#+end_src
-
-#+RESULTS:
-: [2.  2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3. ]
-: [0 1 2 3 4 5 6 7 8 9]
-: [  0.  45.  90. 135. 180. 225. 270. 315.]
-
-**** Simulation
-
-#+begin_src ipython
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_ODR.yml", "r"))
-  Iext = np.array(config['Iext'])  
-  Jab = np.array(config['Jab'])
-
-  BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
-  print('Balance', BALANCE)
-
-  BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
-  print(BALANCE)
-  
-  rates = -np.dot(np.linalg.inv(Jab.reshape((2 ,2))), Iext)
-  print('rates', rates)
-
-  J = Jab[1] * Jab[2] / (Jab[0] * Jab[3])
-  Q = (Jab[3] * Jab[1] * Iext[0] - Iext[1]) / Jab[2]
-
-  print('stp G', J)
-  print('stp Q', Q)
-#+end_src
-
-#+RESULTS:
-: Balance True
-: True
-: rates [-0.1578786   0.79542203]
-: stp G 0.10384615384615385
-: stp Q 3.625396825396826
-
-#+begin_src ipython
-  run_loop_X(conf_name, name, 'Iext', Ie_list, ini_list, phi_list, axis=0)
 #+end_src
 
 #+RESULTS:
@@ -725,52 +541,193 @@
    MEM_USAGE > 85.0%, sleeping for a while ...
    MEM_USAGE > 85.0%, sleeping for a while ...
    MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  MEM_USAGE > 85.0%, sleeping for a while ...
-  File moved successfully!
 #+end_example
 
 **** Analysis
 ***** Load Data
 
 #+begin_src ipython
-  df = load_data(name, Ie_list, ini_list, phi_list, 'Iext')
+  df = load_data(name, M0_list, ini_list, phi_list, 'M0')
+  df_code, end_point = get_df_code(df, 'M0')
+
+  end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
+  end_point['precision'] = end_point.groupby(['phi', 'M0'], group_keys=False)['phase'].apply(get_precision)
+  
+  df_smooth = df.groupby(['time', 'trial', 'phi', 'M0'])['rates'].apply(circcvl).reset_index()
 #+end_src
 
 #+RESULTS:
 : (880, 32000)
 : (10, 8, 11, 32000, 1)
-  
-#+begin_src ipython
-  df_code, end_point = get_df_code(df, 'Iext')
+:    trial  phi   M0        m0        m1     phase
+: 0      0    0  0.5  0.024250  0.001325  2.191206
+: 1      0    0  0.6  0.053250  0.010708  5.864330
+: 2      0    0  0.7  0.099875  0.018979  0.966244
+: 3      0    0  0.8  0.220375  0.111138  5.497182
+: 4      0    0  0.9  0.780000  0.774165  6.207969
 
+***** Tuning Profile
+
+#+begin_src ipython
+  idx_off = M0_list[6]
+  idx_on = np.round(M0_list[7], 5)
+  print('parameters', idx_off, idx_on)
+#+end_src
+
+#+RESULTS:
+: parameters 1.1 1.2
+
+#+begin_src ipython
+  N_E = 32000
+
+  df_point = end_point[end_point.M0==idx_off]
+  df_point_on = end_point[end_point.M0==idx_on]
+
+  fig, ax = plt.subplots(1, 3, figsize=[2.25*width, height])
+
+  sns.lineplot(end_point, x='M0', y='m0', ax=ax[0], legend=False, marker='o', lw=0, hue='trial')
+  ax[0].set_xlabel('FF Input')
+  ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
+
+  sns.lineplot(end_point, x='M0', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', color='k')
+  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[0]) 
+  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[1])
+
+  ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+  ax[1].set_xlabel('FF Input (Hz)')
+  # ax[0].set_ylim([0.4, 1])
+
+
+  point = df_smooth[df_smooth.M0==idx_off].reset_index() 
+  m0, m1, phase = decode_bump(point.rates[0])
+  point = np.roll(point.rates[0], int(( phase / 2.0 / np.pi - 0.5) * point.rates[0].shape[0]))
+
+  point_on = df_smooth[df_smooth.M0==idx_on].reset_index()  
+  m0, m1, phase = decode_bump(point_on.rates[0])
+  point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
+
+  ax[2].plot(point, color=pal[0])
+  ax[2].plot(point_on, color=pal[1])
+
+  ax[2].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  ax[2].set_ylabel('Firing Rate (Hz)')
+  ax[2].set_xlabel('Pref. Location (°)')
+
+  plt.savefig(name + '_tuning.svg', dpi=300)
+
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/3c8fd4cccf061457dac3322258c76c7ddca17ac1.png]]
+
+***** Diffusion
+
+ #+begin_src ipython
+  point = end_point[end_point.M0==idx_off]
+  point_on = end_point[end_point.M0==idx_on]
+
+  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
+
+  sns.lineplot(end_point, x='M0', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0])
+
+  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[0])
+  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[1])
+
+  ax[0].set_xlabel('FF Input (Hz)')
+  ax[0].set_ylabel('Diffusivity (°)')
+
+  ax1 = ax[0].twinx()
+  sns.lineplot(end_point, x='M0', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5, marker='o')
+
+  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[0])
+  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[1])
+
+  ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
+  ax1.spines['right'].set_visible(True)
+
+  bins = 'auto'
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color=pal[1])
+  ax[1].set_xlabel('Angular Deviation (°)')
+  ax[1].set_ylabel('Density')
+  # ax[1].set_xlim([-20, 20])
+
+  plt.savefig(name + '_diffusion.svg', dpi=300)
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/57180900bf53301520b20c27a73914db74ee2396.png]]
+
+*** Varying Ie
+**** Parameters
+
+#+begin_src ipython
+  name = 'odr'
+  conf_name = 'config_single'
+  Ie_list = np.linspace(1.5, 2.5, 11)
+  print(Ie_list)
+  ini_list = np.arange(0, 10)
+  print(ini_list)
+  phi_list = np.linspace(0, 315, 8)
+  print(phi_list)
+
+  # Ie_list=[3]
+  # ini_list = [0]
+  # phi_list = [180]
+#+end_src
+
+#+RESULTS:
+: [1.5 1.6 1.7 1.8 1.9 2.  2.1 2.2 2.3 2.4 2.5]
+: [0 1 2 3 4 5 6 7 8 9]
+: [  0.  45.  90. 135. 180. 225. 270. 315.]
+
+**** Simulation
+
+#+begin_src ipython
+  config = safe_load(open("/home/leon/models/lif_cpp/conf/config_single.yml", "r"))
+  Iext = np.array(config['Iext'])  
+  Jab = np.array(config['Jab'])
+
+  BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
+  print('Balance', BALANCE)
+  
+  BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
+  print(BALANCE)
+
+  rates = -np.dot(np.linalg.inv(Jab.reshape((2 ,2))), Iext)
+  print('rates', rates)
+
+  J = Jab[1] * Jab[2] / (Jab[0] * Jab[3])
+  Q = (Jab[3] * Jab[1] * Iext[0] - Iext[1]) / Jab[2]
+
+  print('stp G', J)
+  print('stp Q', Q)
+#+end_src
+
+#+RESULTS:
+: Balance True
+: True
+: rates [-0.10662824  0.95100865]
+: stp G 0.0994809688581315
+: stp Q 1.7279999999999998
+
+#+begin_src ipython
+  run_loop_X(conf_name, name, 'Iext', Ie_list, ini_list, phi_list, axis=0)
+#+end_src
+
+#+RESULTS:
+: File moved successfully!
+: File moved successfully!
+
+**** Analysis
+***** Load Data
+
+#+begin_src ipython
+  df = load_data(name, Ie_list, ini_list, phi_list, 'Iext')
+  df_code, end_point = get_df_code(df, 'Iext')
+  
   end_point['accuracy'] = (end_point.phase - end_point['phi'] / 180 * np.pi) % (2 * np.pi)
   end_point['precision'] = end_point.groupby(['phi', 'Iext'], group_keys=False)['phase'].apply(get_precision)
 
@@ -778,23 +735,26 @@
 #+end_src
 
 #+RESULTS:
+: (880, 32000)
+: (10, 8, 11, 32000, 1)
 :    trial  phi  Iext        m0        m1     phase
-: 0      0    0   2.0  0.446750  0.257081  0.129303
-: 1      0    0   2.1  1.579500  1.748562  0.183097
-: 2      0    0   2.2  2.347750  2.625262  6.220814
-: 3      0    0   2.3  2.934500  3.224673  0.143104
-: 4      0    0   2.4  3.103375  3.074775  0.007879
+: 0      0    0   1.5  0.021625  0.004951  0.229970
+: 1      0    0   1.6  0.048500  0.016797  0.118679
+: 2      0    0   1.7  0.100625  0.050589  0.378536
+: 3      0    0   1.8  0.154625  0.028661  3.124790
+: 4      0    0   1.9  0.455875  0.314494  6.050418
+#+RESULTS:
 
 ***** Tuning Profile
 
 #+begin_src ipython
-  idx_off = Ie_list[1]
-  idx_on = Ie_list[2]
+  idx_off = Ie_list[5]
+  idx_on = Ie_list[9]
   print('parameters', idx_off, idx_on)
 #+end_src
 
 #+RESULTS:
-: parameters 2.1 2.2
+: parameters 2.0 2.4
 
 #+begin_src ipython
   N_E = 32000
@@ -809,23 +769,23 @@
   ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
 
   sns.lineplot(end_point, x='Iext', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', color='k')
-  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='b') 
-  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[0]) 
+  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[1])
 
   ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax[1].set_xlabel('FF Input (Hz)')
   # ax[0].set_ylim([0.4, 1])
 
   point = df_smooth[df_smooth.Iext==idx_off].reset_index()
-  m0, m1, phase = decode_bump(point.rates[4])
-  point = np.roll(point.rates[4], int(( phase / 2.0 / np.pi - 0.5) * point.rates[4].shape[0]))
+  m0, m1, phase = decode_bump(point.rates[0])
+  point = np.roll(point.rates[0], int(( phase / 2.0 / np.pi - 0.5) * point.rates[0].shape[0]))
 
   point_on = df_smooth[df_smooth.Iext==idx_on].reset_index()  
-  m0, m1, phase = decode_bump(point_on.rates[4])
-  point_on = np.roll(point_on.rates[4], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[4].shape[0]))
+  m0, m1, phase = decode_bump(point_on.rates[0])
+  point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
 
-  ax[2].plot(point, color='b')
-  ax[2].plot(point_on, color='r')
+  ax[2].plot(point, color=pal[0])
+  ax[2].plot(point_on, color=pal[1])
 
   ax[2].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   ax[2].set_ylabel('Firing Rate (Hz)')
@@ -837,7 +797,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/a87eb2916d26a0e10e25bf111fbd1d479035ec70.png]]
+[[file:./.ob-jupyter/8241cec9fbf7a50e349cf7eb446ed22a0c7b7678.png]]
 
 ***** Diffusion
 
@@ -845,12 +805,12 @@
   point = end_point[end_point.Iext==idx_off]
   point_on = end_point[end_point.Iext==idx_on]
 
-  fig, ax = plt.subplots(1, 2, figsize=[2*width, height])
+  fig, ax = plt.subplots(1, 3, figsize=[3*width, height])
 
   sns.lineplot(end_point, x='Iext', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0])
 
-  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='b')
-  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='r')
+  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[0])
+  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[1])
 
   ax[0].set_xlabel('FF Input (Hz)')
   ax[0].set_ylabel('Diffusivity (°)')
@@ -858,17 +818,34 @@
   ax1 = ax[0].twinx()
   sns.lineplot(end_point, x='Iext', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5, marker='o')
 
-  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color='b')
-  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[0])
+  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[1])
 
   ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax1.spines['right'].set_visible(True)
+  point = df_smooth[df_smooth.Iext==idx_off].reset_index()
+  m0, m1, phase = decode_bump(point.rates[0])
+  point = np.roll(point.rates[0], int(( phase / 2.0 / np.pi - 0.5) * point.rates[0].shape[0]))
 
+  point_on = df_smooth[df_smooth.Iext==idx_on].reset_index()  
+  m0, m1, phase = decode_bump(point_on.rates[0])
+  point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
+
+  ax[1].plot(point, color=pal[0])
+  ax[1].plot(point_on, color=pal[1])
+
+  ax[1].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  ax[1].set_ylabel('Firing Rate (Hz)')
+  ax[1].set_xlabel('Pref. Location (°)')
+
+  point = end_point[end_point.Iext==idx_off]
+  point_on = end_point[end_point.Iext==idx_on]
+  
   bins = 'auto'
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
-  ax[1].set_xlabel('Angular Deviation (°)')
-  ax[1].set_ylabel('Density')
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[2], bins=bins, kde=True, stat='density', element='step', alpha=0., color=pal[1])
+  ax[2].set_xlabel('Angular Deviation (°)')
+  ax[2].set_ylabel('Density')
   # ax[1].set_xlim([-20, 20])
 
   plt.savefig(name + '_diffusion.svg', dpi=300)
@@ -876,23 +853,24 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/6028c3d66a81ce49ba5a36b568ac8ae2fed264e4.png]]
+[[file:./.ob-jupyter/caa6e14100a560ab26847b7b504287ea317c9800.png]]
 
 *** Varying Jee
 **** Parameters
 
 #+begin_src ipython
-  name = 'odr'
-  conf_name = 'config_ODR'
-  Jab_list = np.linspace(7, 11, 11)
+  name = 'odr_single'
+  conf_name = 'config_single'
+  Jab_list = np.linspace(5, 10, 11)
   print(Jab_list)
   ini_list = np.arange(0, 10)
+  ini_list = [0]
   # phi_list = np.linspace(0, 315, 8)
   phi_list = [180]
 #+end_src
 
 #+RESULTS:
-: [ 7.   7.4  7.8  8.2  8.6  9.   9.4  9.8 10.2 10.6 11. ]
+: [ 5.   5.5  6.   6.5  7.   7.5  8.   8.5  9.   9.5 10. ]
 
 **** Simulation
 
@@ -921,9 +899,9 @@
 #+RESULTS:
 : Balance True
 : True
-: rates [-0.16313933  0.76268861]
+: rates [-0.1366843   0.77914952]
 : stp G 0.09999999999999999
-: stp Q 3.818253968253968
+: stp Q 3.384325396825397
 
 #+begin_src ipython
   run_loop_X(conf_name, name, 'Jab', Jab_list, ini_list, phi_list, axis=0)
@@ -931,7 +909,6 @@
 
 #+RESULTS:
 : File moved successfully!
-:  MEM_USAGE > 85.0%, sleeping for a while ...
 : File moved successfully!
 
 **** Analysis
@@ -949,14 +926,14 @@
 #+end_src
 
 #+RESULTS:
-: (110, 32000)
-: (10, 1, 11, 32000, 1)
+: (11, 32000)
+: (1, 1, 11, 32000, 1)
 :    trial  phi  Jab        m0        m1     phase
-: 0      0    0  7.0  0.795375  0.147410  3.232187
-: 1      0    0  7.4  1.110375  0.520598  3.206395
-: 2      0    0  7.8  2.113250  1.663416  3.235127
-: 3      0    0  8.2  3.408125  3.220652  3.278166
-: 4      0    0  8.6  4.324375  4.386598  3.139567
+: 0      0    0  5.0  0.621250  0.012968  3.279996
+: 1      0    0  5.5  0.659125  0.033702  3.441674
+: 2      0    0  6.0  0.736875  0.073571  3.226387
+: 3      0    0  6.5  1.088625  0.457196  3.153078
+: 4      0    0  7.0  3.966250  3.625566  3.140358
 
 ***** Tuning Profile
 
@@ -967,7 +944,7 @@
 #+end_src
 
 #+RESULTS:
-: parameters 8.2 9.0
+: parameters 6.5 7.5
 
 #+begin_src ipython
   N_E = 32000
@@ -982,8 +959,8 @@
   ax[0].set_ylabel('$\mathcal{F}_0$ (Hz)')
   
   sns.lineplot(end_point, x='Jab', y=end_point['m1']/end_point['m0'], ax=ax[1], legend=False, marker='o', color='k')
-  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='b') 
-  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=df_point['m1']/ df_point['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[0]) 
+  sns.lineplot(end_point, x=idx_on, y=df_point_on['m1'] / df_point_on['m0'], ax=ax[1], legend=False, marker='o', ms=10, color=pal[1])
 
   ax[1].set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax[1].set_xlabel('$J_{EE}$')
@@ -998,8 +975,8 @@
   m0, m1, phase = decode_bump(point_on.rates[0])
   point_on = np.roll(point_on.rates[0], int((phase / 2.0 / np.pi - 0.5) * point_on.rates[0].shape[0]))
 
-  ax[2].plot(point, color='b')
-  ax[2].plot(point_on, color='r')
+  ax[2].plot(point, color=pal[0])
+  ax[2].plot(point_on, color=pal[1])
 
   ax[2].set_xticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   ax[2].set_ylabel('Firing Rate (Hz)')
@@ -1011,7 +988,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/fad185b12f21ae102c820e9a6e6e47b8901fe51a.png]]
+[[file:./.ob-jupyter/e9a570f804f94d1d8c746d98c071d38fa3128074.png]]
 
 ***** Diffusion
 
@@ -1023,8 +1000,8 @@
 
   sns.lineplot(end_point, x='Jab', y=end_point.precision.abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0])
 
-  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='b')
-  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color='r')
+  sns.lineplot(x=idx_off, y=point['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[0])
+  sns.lineplot(x=idx_on, y=point_on['precision'].abs() * 180 / np.pi, legend=False, marker='o', ax=ax[0], ms=10, color=pal[1])
 
   ax[0].set_xlabel('$J_{EE}$')
   ax[0].set_ylabel('Diffusivity (°)')
@@ -1032,15 +1009,15 @@
   ax1 = ax[0].twinx()
   sns.lineplot(end_point, x='Jab', y=end_point['m1']/end_point['m0'], ax=ax1, legend=False, ls='--', color='k', alpha=0.5, marker='o')
 
-  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color='b')
-  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color='r')
+  sns.lineplot(end_point, x=idx_off, y=point['m1']/point['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[0])
+  sns.lineplot(end_point, x=idx_on, y=point_on['m1']/point_on['m0'], legend=False, marker='o', ax=ax1, ms=10, color=pal[1])
 
   ax1.set_ylabel('$\mathcal{F}_1 / \mathcal{F}_0$')
   ax1.spines['right'].set_visible(True)
 
   bins = 'auto'
-  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = 'b')
-  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color='r')
+  sns.histplot(data=point, x=point['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=point_on, x=point_on['precision']*180/np.pi, legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0., color=pal[1])
   ax[1].set_xlabel('Angular Deviation (°)')
   ax[1].set_ylabel('Density')
   # ax[1].set_xlim([-20, 20])
@@ -1050,7 +1027,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/1bfd5d91ab503b0daa8816c9c68b7977c6e7738a.png]]
+[[file:./.ob-jupyter/0feda236fe0f92596a5efcabff6fce9aae167c30.png]]
 
 #+begin_src ipython
 

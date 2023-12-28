@@ -35,6 +35,8 @@ float *u_stp;
 float *A_stp;
 
 float *theta;
+float *thresh;
+float phase;
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -87,11 +89,15 @@ void init_lif() {
   volts = new float[N]();
   spikes = new float[N]();
   spike_times= new float[N]();
-  ISI = new float[N]();
-  
+
+  ISI = new float[N]();  
   for (int i = 0; i < N; i++)
-    ISI[i] = TAU_REF[which_pop[i]];
-  
+    ISI[i] = TAU_AREF[which_pop[i]];
+
+  thresh = new float[N]();
+  for (int i = 0; i < N; i++)
+    thresh[i] = V_THRESH;
+      
   ff_inputs = new float[N]();
   inputs = new float*[N_POP]();
   net_inputs = new float[N]();
@@ -135,8 +141,10 @@ void free_lif() {
   delete[] spikes;
   delete[] spike_times;
 
+  delete[] ISI;
   delete[] ff_inputs;
-
+  delete[] thresh;
+  
   for (int i = 0; i < N_POP; i++) {
     delete[] inputs[i];
   }
@@ -168,22 +176,25 @@ void initNetwork() {
   std::cout << "Initializing Network, output dir:" << DATA_PATH;
 
   // volts = generateGaussianVector<float>(N, 2.0, 0.5);
+
+  float dum = 1.0 ;
+  if(IF_COND_BASE==0)   
+    dum = (V_THRESH - V_REST);
+  
   for(int i=0; i < N_POP; i++)
-    for(int j=0; j < N_POP; j++)      
-      // This is the correct scaling when Ka is frac * K
-      // and for some reason it helps increasing fluctuations
-      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * (V_THRESH - V_REST) / TAU_SYN[j] * sqrt(Ka[0]) / Ka[j];
+    for(int j=0; j < N_POP; j++)
+      Jab_scaled[j + i * N_POP] = GAIN * Jab[j + i * N_POP] * dum / TAU_SYN[j] * sqrt(Ka[0]) / Ka[j];
   
   if(IF_NMDA) {
     for(int i=0; i < N_POP; i++)
-      Jab_NMDA[i] = GAIN * Jab[i * N_POP] * (V_THRESH - V_REST) / TAU_NMDA[i] / sqrt(Ka[0]);
+      Jab_NMDA[i] = GAIN * Jab[i * N_POP] * dum / TAU_NMDA[i] / sqrt(Ka[0]);
     
     Jab_NMDA[0] *= (1.0 - R_NMDA[0]) / R_NMDA[0];
     Jab_NMDA[1] *= (1.0 - R_NMDA[1]) / R_NMDA[1];
   }
   
   for(int i=0; i < N_POP; i++)
-    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * (V_THRESH - V_REST) * M0;
+    Iext_scaled[i] = Iext[i] * sqrt(Ka[0]) * dum * M0;
   
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
@@ -197,7 +208,8 @@ void initNetwork() {
     for(int i=0; i < N_POP; i++)
       // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
       // A_CORR[i] = A_CORR[i] * GAIN * (V_THRESH - V_REST);
-      A_CORR[i] = A_CORR[i] / sqrt(Ka[0]);
+      // A_CORR[i] = A_CORR[i] / sqrt(Ka[0]) ;
+      CORR_FF[i] = Iext_scaled[i] * CORR_FF[i] / sqrt(Ka[0]);
   
   std::cout << " Done" << std::endl;
 
@@ -260,9 +272,12 @@ void updateFFinputs(int step) {
     for (int i = 0; i < N; i++)
       ff_inputs[i] += STD_FF[which_pop[i]] * white(gen);
   
-  if (IF_FF_CORR)
+  if (IF_FF_CORR) {
+    phase = unif_theta(gen);
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta[i] - unif_theta(gen)));
+      //ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta[i] - phase));
+      ff_inputs[i] += CORR_FF[which_pop[i]] * std::cos(theta[i] - phase);
+  }
 }
 
 void updateVolts(){
@@ -317,42 +332,73 @@ void updateRecInputs(){
 }
 
 void updateNetInputs(){
-
-  for(int i = 0; i < N; i++)
-    net_inputs[i] = ff_inputs[i];
-
-  for(int i = 0; i < N_POP; i++) {
-    for (int j = 0; j < N; j++) {
-      net_inputs[j] += inputs[i][j];
-      inputs[i][j] *= EXP_DT_TAU_SYN[i];
+  
+  if (IF_COND_BASE) {
+    for(int i = 0; i < N; i++)
+      net_inputs[i] = ff_inputs[i] * (V_LEAK - volts[i]);
+  
+    for(int i = 0; i < N_POP; i++) {
+      for (int j = 0; j < N; j++) {
+        net_inputs[j] += inputs[i][j] * (V_REV[which_pop[j]] - volts[j]); 
+        inputs[i][j] *= EXP_DT_TAU_SYN[i];
+      }
+    }
+  
+    if (IF_NMDA) {    
+      for (int j = 0; j < N; j++) {      
+        net_inputs[j] += inputs_NMDA[j] * (V_REV[which_pop[j]] - volts[j]);
+        inputs_NMDA[j] *= EXP_DT_TAU_NMDA[which_pop[j]];
+      }
     }
   }
-  if (IF_NMDA) {
-    for (int j = 0; j < N; j++) {
-      net_inputs[j] += inputs_NMDA[j];
-      inputs_NMDA[j] *= EXP_DT_TAU_NMDA[which_pop[j]];
+  else {
+    for(int i = 0; i < N; i++)
+      net_inputs[i] = ff_inputs[i];
+    
+    for(int i = 0; i < N_POP; i++) {
+      for (int j = 0; j < N; j++) {
+        net_inputs[j] += inputs[i][j]; 
+        inputs[i][j] *= EXP_DT_TAU_SYN[i];
+      }
     }
+  
+    if (IF_NMDA) {    
+      for (int j = 0; j < N; j++) {      
+        net_inputs[j] += inputs_NMDA[j];
+        inputs_NMDA[j] *= EXP_DT_TAU_NMDA[which_pop[j]];
+      }
+    }    
+  }
+}
+
+void updateThresh(){
+  for (int i = 0; i < N; i++) {
+    thresh[i] *= EXP_DT_TAU_REF[which_pop[i]];
+    thresh[i] += DT_TAU_REF[which_pop[i]];
   }
 }
 
 void updateSpikes(int step){
   for (int i = 0; i < N; i++)
-    if (volts[i] >= V_THRESH) {      
+    if (volts[i] >= thresh[i]) {
 
       volts[i] = V_REST;
       
-      if (abs(ISI[i])>=TAU_REF[which_pop[i]]) {
+      if (IF_THRESH_DYN)
+        thresh[i] += DELTA_THRESH;
+      
+      if (abs(ISI[i]) >= IF_THRESH_DYN * TAU_AREF[which_pop[i]]) {
         
         // update ISI
         ISI[i] = step - spike_times[i];
         spike_times[i] = step;
         
         spikes[i] = 1.0;
-        rates[i] += spikes[i];        
+        rates[i] += spikes[i];
         // spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
         
         if (IF_STP && i < Na[0])
-          updateStp(i, ISI[i] * DT);        
+          updateStp(i, ISI[i] * DT);
       }
     }
     else {
@@ -410,11 +456,6 @@ void printParam(){
       std::cout << Jab_scaled[j + i * N_POP] << " ";
   std::cout << std::endl;
 
-  std::cout << "TAU_REF ";
-  for(int i=0; i < N_POP; i++)
-    std::cout << TAU_REF[i] << " ";
-  std::cout << std::endl;
-  
 }
 
 void runSimul(){
@@ -470,8 +511,8 @@ void runSimul(){
   
   int N_STEPS = (int) (DURATION / DT);
   int N_STEADY = (int) (T_STEADY / DT);
-  int N_WINDOW = (int) (T_WINDOW / DT);
-  int N_SAVE = (int) (DURATION - T_SAVE) / DT + N_STEADY;
+  int N_WINDOW = (int) (T_WINDOW / DT);  
+  int N_SAVE = (int) (T_SAVE>0) * (DURATION - T_SAVE) / DT + N_STEADY;
   
   std::cout << "Running Simulation" << " N_STEPS " << N_STEPS;
   std::cout << " N_STEADY " << N_STEADY;
@@ -480,6 +521,7 @@ void runSimul(){
   for(int step = 0; step < N_STEPS + N_STEADY; step++) {
     
     updateVolts();
+    if(IF_THRESH_DYN==1) updateThresh();
     updateSpikes(step); // must come before updateRecInputs in this implementation
     updateFFinputs(step); // must come before updateNetInputs in this implementation
     updateRecInputs(); // must come before updateNetInputs in this implementation
