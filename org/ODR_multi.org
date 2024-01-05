@@ -41,7 +41,9 @@
 
 #+RESULTS:
 
+
 * Helpers
+
 #+begin_src ipython
   def get_precision(x):
 
@@ -155,6 +157,7 @@
 #+end_src
 
 #+RESULTS:
+
 
 * Multiple Trials
 *** Simulation

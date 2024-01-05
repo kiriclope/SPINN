@@ -1,0 +1,452 @@
+#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif :kernel dual_data
+# #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
+
+* Notebook Configuration
+** Settings
+#+begin_src ipython
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+
+  %run /home/leon/models/lif_cpp/notebooks/setup.py
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+
+** Imports
+
+#+begin_src ipython
+  import sys
+  sys.path.insert(0, '/home/leon/models/lif_cpp')  
+  REPO_PATH = "/home/leon/models/lif_cpp"
+
+  import warnings
+  # Ignore FutureWarning
+  warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+  import subprocess
+  import pandas as pd
+  from time import sleep
+  from yaml import safe_load
+  from scipy.stats import circmean
+  from joblib import Parallel, delayed
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.decode import decode_bump, circcvl
+
+  pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
+#+end_src
+
+#+RESULTS:
+
+* Helpers
+** simulations
+
+#+begin_src ipython
+  def run_sim(conf_name, session, X_str=None, axis=0, gain=1, IF_M0=0, gain2=1.1):
+
+    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
+
+    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
+    data_path = REPO_PATH + '/data/simul/' + session
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
+    
+    if X_str is not None:
+      if axis is not None:
+        if axis<0:
+          for axis in range(np.array(config[X_str]).shape[0]):
+            update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
+        else:
+          update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
+      else:
+        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str] * gain), axis=None)
+
+    if IF_M0:
+      update_conf(REPO_PATH + '/conf/' + conf_name, 'Iext', float(config['Iext'][0] * gain2), axis=0)
+
+    sleep(.05)
+    run_cpp(session, conf_path=conf_path)
+    sleep(.05)
+
+    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                 REPO_PATH + '/conf/' + conf_name + '.yml')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def run_ini_phi(conf_name, name, ini_list, phi_list, X_str=None, axis=0, gain=1.05, IF_M0=0, gain2=1.1):
+      restore_conf(REPO_PATH + '/conf/'+ conf_name +'.yml',
+                   REPO_PATH + '/conf/'+ conf_name + '.yml.bak')
+
+      conf_path = REPO_PATH + '/conf/'+ conf_name +'.yml'
+
+      for ini in ini_list:
+          for phi in phi_list:
+              session = "%s_phi_%d_ini_%d" % (name, phi, ini)
+              update_conf(REPO_PATH + '/conf/' + conf_name, 'PHI_STIM', float(phi), axis=0)
+
+              sleep(.05)
+              run_sim(conf_name, session, X_str, axis, gain, IF_M0, gain2)
+              sleep(.05)
+
+              subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
+              subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
+
+      restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                   REPO_PATH + '/conf/' + conf_name + '.yml')
+
+#+end_src
+
+#+RESULTS:
+
+** data
+
+#+begin_src ipython
+  def get_data(session='/'):
+    # Open the file in binary mode and read the data
+    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T
+ #+end_src
+ 
+ #+RESULTS:
+ 
+#+begin_src ipython
+  def get_rate(name, ini, phi):
+       session = "/%s_phi_%d_ini_%d/" % (name, phi, ini)
+       rate = get_data(session)
+       return rate[:32000]
+
+  def get_rates_ini_phi(name, ini_list, phi_list):
+       rates = Parallel(n_jobs=-1)(delayed(get_rate)(name, ini, phi) for ini in ini_list for phi in phi_list)
+       rates = np.array(rates)
+       rates = rates.reshape(len(ini_list), len(phi_list), 32000, -1)
+       return rates
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython  
+  def get_df_ini_phi(rates):
+      n_trials, n_phi, n_neurons, n_times = rates.shape
+
+      # Create indices
+      trials_ind, phi_ind, neurons_ind, times_ind = np.indices((n_trials, n_phi, n_neurons, n_times))
+
+      # Construct DataFrame
+      df = pd.DataFrame({
+          'trial': trials_ind.flatten(),
+          'phi': phi_ind.flatten(),
+          'neuron': neurons_ind.flatten(),
+          'time': times_ind.flatten(),
+          'rates': rates.flatten()
+      })
+
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def load_data_ini_phi(name, ini_list, phi_list):
+      rates = get_rates_ini_phi(name, ini_list, phi_list)
+      df = get_df_ini_phi(rates)
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_code(df):
+      df_code = df.groupby(['time', 'trial', 'phi'])['rates'].apply(decode_bump).reset_index()
+      df_code[['m0', 'm1', 'phase']] = pd.DataFrame(df_code['rates'].tolist(), index=df_code.index)
+      df_code = df_code.drop(columns=['rates'])
+
+      end_point = df_code[df_code.time==df_code.time.iloc[-1]]
+      end_point = end_point.drop(columns=['time'])
+      return df_code, end_point
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_precision(x):
+
+      cmean =  (x - circmean(x, low=-np.pi, high=np.pi)) 
+
+      cmean[cmean > np.pi] -= 2*np.pi
+      cmean[cmean < -np.pi] += 2*np.pi
+
+      return cmean
+#+end_src
+
+#+RESULTS:
+
+* Compilation
+
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  # make clean
+  make
+#+end_src
+
+#+RESULTS:
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
+| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
+
+* Neuromodulation
+** Parameters
+
+#+begin_src ipython
+  ini_list = np.arange(0, 20)
+  phi_list = np.linspace(0, 315, 8)
+  conf_name = 'config_ODR'
+
+  # phi_list = [180]
+  # ini_list = [0]
+#+end_src
+
+#+RESULTS:
+
+** Simulations
+*** off and on
+#+begin_src ipython
+  name = 'odr_off'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Iext', gain=1.0, axis=0)
+#+end_src
+
+#+RESULTS:
+: 51670d0b-f763-4caf-a3cb-938232d7cfc7
+
+#+begin_src ipython
+  name = 'odr_on'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Iext', gain=1.1, axis=0)
+#+end_src
+
+#+RESULTS:
+: 561b306f-af69-438d-bce5-3affd18aa4ce
+
+*** Jab and corr
+
+#+begin_src ipython
+  name = 'odr_Jee'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=1.05, axis=0, IF_M0=1)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  name = 'odr_Jei'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=0.95, axis=1, IF_M0=0)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  name = 'odr_Jie'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=0.95, axis=2, IF_M0=1)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  name = 'odr_corr'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='CORR_FF', gain=0.5, axis=-1, IF_M0=1)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  name = 'odr_use'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='USE', gain=1.1, axis=0, IF_M0=1)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  name = 'odr_tau_fac'
+  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='TAU_REC', gain=1.1, axis=0, IF_M0=1)
+#+end_src
+
+#+RESULTS:
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+** Data
+*** Load
+
+#+begin_src ipython
+  name = 'odr_off'
+  df = load_data_ini_phi(name, ini_list, phi_list)
+  df_code, end_point = get_code(df)
+
+  end_point['precision'] = end_point.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
+  df_smooth = df.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
+
+  smooth = []
+  for i in range(df_smooth.rates.shape[0]):
+      m0, m1, phase = decode_bump(df_smooth.rates[i])
+      smooth.append(np.roll(df_smooth.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth.rates[i].shape[0])))
+
+  smooth = np.array(smooth)
+  Nx, Ny = np.array(smooth_on).shape
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  name = 'odr_on'
+  df_on = load_data_ini_phi(name, ini_list, phi_list)
+  df_code, end_point_on = get_code(df_on)
+
+  end_point_on['precision'] = end_point_on.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
+  df_smooth_on = df_on.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
+
+  smooth_on = []
+  for i in range(df_smooth_on.rates.shape[0]):
+      m0, m1, phase = decode_bump(df_smooth_on.rates[i])
+      smooth_on.append(np.roll(df_smooth_on.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth_on.rates[i].shape[0])))
+
+  smooth_on = np.array(smooth_on)
+#+end_src
+
+#+RESULTS:
+
+*** Plots
+
+#+begin_src ipython
+  bins = 'auto'
+  fig, ax = plt.subplots(2, 1, figsize=[width, 2*height])
+
+  N_E = 32000
+  title = '\\text{FF Input} \\nearrow'
+  # title = '\\text{FF Corr} \\searrow'
+
+  #title = 'J_{EE} \\nearrow'
+
+  means = smooth.mean(axis=0)  
+  ci = smooth.std(axis=0, ddof=1)
+
+  # Plot
+  ax[0].plot(means, label='Mean')
+  ax[0].fill_between(range(Ny), means - ci, means + ci, alpha=0.25)
+
+  means = smooth_on.mean(axis=0)  
+  ci = smooth.std(axis=0, ddof=1) * 1.96
+
+  # Plot
+  ax[0].plot(means, label='Mean')
+  ax[0].fill_between(range(Ny), means - ci, means + ci, alpha=0.2)
+
+  ax[0].set_xticks([0, N_E/2, N_E], [0, 180, 360])
+  ax[0].set_ylabel('Firing Rate (Hz)')
+  ax[0].set_xlabel('Pref. Location (°)')
+  ax[0].set_title('$%s$' % title)
+
+  sns.histplot(data=end_point, x=end_point['precision'], legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+  sns.histplot(data=end_point_on, x=end_point_on['precision'], legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[1])
+  ax[1].set_xlabel('Endpoint Deviation (°)')
+  ax[1].set_ylabel('Density')
+  ax[1].set_xlim([-50, 50])
+
+  plt.savefig(name + '_neuro.svg', dpi=300)
+  plt.show()
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/c5c24c0b28392e889eaeeef908809d23f4ea2646.png]]
+
+#+begin_src ipython
+  session = 'odr_off'
+  data = get_data(session)
+  rates_off = data[:32000]
+
+  smooth_off = circcvl(rates_off, windowSize=3200, axis=0)
+  m0, m1, phase = decode_bump(smooth_off[:, -1])
+  smooth_off = np.roll(smooth_off[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_off.shape[0]))
+  print(smooth_off.shape)
+
+  theta = np.linspace(0, 360, rates_off.shape[0])
+
+  width = 7
+  golden_ratio = (5**.5 - 1) / 2
+  fig, ax = plt.subplots(1, 4, figsize= [2.5*width, width *golden_ratio])
+
+  # ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
+  # ax[0][0].plot(theta, smooth_on[:, -1], 'r')
+
+  sessions = ['Jee', 'corr']
+  titles = ['J_{EE} \\nearrow', 'J_{EI} \\searrow', 'J_{IE} \\nearrow', '\sigma_{A0} \\searrow']
+  for i in range(4): 
+      session = 'odr_' + sessions[i] + '_phi_180_ini_0'
+      data = get_data(session)
+      rates_on = data[:32000]
+
+      smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
+      m0, m1, phase = decode_bump(smooth_on[:, -1])
+      smooth_on = np.roll(smooth_on[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_on.shape[0]))
+      
+      ax[i].plot(theta, smooth_off , color=pal[0])
+      ax[i].plot(theta, smooth_on, color=pal[1])
+      ax[i].set_title('$%s$' % titles[i])
+      ax[i].set_xticks([0, 180, 360]);
+      ax[i].set_xlabel('Pref. Location (°)')
+
+  ax[0].set_ylabel('Firing Rate (Hz)')
+  plt.savefig('./neuromodulation.svg', dpi=300)
+
+  plt.show()
+#+end_src
+
+#+begin_src ipython
+
+#+end_src
+
+#+RESULTS:
+

@@ -18,6 +18,7 @@ std::string MAT_PATH;
 int CHECK_BISTABILITY;
 std::vector<int> BUMP_SWITCH;
 
+int IF_REC_SPIKE;
 int VERBOSE;
 int N;
 int N_POP;
@@ -89,6 +90,7 @@ std::vector<float> R_NMDA;
 float* EXP_DT_TAU_NMDA;
 
 int IF_STP;
+std::vector<int> IS_STP;
 std::vector<float> TAU_REC;
 std::vector<float> TAU_FAC;
 std::vector<float> USE;
@@ -127,7 +129,8 @@ void loadConfig(std::string configname){
   
   IF_SAVE_DATA = config["IF_SAVE_DATA"].as<int>();
   T_SAVE = config["T_SAVE"].as<float>();
-  
+
+  IF_REC_SPIKE = config["IF_REC_SPIKE"].as<int>();
   VERBOSE = config["verbose"].as<int>();
   CHECK_BISTABILITY = config["CHECK_BISTABILITY"].as<int>();
   BUMP_SWITCH = config["BUMP_SWITCH"].as<std::vector<int>>();
@@ -144,7 +147,7 @@ void loadConfig(std::string configname){
   Ka = new float[N_POP]() ;
   cNa = new int[N_POP+1]() ;
   which_pop = new int[N]() ;
-
+  
   for(int i=0; i<N_POP; ++i) {
     Na[i] = (int) (FRAC[i] * N);
     // Ka[i] = K;
@@ -215,6 +218,7 @@ void loadConfig(std::string configname){
     EXP_DT_TAU_NMDA[i] = std::exp(-DT / TAU_NMDA[i]);
 
   IF_STP = config["IF_STP"].as<int>();
+  IS_STP = config["IS_STP"].as<std::vector<int>>();
   TAU_REC = config["TAU_REC"].as<std::vector<float>>();
   TAU_FAC = config["TAU_FAC"].as<std::vector<float>>();
   USE = config["USE"].as<std::vector<float>>();

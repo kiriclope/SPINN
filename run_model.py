@@ -39,7 +39,7 @@ def update_conf(conf_name, key_to_change, new_value, axis=None):
 def restore_conf(src, dest):
     try:
         shutil.copy(src, dest)
-        print("File moved successfully!")
+        # print("File moved successfully!")
     except FileNotFoundError:
         print("Error: Source file not found!")
     except PermissionError:

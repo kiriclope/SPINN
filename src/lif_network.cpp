@@ -30,9 +30,9 @@ float *Iext_scaled;
 size_t *colptr;
 int *indices;
 
-float *x_stp;
-float *u_stp;
-float *A_stp;
+float **x_stp;
+float **u_stp;
+float **A_stp;
 
 float *theta;
 float *thresh;
@@ -42,7 +42,7 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 std::uniform_real_distribution<float> unif_theta(0.0, twoPi);
-// std::vector<std::pair<int, float>> spike_pair;
+std::vector<std::pair<int, float>> spike_pair;
 
 void odr_stimuli(float* &ff_inputs, int FLAG) {
   if(FLAG==0) 
@@ -89,7 +89,7 @@ void init_lif() {
   volts = new float[N]();
   spikes = new float[N]();
   spike_times= new float[N]();
-
+  
   ISI = new float[N]();  
   for (int i = 0; i < N; i++)
     ISI[i] = TAU_AREF[which_pop[i]];
@@ -117,11 +117,16 @@ void init_lif() {
   }
   
   if(IF_STP) {
-    x_stp = new float[N] {1.0};
-    u_stp = new float[N] {1.0};
-    A_stp = new float[N] {1.0};
+    x_stp = new float*[N_POP]();
+    u_stp = new float*[N_POP]();
+    A_stp = new float*[N_POP]();
+    for (int i = 0; i < N_POP; i++) {
+      x_stp[i] = new float[N] {1.0};
+      u_stp[i] = new float[N] {1.0};
+      A_stp[i] = new float[N] {1.0};
+    }
   }
-
+  
   theta = new float[N]();
   for (int i = 0; i < N; i++)
     theta[i] = (twoPi * (i - cNa[which_pop[i]])) / (float) Na[which_pop[i]];
@@ -163,11 +168,12 @@ void free_lif() {
   delete[] indices;
 
   if (IF_STP) {
-    delete[] x_stp;
-    delete[] u_stp;
-    delete[] A_stp;
+    for (int i = 0; i < N_POP; i++) {
+      delete[] x_stp[i];
+      delete[] u_stp[i];
+      delete[] A_stp[i];
+    }
   }
-
   delete[] theta;
 }
 
@@ -194,7 +200,7 @@ void initNetwork() {
   }
   
   for(int i=0; i < N_POP; i++)
-    Iext_scaled[i] = Iext[i] * sqrt(Ka[0]) * dum * M0;
+    Iext_scaled[i] = GAIN * Iext[i] * sqrt(Ka[0]) * dum * M0;
   
   for(int i=0; i<N; i++)
     ff_inputs[i] = Iext_scaled[which_pop[i]];
@@ -204,13 +210,14 @@ void initNetwork() {
       // STD_FF[i] *= GAIN * (V_THRESH - V_REST);
       STD_FF[i] = STD_FF[i] / sqrt(Ka[0]);
   
-  if(IF_FF_CORR)
-    for(int i=0; i < N_POP; i++)
-      // A_CORR[i] = A_CORR[i] * sqrt(Ka[0]) * (V_THRESH - V_REST);
-      // A_CORR[i] = A_CORR[i] * GAIN * (V_THRESH - V_REST);
-      // A_CORR[i] = A_CORR[i] / sqrt(Ka[0]) ;
-      CORR_FF[i] = Iext_scaled[i] * CORR_FF[i] / sqrt(Ka[0]);
-  
+  if(IF_FF_CORR==1)
+    for(int i=0; i < N_POP; i++) 
+      A_CORR[i] = A_CORR[i] * dum / 1000.0 ;
+  else {
+    if(IF_FF_CORR==2)
+    for(int i=0; i < N_POP; i++) 
+      CORR_FF[i] = Iext_scaled[i] * CORR_FF[i] / sqrt(Ka[0]); 
+  }
   std::cout << " Done" << std::endl;
 
   // network initialization
@@ -272,10 +279,15 @@ void updateFFinputs(int step) {
     for (int i = 0; i < N; i++)
       ff_inputs[i] += STD_FF[which_pop[i]] * white(gen);
   
-  if (IF_FF_CORR) {
+  if (IF_FF_CORR==1) {
     phase = unif_theta(gen);
     for (int i = 0; i < N; i++)
-      //ff_inputs[i] += A_CORR[which_pop[i]] * (1.0 + CORR_FF[which_pop[i]] * std::cos(theta[i] - phase));
+      ff_inputs[i] += A_CORR[which_pop[i]] * (CORR_FF[which_pop[i]] * std::cos(theta[i] - phase));
+  }
+  else {
+    if (IF_FF_CORR==2)
+    phase = unif_theta(gen);
+    for (int i = 0; i < N; i++)
       ff_inputs[i] += CORR_FF[which_pop[i]] * std::cos(theta[i] - phase);
   }
 }
@@ -310,20 +322,20 @@ void updateRecInputs(){
       
       for (size_t i = colptr[j]; i < colptr[j + 1]; i++) { // postsynaptic
         post_pop = which_pop[indices[i]];
-        if (IF_STP && pres_pop == 0 && post_pop == 0)
-          inputs[pres_pop][indices[i]] += A_stp[j] * Jab_scaled[pres_pop + N_POP * post_pop];
+        if (IF_STP && IS_STP[pres_pop + post_pop * N_POP])
+          inputs[pres_pop][indices[i]] += A_stp[post_pop][j] * Jab_scaled[pres_pop + N_POP * post_pop];
         else
           inputs[pres_pop][indices[i]] += Jab_scaled[pres_pop + N_POP * post_pop];
       }
     }
-
+  
   if (IF_NMDA) {
     for (int j = 0; j < Na[0]; j++) // presynaptic
       if (spikes[j] == 1) {
         for (size_t i = colptr[j]; i < colptr[j + 1]; i++) { // postsynaptic
           post_pop = which_pop[indices[i]];
-          if (IF_STP && post_pop == 0)
-            inputs_NMDA[indices[i]] += A_stp[j] * Jab_NMDA[post_pop];
+          if (IF_STP && IS_STP[post_pop * N_POP])
+            inputs_NMDA[indices[i]] += A_stp[post_pop][j] * Jab_NMDA[post_pop];
           else
             inputs_NMDA[indices[i]] += Jab_NMDA[post_pop];
         }
@@ -395,10 +407,14 @@ void updateSpikes(int step){
         
         spikes[i] = 1.0;
         rates[i] += spikes[i];
-        // spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
+
+        if (IF_REC_SPIKE)
+          spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
         
-        if (IF_STP && i < Na[0])
-          updateStp(i, ISI[i] * DT);
+        if (IF_STP)
+          for(int j=0; j<N_POP; j++)
+            if (IS_STP[which_pop[i] + j * N_POP])
+              updateStp(i, j, ISI[i] * DT);       
       }
     }
     else {
@@ -406,13 +422,16 @@ void updateSpikes(int step){
     }
 }
 
-void updateStp(int i, float isi){
-  // This is the Mato & Hansel stp model  
+void updateStp(int i, int post_pop, float isi){
+  // This is the Mato & Hansel stp model 
   int pre_pop = which_pop[i];
+  if (TAU_FAC[pre_pop + post_pop*N_POP])
+    u_stp[post_pop][i] = u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]) + USE[pre_pop+post_pop*N_POP] * (1.0 - u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]));
+  else
+    u_stp[post_pop][i] = USE[pre_pop + post_pop*N_POP];
   
-  u_stp[i] = u_stp[i] * exp(-isi / TAU_FAC[pre_pop]) + USE[pre_pop] * (1.0 - u_stp[i] * exp(-isi / TAU_FAC[pre_pop]));
-  x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-isi / TAU_REC[pre_pop]) + 1.0 - exp(-isi / TAU_REC[pre_pop]);
-  A_stp[i] = u_stp[i] * x_stp[i];
+  x_stp[post_pop][i] = x_stp[post_pop][i] * (1.0 - u_stp[post_pop][i]) * exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]) + 1.0 - exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]);
+  A_stp[post_pop][i] = u_stp[post_pop][i] * x_stp[post_pop][i];
   
 }
 
@@ -552,8 +571,10 @@ void runSimul(){
       }
       
       if (IF_SAVE_DATA) {
-        if (step>N_SAVE) {
-          // saveArrayToFile(spikesFile, spikes, N);
+        if (step>=N_SAVE) {
+          if (IF_REC_SPIKE)
+            saveArrayToFile(spikesFile, spikes, N);
+          
           saveArrayToFile(ratesFile, rates, N);
           // saveArrayToFile(voltsFile, volts, N);
         
@@ -573,8 +594,9 @@ void runSimul(){
   } // end for
 
   if (IF_SAVE_DATA) {
-    
-    // saveVectorOfPairsToFile(spikesFile, spike_pair);
+
+    if (IF_REC_SPIKE)
+      saveVectorOfPairsToFile(spikesFile, spike_pair);
     
     spikesFile.close();
     ratesFile.close();

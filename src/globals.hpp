@@ -18,6 +18,7 @@ extern std::string MAT_PATH;
 extern int CHECK_BISTABILITY;
 extern std::vector<int> BUMP_SWITCH;
 
+extern int IF_REC_SPIKE;
 extern int VERBOSE;
 extern int N;
 extern int N_POP;
@@ -88,6 +89,7 @@ extern std::vector<float> R_NMDA;
 extern float* EXP_DT_TAU_NMDA;
 
 extern int IF_STP;
+extern std::vector<int> IS_STP;
 extern std::vector<float> TAU_REC;
 extern std::vector<float> TAU_FAC;
 extern std::vector<float> USE;

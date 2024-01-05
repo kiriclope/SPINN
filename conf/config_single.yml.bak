@@ -7,8 +7,10 @@ IF_LOAD_MAT: 1
 # to save connectivity matrix from MAT_PATH
 IF_SAVE_MAT: 0
 
+IF_REC_SPIKE: 0
+
 # saving the last T_SAVE ms
-T_SAVE: 0.0
+T_SAVE: 1000.0
 
 # path for the output files of the simulation
 DATA_PATH: /home/leon/models/lif_cpp/data/simul
@@ -21,7 +23,7 @@ verbose: 1
 # Time step in ms
 DT: 0.1
 # total simulation time in ms
-DURATION: 5000.0
+DURATION: 10000.0
 # time to start showing simulation result ms
 T_STEADY: 0.0
 # Saving to files every T_WINDOW in ms
@@ -107,12 +109,12 @@ R_NMDA: [0.5, 0.5]
 GAIN: 1.0
 
 # Feedforward inputs strengths
-Iext: [2.0, 1.75]
+Iext: [2.0, 1.7]
 # FF rate
 M0: 1.0
 # Synaptic strengths 
 # Jab: [15.0, -1.35, 2.5, -2.0]
-Jab: [8.65, -1.15, 1.25, -1.7]
+Jab: [8.0, -1.125, 1.25, -1.73]
 # Jab: [8.4, -1.4, 1.26, -1.6]
 # Jab: [8.0, -0.7, 1.25, -1.0]
 
@@ -126,8 +128,8 @@ Jab: [8.65, -1.15, 1.25, -1.7]
 # 'spec' gives a sparse matrix with weak cosine structure,
 # Pij = (1 + KAPPA cos(theta_ij) / sqrt(Kb)) , Cij = 1 with proba Pij
 PROBA: ['cos', 'cos', 'cos', 'cos']
-KAPPA: [1.0, 0.95, 1.0, 1.0]
-# KAPPA: [0.5, 0.425, 0.5, 0.5]
+KAPPA: [1.0, 0.9, 1.0, 1.0]
+# KAPPA: [1.0, 0.95, 1.0, 1.0]
 
 # PROBA: ['lr', 'rand', 'rand', 'rand']
 # KAPPA: [3.0, 0.0, 0.0, 0.0]
@@ -137,9 +139,10 @@ KAPPA: [1.0, 0.95, 1.0, 1.0]
 ##############
 # adds STP (as in Mato & Hansel, J Neurosci, 2012)
 IF_STP: 1
-USE: [0.03, 0.03]
-TAU_FAC: [550, 850]
-TAU_REC: [250, 200]
+IS_STP: [1, 1, 0, 0]
+USE: [0.03, 0.3]
+TAU_FAC: [550, 800]
+TAU_REC: [250, 800]
 
 ############################
 # Feed Forward Input
@@ -152,9 +155,9 @@ STD_FF: [0.01, 0.01]
 # adds cosine correlation to the feedforward
 IF_FF_CORR: 1
 # amplitude of the correlations
-A_CORR: [0.01, 0.01]
+A_CORR: [2.0, 1.7]
 # tuning of the correlations
-CORR_FF: [0.02, 0.02]
+CORR_FF: [0.01, 0.01]
 
 ####################
 # Low rank

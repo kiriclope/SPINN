@@ -1,9 +1,10 @@
-#+STARTUP: fold
-#+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif :kernel dual_data
+<#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif_single :kernel dual_data
 # #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
 
-* Notebook Configuration
+* Notebook utils
 ** Settings
+
 #+begin_src ipython
   %load_ext autoreload
   %autoreload 2
@@ -39,9 +40,10 @@
 
 #+RESULTS:
 
-* Helpers
+** Helpers
+
 #+begin_src ipython
-  def run_sim(conf_name, session, X_str=None, axis=0, gain=1):
+  def run_sim(conf_name, session, X_str=None, axis=0, gain=1, IF_M0=1):
 
     restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
                  REPO_PATH + '/conf/'+ conf_name +'.yml.bak')
@@ -52,9 +54,21 @@
     data_path = REPO_PATH + '/data/simul/' + session
     update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
     if X_str is not None:
-      update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
-    # update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.25), axis=0)
+      if axis is not None:
+        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
+      elif axis == -1:
+        for axis in range(np.array(config[X_str]).shape[0]):
+          update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)          
+      else:
+        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str]) * gain, axis=None)
 
+    if IF_M0:
+      update_conf(REPO_PATH + '/conf/' + conf_name, 'Iext', float(config['Iext'][0] * 1.1), axis=0)
+
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'T_SAVE', float(0.0), axis=None)
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'DURATION', float(20000.0), axis=None)
+    update_conf(REPO_PATH + '/conf/' + conf_name, 'T_STEADY', float(10000.0), axis=None)
+    
     sleep(.2)
     run_cpp(session, conf_path=conf_path)
     sleep(.2)
@@ -80,7 +94,7 @@
   def get_times(conf_name):
        config = safe_load(open("/home/leon/models/lif_cpp/conf/"+conf_name+".yml", "r"))
 
-       times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
+       times = np.arange(0, 20000, config['T_WINDOW'])
        # times -= config['T_STEADY']
        times /= 1000.0
 
@@ -88,65 +102,31 @@
 #+end_src
 
 #+RESULTS:
-
-#+begin_src ipython
-  def gram_schmidt(a, b):
-      e1 = a / np.linalg.norm(a)
-      v = b - np.dot(b, e1) * e1
-      e2 = v / np.linalg.norm(v)
-
-      return np.arctan2(e2, e1)
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  def get_index():
-      ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
-      ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32) 
-      # theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
-      theta = gram_schmidt(ksi_1, ksi_2)
-
-      return theta.argsort()
-#+end_src
-
-#+RESULTS:
-
-* Connectivity
-#+begin_src sh
-  cd $HOME/models/lif_cpp/src
-  nvcc -lyaml-cpp mat.cu globals.cpp
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  arr = np.fromfile('../data/matrix/colptr.txt', dtype=np.uint)  # specify the dtype according to your data
-  print(arr)
-#+end_src
-
-#+RESULTS:
-: [        0      3980      8010 ... 160007536 160011577 160015483]
-
-* Compilation
+** Compilation
 #+begin_src sh
   cd $HOME/models/lif_cpp
-  # make clean
+  make clean
   make
 #+end_src
 
 #+RESULTS:
+| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |               |                  |                  |             |                      |                           |               |                |                     |             |                      |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/globals.cpp     | -o          | obj/globals.o        |                           |            |
 | g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/main.cpp        | -o          | obj/main.o           |                           |            |
+| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/sparse_mat.cpp  | -o          | obj/sparse_mat.o     |                           |            |
 | g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
 
 * Single trial
 ** Simulation
 
 #+begin_src ipython
-  conf_name = 'config_single'
+  conf_name = 'config'
   config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
 
   N_E = int(config['N'] * 0.8)
+  N_I = int(config['N'] * 0.2)
+
   print(N_E)
   Iext = np.array(config['Iext'])
   Jab = np.array(config['Jab'])
@@ -154,8 +134,8 @@
   BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
   print('Balance', BALANCE)
 
-  BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
-  print(BALANCE)
+  # BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
+  # print(BALANCE)
 
   rates = -np.dot(np.linalg.inv(Jab.reshape((2 ,2))), Iext)
   print('rates', rates)
@@ -163,35 +143,28 @@
   J = Jab[1] * Jab[2] / (Jab[0] * Jab[3])
   Q = (Jab[3] * Jab[1] * Iext[0] - Iext[1]) / Jab[2]
 
-  print('stp G', J)
-  print('stp Q', Q)
+  # print('stp G', J)
+  # print('stp Q', Q)
 #+end_src
 
 #+RESULTS:
 : 32000
 : Balance True
-: True
-: rates [-0.09430756  0.96006797]
-: stp G 0.08900928792569661
-: stp Q 1.7279999999999998
+: rates [-0.21346887  1.47395172]
 
 #+begin_src ipython
   session = 'odr_off'
-  run_sim(conf_name, session)
+  run_sim(conf_name, session, X_str='Iext', gain=1.0, axis=0)
 #+end_src
 
 #+RESULTS:
-: File moved successfully!
-: File moved successfully!
 
 #+begin_src ipython 
   session = 'odr_on'
-  run_sim(conf_name, session, X_str='Iext', axis=0, gain=1.05)
+  run_sim(conf_name, session, X_str='Iext', gain=1.1, axis=0)
 #+end_src
 
 #+RESULTS:
-: File moved successfully!
-: File moved successfully!
 
 ** Analysis
 *** Rates
@@ -201,24 +174,24 @@
   data_off = get_data(session)
   print('data', data_off.shape)
   rates_off = data_off[:N_E]
-  print('rates', np.mean(data_off[:32000]), np.mean(data_off[8000:]))
+  print('rates', np.mean(data_off[:N_E]), np.mean(data_off[N_E:]))
 #+end_src
 
 #+RESULTS:
-: data (40000, 36)
-: rates 4.9260244 7.482698
+: data (40000, 79)
+: rates 6.2022104 11.918247
 
 #+begin_src ipython  
   session = 'odr_on'
   data_on = get_data(session)
   print('data', data_on.shape)
   rates_on = data_on[:N_E]
-  print('rates', np.mean(data_on[:32000]), np.mean(data_on[8000:]))
+  print('rates', np.mean(data_on[:N_E]), np.mean(data_on[N_E:]))
 #+end_src
 
 #+RESULTS:
-: data (40000, 35)
-: rates 5.4278607 7.9760036
+: data (40000, 79)
+: rates 6.210101 11.9302025
 
 #+begin_src ipython
   width = 7
@@ -226,7 +199,7 @@
   fig, ax = plt.subplots(1, 2, figsize= [1.5*width, width * golden_ratio])
 
   r_min = 0
-  r_max = 1.5 * np.max((np.mean(rates_off), np.mean(rates_on)))
+  r_max = 1.25 * np.max((np.mean(rates_off), np.mean(rates_on)))
 
   times = get_times(conf_name)
   times_off = times[:data_off.shape[1]]
@@ -243,8 +216,8 @@
   im = ax[1].imshow(rates_on, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times_on[0], times_on[-1], 0, N_E])
 
   ax[1].set_xlabel('Time (s)')
-  ax[1].set_xticks([0, 1, 2, 3, 4, 5])
-  ax[1].set_xticks(np.arange(int(times_off[0]), int(times_off[-1]), 2))
+  # ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+  ax[1].set_xticks(np.arange(int(times_on[0]), int(times_on[-1]), 2))
   ax[1].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
   ax[1].set_title('NB Stim')
 
@@ -266,7 +239,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/039354fa413534aa208835c19b4d0baf81b4a1aa.png]]
+[[file:./.ob-jupyter/1d446cb1d4bdb63a86bd8ea7808ce61fdbd9294f.png]]
 
 *** Fourier vs Time
 
@@ -277,7 +250,7 @@
   times = get_times(conf_name)
   times_off = times[:data_off.shape[1]]
   times_on = times[:data_on.shape[1]]
-
+  
   fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
   ax[0].plot(times_off, m0)
   ax[0].plot(times_on, m0_on)
@@ -299,15 +272,14 @@
 
   ax[2].set_xlabel('Time (s)')
   ax[2].set_ylabel('$\phi$ (°)')
-  ax[2].set_yticks([0, 90, 180, 270, 360])
+  ax[2].set_yticks([-180, -90, 0, 90, 180], [0, 90, 180, 270, 360])
   # ax[2].set_xticks([0, 1, 2, 3, 4, 5])
   plt.tight_layout()
   plt.show()
   #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/2a31c1696db76190ebd24316dfeb2bce02aaae28.png]]
-
+[[file:./.ob-jupyter/75311c9606a2f140811ff3c6e7a7e3ae1e6a3dc4.png]]
 
 *** Spatial profile
 
@@ -318,11 +290,10 @@
   m0, m1, phase = decode_bump(smooth_off[:, -1])
   smooth_off = np.roll(smooth_off[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_off.shape[0]))
 
-
   theta = np.linspace(0, 360, rates_off.shape[0])
   plt.plot(theta, m0 + m1 * np.cos(theta * np.pi / 180- np.pi), 'b')
   plt.plot(theta, smooth_off, 'b', label='off')
-
+  
   m0, m1, phase =decode_bump(smooth_on[:, -1])
   smooth_on = np.roll(smooth_on[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_on.shape[0]))
 
@@ -337,7 +308,7 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/4923bf76d59ee9c4e852f850b0715b07509c268a.png]]
+[[file:./.ob-jupyter/ca8070e32133e0eb153b466cc075a984fa722ea7.png]]
 
 #+begin_src ipython
 
@@ -345,127 +316,3 @@
 
 #+RESULTS:
 
-* Neuromodulation
-*** On m0
-
-#+begin_src ipython 
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml',
-               REPO_PATH + '/conf/config_ODR.yml.bak')
-
-  Iext = [.004*1.15, 0.002*1.15]
-
-  session = 'odr_on_m0'
-  data_path = REPO_PATH + '/data/simul/' + session
-  update_conf(REPO_PATH + '/conf/config_ODR', 'DATA_PATH', data_path)
-  update_conf(REPO_PATH + '/conf/config_ODR', 'Iext', Iext)
-  sleep(.2)
-  run_cpp(session, conf_path=conf_path)
-  sleep(.2)
-
-  restore_conf(REPO_PATH + '/conf/config_ODR.yml.bak',
-               REPO_PATH + '/conf/config_ODR.yml')
-
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-*** On Jab
-
-#+begin_src ipython
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ 'config_single' +".yml", "r"))
-  print(config['Iext'][0] * 1.25)
-#+end_src
-
-#+RESULTS:
-: 3.59375
-
-#+begin_src ipython
-  def run_sim(conf_name, session, X_str=None, axis=0, gain=1):
-
-    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
-                 REPO_PATH + '/conf/'+ conf_name +'.yml.bak')
-
-    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
-
-    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
-    data_path = REPO_PATH + '/data/simul/' + session
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
-    if X_str is not None:
-      update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
-    # update_conf(REPO_PATH + '/conf/' + conf_name + '', 'Iext', float(config['Iext'][0] * 1.25), axis=0)
-
-    sleep(.2)
-    run_cpp(session, conf_path=conf_path)
-    sleep(.2)
-
-    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-                 REPO_PATH + '/conf/'+ conf_name +'.yml')
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  run_sim('config_single', 'odr_Jee', 'Jab', 0, 1.1)
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-#+begin_src ipython
-  run_sim('config_single', 'odr_Jei', 'Jab', 1, 0.9)
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-#+begin_src ipython
-  run_sim('config_single', 'odr_Jie', 'Jab', 2, 1.1)
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-#+begin_src ipython
-  run_sim('config_single', 'odr_Jii', 'Jab', 3, 0.9)
-#+end_src
-
-#+RESULTS:
-: File moved successfully!
-: File moved successfully!
-
-#+begin_src ipython
-  session = 'odr_off'
-  data = get_data(session)
-  rates_off = data[:32000]
-
-  smooth_off = circcvl(rates_off, windowSize=3200, axis=0)
-
-  theta = np.linspace(0, 360, rates_off.shape[0])
-
-  width = 7
-  golden_ratio = (5**.5 - 1) / 2
-  fig, ax = plt.subplots(1, 4, figsize= [2.25*width, width *golden_ratio])
-
-  # ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
-  # ax[0][0].plot(theta, smooth_on[:, -1], 'r')
-
-  sessions = ['Jee', 'Jei', 'Jie', 'Jii']
-  for i in range(4):
-      session = 'odr_' + sessions[i]
-      data = get_data(session)
-      rates_on = data[:32000]
-      smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
-
-      ax[i].plot(theta, smooth_off[:, -1] , color=pal[0])
-      ax[i].plot(theta, smooth_on[:, -1], color=pal[1])
-      ax[i].set_title(sessions[i])
-      ax[i].set_xticks([0, 90, 180, 270, 360]);
-#+end_src
-
-#+RESULTS:
-[[file:./.ob-jupyter/d1a2ce2fd8953ba0a7a7dd19355e3649452f85e1.png]]
