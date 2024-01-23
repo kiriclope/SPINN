@@ -21,9 +21,9 @@ extern float *Iext_scaled;
 extern unsigned long *colptr;
 extern int *indices;
 
-extern float **x_stp;
-extern float **u_stp;
-extern float **A_stp;
+extern float *x_stp;
+extern float *u_stp;
+// extern float **A_stp;
 
 void init_lif();
 void free_lif();

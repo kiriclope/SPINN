@@ -2,7 +2,7 @@
 CC = g++
 
 # Compiler flags
-CFLAGS = -Wall -std=c++17 -Ofast -s -march=native -funroll-loops -ftree-vectorize -ffast-math -fomit-frame-pointer -fexpensive-optimizations
+CFLAGS = -Wall -std=c++17 -Ofast -s -march=native -ffast-math -fomit-frame-pointer -fexpensive-optimizations -fno-rtti -flto
 CFLAGS_DEBUG = -Wall -Wextra -std=c++17 -O0 -g
 
 # INCLUDES = -I ~/home/leon/models/lif_cpp/include

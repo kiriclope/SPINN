@@ -4,6 +4,7 @@
 
 * Notebook Configuration
 ** Settings
+
 #+begin_src ipython
   %load_ext autoreload
   %autoreload 2
@@ -21,6 +22,7 @@
 : /home/leon/mambaforge/envs/dual_data/bin/python
 
 ** Imports
+
 #+begin_src ipython
   import sys
   sys.path.insert(0, '/home/leon/models/lif_cpp')  
@@ -38,6 +40,36 @@
 #+RESULTS:
 
 * Helpers
+
+#+begin_src ipython
+  def run_sim(repo_path, conf_name, name, DURATION=10000, T_STEADY=5000, gain=1):
+
+    conf_path = repo_path + '/conf/' + conf_name
+    config = safe_load(open(conf_path + ".yml", "r"))
+    data_path = repo_path + '/data/simul/'
+
+    restore_conf(conf_path + '.yml',
+                 conf_path +'.yml.bak')
+
+    update_conf(conf_path, 'Iext', float(gain), axis=0)
+    update_conf(conf_path, 'T_SAVE', float(0.0), axis=None)
+    update_conf(conf_path, 'DURATION', float(DURATION), axis=None)
+    update_conf(conf_path, 'T_STEADY', float(T_STEADY), axis=None)
+    
+    update_conf(conf_path, 'DATA_PATH', data_path + name)
+    # update_conf(conf_path, 'PHI_STIM', float(phi), axis=0)
+
+    sleep(.2)
+    run_cpp(name, conf_path = conf_path + ".yml")
+    sleep(.2)
+
+
+    restore_conf(conf_path + '.yml.bak',
+                 conf_path +'.yml')
+#+end_src
+
+#+RESULTS:
+
 #+begin_src ipython
   def get_data(session='/'):
     # Open the file in binary mode and read the data
@@ -52,35 +84,12 @@
 #+begin_src ipython
   def get_times(conf_name):
        config = safe_load(open("/home/leon/models/lif_cpp/conf/" + conf_name + ".yml", "r"))
-
-       times = np.arange(0, config['DURATION']-config['T_WINDOW'], config['T_WINDOW'])
+       
+       times = np.arange(0, config['DURATION'] + config['T_WINDOW'], config['T_WINDOW'])
        # times -= config['T_STEADY']
        times /= 1000.0
 
        return times
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  def gram_schmidt(a, b):
-      e1 = a / np.linalg.norm(a)
-      v = b - np.dot(b, e1) * e1
-      e2 = v / np.linalg.norm(v)
-
-      return np.arctan2(e2, e1)
-#+end_src
-
-#+RESULTS:
-
-#+begin_src ipython
-  def get_index():
-      ksi_1 = np.fromfile('../data/matrix/ksi_1.txt', dtype=np.float32)
-      ksi_2 = np.fromfile('../data/matrix/ksi_2.txt', dtype=np.float32) 
-      # theta = np.arctan2(ksi_2 / np.linalg.norm(ksi_2), ksi_1 / np.linalg.norm(ksi_1))
-      theta = gram_schmidt(ksi_1, ksi_2)
-
-      return theta.argsort()
 #+end_src
 
 #+RESULTS:
@@ -102,6 +111,7 @@
 : [        0      4018      8047 ... 159988477 159992510 159996569]
 
 * Compilation
+
 #+begin_src sh
   cd $HOME/models/lif_cpp
   make clean
@@ -120,9 +130,13 @@
 ** Simulation
 
 #+begin_src ipython
-  session = 'single_trial'
-  conf_path = REPO_PATH + '/conf/config_ODR.yml'
-  run_cpp(session, conf_path=conf_path)
+  conf_name = 'config'
+
+  name = 'single_off'
+  run_sim(REPO_PATH, conf_name, name, DURATION=30000, T_STEADY=1000, gain=2.0)
+  
+  name = 'single_on'
+  run_sim(REPO_PATH, conf_name, name, DURATION=30000, T_STEADY=1000, gain=2.12)
 #+end_src
 
 #+RESULTS:
@@ -131,52 +145,80 @@
 **** Rates
 
 #+begin_src ipython
-  session = '/'
-  conf_name = 'config_ODR'
+  session = 'single_off'
+
   data = get_data(session)
   print('data', data.shape)
-  rates = data[:32000]
+  rates_off = data[:32000]
+
+  print('rates', np.mean(data[:32000]), np.mean(data[8000:]))
+
+  session = 'single_on'
+  
+  data = get_data(session)
+  print('data', data.shape)
+  rates_on = data[:32000]
+
   print('rates', np.mean(data[:32000]), np.mean(data[8000:]))
 #+end_src
 
 #+RESULTS:
-: data (40000, 23)
-: rates 5.299837 7.0409184
+: data (40000, 51)
+: rates 0.66418874 1.7070857
+: data (40000, 48)
+: rates 1.0695599 2.0981615
 
 #+begin_src ipython
-  fig, ax = plt.subplots()
-
   N_E = 32000
   r_min = 0
-  r_max = 1.5 * np.mean(data[:N_E])
+  r_max = 5
 
   times = get_times(conf_name)
+  print(times.shape)
+  print(data.shape)
   times = times[:data.shape[1]]
 
-  im = ax.imshow(rates, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times[0], times[-1], 0, N_E])
+  fig, ax = plt.subplots(1, 2, figsize=(2*width, height), sharey=True)
 
-  ax.set_xlabel('Time (s)')
-  ax.set_ylabel('Prefered Location (°)')
-  ax.set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  im0 = ax[0].imshow(rates_off, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times[0], times[-1], 0, N_E])
+  im = ax[1].imshow(rates_on, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times[0], times[-1], 0, N_E])
 
-  cbar = plt.colorbar(im, ax=ax)
+  ax[1].set_xlabel('Time (s)')
+  # ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+
+  ax[0].set_xlabel('Time (s)')
+  # ax[0].set_xticks([0, 1, 2, 3, 4, 5])
+
+  ax[0].set_title('NB OFF')
+  ax[0].set_ylabel('Pref. Location (°)')
+  ax[0].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+
+  ax[1].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
+  ax[1].set_title('NB ON')
+
+  cbar = plt.colorbar(im, ax=ax[0])
   cbar.set_label("Firing Rate (Hz)")
-  # cbar.set_ticks([0, 5, 10])
-  plt.savefig('./neurons.svg', dpi=300)
+  cbar.set_ticks([0, 5, 10, 15])
+  plt.savefig('./lif_single.svg', dpi=300)
   plt.show()
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/67d163fb439e7ba3a126f7aa4036ae9de59b9b80.png]]
+:RESULTS:
+: (121,)
+: (40000, 48)
+[[file:./.ob-jupyter/b0b7b5f3abad120af9f2e1ee068df5211f48770a.png]]
+:END:
 
 **** Fourier vs Time
 
 #+begin_src ipython
-  m0, m1, phi = decode_bump(rates, axis=0)
+  m0, m1, phi = decode_bump(rates_on, axis=0)
 
   times = get_times(conf_name)
   times = times[:data.shape[1]]
   fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
+
   ax[0].plot(times, m0)
   ax[0].set_xlabel('Time (s)')
   ax[0].set_ylabel('$\mathcal{F}^0$')
@@ -199,16 +241,16 @@
   #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/80397ae7df4f2dee492fd728ffb108131deb4dab.png]]
+[[file:./.ob-jupyter/5eaf2c157ef15007812a257ad3b635fb7ef185f0.png]]
 
 
 **** Spatial profile
 
 #+begin_src ipython
-  smooth_E = circcvl(rates, windowSize=3200, axis=0)
-  theta = np.linspace(0, 360, rates.shape[0])
+  smooth_E = circcvl(rates_on, windowSize=3200, axis=0)
+  theta = np.linspace(0, 360, rates_off.shape[0])
 
-  plt.plot(theta, smooth_E[:, 0] , 'b')
+  plt.plot(theta, smooth_E[:, -30] , 'b')
   plt.plot(theta, smooth_E[:, -1], 'r')
 
   plt.xlabel('Prefered Location (°)')
@@ -218,7 +260,19 @@
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/c926be2793e543b3b52c15612025d23031248f22.png]]
+:RESULTS:
+# [goto error]
+: [0;31m---------------------------------------------------------------------------[0m
+: [0;31mIndexError[0m                                Traceback (most recent call last)
+: Cell [0;32mIn[106], line 4[0m
+: [1;32m      1[0m smooth_E [38;5;241m=[39m circcvl(rates_on, windowSize[38;5;241m=[39m[38;5;241m3200[39m, axis[38;5;241m=[39m[38;5;241m0[39m)
+: [1;32m      2[0m theta [38;5;241m=[39m np[38;5;241m.[39mlinspace([38;5;241m0[39m, [38;5;241m360[39m, rates_off[38;5;241m.[39mshape[[38;5;241m0[39m])
+: [0;32m----> 4[0m plt[38;5;241m.[39mplot(theta, [43msmooth_E[49m[43m[[49m[43m:[49m[43m,[49m[43m [49m[38;5;241;43m-[39;49m[38;5;241;43m30[39;49m[43m][49m , [38;5;124m'[39m[38;5;124mb[39m[38;5;124m'[39m)
+: [1;32m      5[0m plt[38;5;241m.[39mplot(theta, smooth_E[:, [38;5;241m-[39m[38;5;241m1[39m], [38;5;124m'[39m[38;5;124mr[39m[38;5;124m'[39m)
+: [1;32m      7[0m plt[38;5;241m.[39mxlabel([38;5;124m'[39m[38;5;124mPrefered Location (°)[39m[38;5;124m'[39m)
+: 
+: [0;31mIndexError[0m: index -30 is out of bounds for axis 1 with size 29
+:END:
 
 **** Raster
 

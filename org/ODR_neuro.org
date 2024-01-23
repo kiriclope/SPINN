@@ -2,6 +2,18 @@
 #+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif :kernel dual_data
 # #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
 
+* Compilation
+
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  # make clean
+  make
+#+end_src
+
+#+RESULTS:
+| lto-wrapper: | warning: | using      | serial | compilation | of   | 2 | LTRANS | jobs |
+| [            | Babel    | evaluation | exited | with        | code | 0 | ]      |      |
+
 * Notebook Configuration
 ** Settings
 #+begin_src ipython
@@ -38,6 +50,7 @@
   from yaml import safe_load
   from scipy.stats import circmean
   from joblib import Parallel, delayed
+  from mpl_toolkits.axes_grid1.inset_locator import inset_axes
   from run_model import run_cpp, update_conf, restore_conf
   from analysis.decode import decode_bump, circcvl
 
@@ -48,66 +61,72 @@
 
 * Helpers
 ** simulations
-
 #+begin_src ipython
-  def run_sim(conf_name, session, X_str=None, axis=0, gain=1, IF_M0=0, gain2=1.1):
+  def run_ini_phi(repo_path, conf_name, name, ini_list, phi_list, X_str=None, X_gain=1, X_axis=0, gain=1):
 
-    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
+    conf_path = repo_path + '/conf/' + conf_name
+    config = safe_load(open(conf_path + ".yml", "r"))
+    data_path = repo_path + '/data/simul/'
 
-    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
-    data_path = REPO_PATH + '/data/simul/' + session
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
-    
-    if X_str is not None:
-      if axis is not None:
-        if axis<0:
-          for axis in range(np.array(config[X_str]).shape[0]):
-            update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
-        else:
-          update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
-      else:
-        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str] * gain), axis=None)
+    restore_conf(conf_path + '.yml',
+                 conf_path +'.yml.bak')
 
-    if IF_M0:
-      update_conf(REPO_PATH + '/conf/' + conf_name, 'Iext', float(config['Iext'][0] * gain2), axis=0)
+    update_conf(conf_path, 'Iext', float(config['Iext'][0] * gain), axis=0)
+    update_X(conf_path, config, X_str=X_str, axis=X_axis, gain=X_gain)
 
-    sleep(.05)
-    run_cpp(session, conf_path=conf_path)
-    sleep(.05)
+    for ini in ini_list:
+      for phi in phi_list:
+        session = name + "_phi_%d_ini_%d" % (phi, ini)
+        update_conf(conf_path, 'DATA_PATH', data_path + session)
+        update_conf(conf_path, 'PHI_STIM', float(phi), axis=0)
 
-    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-                 REPO_PATH + '/conf/' + conf_name + '.yml')
+        sleep(.2)
+        run_cpp(session, conf_path = conf_path + ".yml")
+        sleep(.2)
+
+        subprocess.run([repo_path + '/src/mem_usage.sh'])
+        subprocess.run([repo_path + '/src/cpu_usage.sh'])
+        
+    restore_conf(conf_path + '.yml.bak',
+                 conf_path +'.yml')
 #+end_src
 
 #+RESULTS:
 
 #+begin_src ipython
-  def run_ini_phi(conf_name, name, ini_list, phi_list, X_str=None, axis=0, gain=1.05, IF_M0=0, gain2=1.1):
-      restore_conf(REPO_PATH + '/conf/'+ conf_name +'.yml',
-                   REPO_PATH + '/conf/'+ conf_name + '.yml.bak')
+  def update_X(conf_path, config, X_str=None, axis=0, gain=1):
 
-      conf_path = REPO_PATH + '/conf/'+ conf_name +'.yml'
-
-      for ini in ini_list:
-          for phi in phi_list:
-              session = "%s_phi_%d_ini_%d" % (name, phi, ini)
-              update_conf(REPO_PATH + '/conf/' + conf_name, 'PHI_STIM', float(phi), axis=0)
-
-              sleep(.05)
-              run_sim(conf_name, session, X_str, axis, gain, IF_M0, gain2)
-              sleep(.05)
-
-              subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
-              subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
-
-      restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-                   REPO_PATH + '/conf/' + conf_name + '.yml')
-
+    if X_str is not None:
+      # if len(axis)==1:
+      #   if axis is not None:
+      #     if axis<0:
+      #       for axis in range(np.array(config[X_str]).shape[0]):
+      #         update_conf(conf_path, X_str, float(config[X_str][axis] * gain), axis=axis)
+      #     else:
+      #       update_conf(conf_path, X_str, float(config[X_str][axis] * gain), axis=axis)
+      #   else:
+      #     update_conf(conf_path, X_str, float(config[X_str] * gain), axis=None)
+      # else:
+      for ax in axis:
+        update_conf(conf_path, X_str, float(config[X_str][ax] * gain), axis=ax)
 #+end_src
 
 #+RESULTS:
 
 ** data
+
+#+begin_src ipython
+  def plot_smooth(data, ax, color):
+      mean = data.mean(axis=0)  
+      ci = smooth.std(axis=0, ddof=1) * 1.96
+
+      # Plot
+      ax.plot(mean, color=color)
+      ax.fill_between(range(data.shape[1]), mean - ci, mean + ci, alpha=0.25, color=color)
+#+end_src
+
+#+RESULTS:
+
 
 #+begin_src ipython
   def get_data(session='/'):
@@ -118,7 +137,7 @@
     return data.reshape(-1, 40000).T
  #+end_src
  
- #+RESULTS:
+#+RESULTS:
  
 #+begin_src ipython
   def get_rate(name, ini, phi):
@@ -191,55 +210,85 @@
 
 #+RESULTS:
 
-* Compilation
-
-#+begin_src sh
-  cd $HOME/models/lif_cpp
-  # make clean
-  make
-#+end_src
-
-#+RESULTS:
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
-| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
-
 * Neuromodulation
 ** Parameters
 
 #+begin_src ipython
   ini_list = np.arange(0, 20)
-  phi_list = np.linspace(0, 315, 8)
-  conf_name = 'config_ODR'
+  phi_list = np.linspace(0, 360, 9)[1:]
+  conf_name = 'config'
+  name = 'last2'
 
+  gain = 1.2
+  ugain = 2.0
+  dgain = 0.8
   # phi_list = [180]
   # ini_list = [0]
 #+end_src
 
 #+RESULTS:
 
+#+begin_src ipython
+1.95*1.15
+#+end_src
+
+#+RESULTS:
+: 2.2424999999999997
+
 ** Simulations
 *** off and on
+
 #+begin_src ipython
-  name = 'odr_off'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Iext', gain=1.0, axis=0)
+  session = name + '_off'
+  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list)
 #+end_src
 
 #+RESULTS:
-: 51670d0b-f763-4caf-a3cb-938232d7cfc7
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
+:  MEM_USAGE > 85.0%, sleeping for a while ...
 
 #+begin_src ipython
-  name = 'odr_on'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Iext', gain=1.1, axis=0)
+  session = name + '_on'
+  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, gain=gain)
 #+end_src
 
 #+RESULTS:
-: 561b306f-af69-438d-bce5-3affd18aa4ce
+#+begin_example
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+#+end_example
 
 *** Jab and corr
+**** Excitatory
 
 #+begin_src ipython
-  name = 'odr_Jee'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=1.05, axis=0, IF_M0=1)
+  session = name + '_Jee'
+  #  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=1.2, X_axis=[0], gain=1.2)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+    session = name + '_Jie'
+    #  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=1.2, X_axis=[2], gain=1.2)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  session = name + '_Jae'
+  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=ugain, X_axis=[0, 2], gain=gain)
 #+end_src
 
 #+RESULTS:
@@ -248,112 +297,119 @@
 :  MEM_USAGE > 85.0%, sleeping for a while ...
 :  MEM_USAGE > 85.0%, sleeping for a while ...
 
+**** inhibitory
+
 #+begin_src ipython
-  name = 'odr_Jei'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=0.95, axis=1, IF_M0=0)
+    session = name + '_Jei'
+    #  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=0.95, X_axis=[1], gain=1.2)
 #+end_src
 
 #+RESULTS:
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
 
 #+begin_src ipython
-  name = 'odr_Jie'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='Jab', gain=0.95, axis=2, IF_M0=1)
+  session = name + 'odr_Jii'
+  # run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=0.95, X_axis=[3], gain=1.2)
 #+end_src
 
 #+RESULTS:
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
 
 #+begin_src ipython
-  name = 'odr_corr'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='CORR_FF', gain=0.5, axis=-1, IF_M0=1)
+  session = name +'_Jai'
+  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=dgain, X_axis=[1, 3], gain=gain)
 #+end_src
 
 #+RESULTS:
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
+#+begin_example
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+#+end_example
+
+**** other
 
 #+begin_src ipython
-  name = 'odr_use'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='USE', gain=1.1, axis=0, IF_M0=1)
+  session = name + '_corr'
+  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='CORR_FF', X_gain=0.5, X_axis=[0, 1], gain=gain)
 #+end_src
 
 #+RESULTS:
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
+#+begin_example
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+  MEM_USAGE > 85.0%, sleeping for a while ...
+#+end_example
 
 #+begin_src ipython
-  name = 'odr_tau_fac'
-  run_ini_phi(conf_name, name, ini_list, phi_list, X_str='TAU_REC', gain=1.1, axis=0, IF_M0=1)
+  session = name + '_tauf'
+  #  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='TAU_FAC', X_gain=1.1, X_axis=[0], gain=1.2)
 #+end_src
 
 #+RESULTS:
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
-:  MEM_USAGE > 85.0%, sleeping for a while ...
+
+#+begin_src ipython
+  session = name + '_use'
+  #  run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='USE', X_gain=1.1, X_axis=[0], gain=1.2)
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  session = name + '_Jaa'
+  # run_ini_phi(REPO_PATH, conf_name, session, ini_list, phi_list, X_str='Jab', X_gain=1.2, X_axis=[0, 2], gain=1.2)
+#+end_src
+
+#+RESULTS:
 
 ** Data
 *** Load
 
 #+begin_src ipython
-  name = 'odr_off'
-  df = load_data_ini_phi(name, ini_list, phi_list)
-  df_code, end_point = get_code(df)
+  def get_smooth(df_smooth):
+    smooth = []
+    for i in range(df_smooth.rates.shape[0]):
+        m0, m1, phase = decode_bump(df_smooth.rates[i])
+        smooth.append(np.roll(df_smooth.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth.rates[i].shape[0])))
+        
+    return np.array(smooth)
 
-  end_point['precision'] = end_point.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
-  df_smooth = df.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
-
-  smooth = []
-  for i in range(df_smooth.rates.shape[0]):
-      m0, m1, phase = decode_bump(df_smooth.rates[i])
-      smooth.append(np.roll(df_smooth.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth.rates[i].shape[0])))
-
-  smooth = np.array(smooth)
-  Nx, Ny = np.array(smooth_on).shape
 #+end_src
 
 #+RESULTS:
 
 #+begin_src ipython
-  name = 'odr_on'
-  df_on = load_data_ini_phi(name, ini_list, phi_list)
-  df_code, end_point_on = get_code(df_on)
+  def load_df(session):
+    df = load_data_ini_phi(session, ini_list, phi_list)
+    df_code, end_point = get_code(df)
 
-  end_point_on['precision'] = end_point_on.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
-  df_smooth_on = df_on.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
+    end_point['precision'] = end_point.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
+    df_smooth = df.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
 
-  smooth_on = []
-  for i in range(df_smooth_on.rates.shape[0]):
-      m0, m1, phase = decode_bump(df_smooth_on.rates[i])
-      smooth_on.append(np.roll(df_smooth_on.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth_on.rates[i].shape[0])))
+    smooth = []
+    for i in range(df_smooth.rates.shape[0]):
+        m0, m1, phase = decode_bump(df_smooth.rates[i])
+        smooth.append(np.roll(df_smooth.rates[i], int((phase / 2.0 / np.pi - 0.5) * df_smooth.rates[i].shape[0])))
 
-  smooth_on = np.array(smooth_on)
+    smooth = np.array(smooth)
+
+    return df_code, end_point, smooth
 #+end_src
 
 #+RESULTS:
@@ -361,92 +417,136 @@
 *** Plots
 
 #+begin_src ipython
+  IF_LOAD = 1
   bins = 'auto'
-  fig, ax = plt.subplots(2, 1, figsize=[width, 2*height])
-
   N_E = 32000
-  title = '\\text{FF Input} \\nearrow'
-  # title = '\\text{FF Corr} \\searrow'
+  titles = ['FF Input $\\nearrow$', '$J_{AE} \\nearrow$','$J_{AI} \\searrow$','FF Corr $\\searrow$']
+  sessions = ['_on', '_Jae', '_Jai', '_corr']
+  inset_titles = ['ns', '*', '*', '*']
 
-  #title = 'J_{EE} \\nearrow'
+  fig, ax = plt.subplots(2, 4, figsize=[3*width, 2*height], sharey='row', sharex='row')
 
-  means = smooth.mean(axis=0)  
-  ci = smooth.std(axis=0, ddof=1)
+  if IF_LOAD:
+      df_code, end_point, smooth = load_df(name + '_off')
+      end_point['syn'] = 0
 
-  # Plot
-  ax[0].plot(means, label='Mean')
-  ax[0].fill_between(range(Ny), means - ci, means + ci, alpha=0.25)
+      df_list= [df_code]
+      smooth_list = [smooth]
+      end_list = [end_point]
 
-  means = smooth_on.mean(axis=0)  
-  ci = smooth.std(axis=0, ddof=1) * 1.96
+  ax[0][0].set_ylabel('Firing Rate (Hz)')
+  ax[0][0].set_ylim([0, 15])
 
-  # Plot
-  ax[0].plot(means, label='Mean')
-  ax[0].fill_between(range(Ny), means - ci, means + ci, alpha=0.2)
+  ax[1][0].set_ylabel('Density')
+  ax[1][0].set_ylim([0, 0.125])
+  ax[0][0].set_title('%s' % titles[0])
 
-  ax[0].set_xticks([0, N_E/2, N_E], [0, 180, 360])
-  ax[0].set_ylabel('Firing Rate (Hz)')
-  ax[0].set_xlabel('Pref. Location (°)')
-  ax[0].set_title('$%s$' % title)
+  for i in range(len(sessions)):
 
-  sns.histplot(data=end_point, x=end_point['precision'], legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
-  sns.histplot(data=end_point_on, x=end_point_on['precision'], legend=False, ax=ax[1], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[1])
-  ax[1].set_xlabel('Endpoint Deviation (°)')
-  ax[1].set_ylabel('Density')
-  ax[1].set_xlim([-50, 50])
+      if IF_LOAD:
+          session = name + sessions[i]
+          df_code_on, end_point_on, smooth_on = load_df(session)
+          end_point_on['syn'] = 1
+
+          df_list.append(df_code_on)
+          smooth_list.append(smooth_on)
+          end_list.append(end_point_on)
+
+      plot_smooth(smooth_list[0], ax[0][i], color=pal[0])
+      plot_smooth(smooth_list[i+1], ax[0][i], color=pal[1])
+
+      ax[0][i].set_xticks([0, N_E/2, N_E], [0, 180, 360])
+      ax[0][i].set_xlabel('Pref. Location (°)')
+      # ax[0][i].set_ylim([0, 15])
+      if i>0:
+          ax[0][i].set_title('%s, %s' % (titles[0], titles[i]))
+
+      sns.histplot(data=end_list[0], x=end_list[0]['precision'], legend=False, ax=ax[1][i], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[0])
+
+      sns.histplot(data=end_list[i+1], x=end_list[i+1]['precision'], legend=False, ax=ax[1][i], bins=bins, kde=True, stat='density', element='step', alpha=0,color = pal[1])
+
+      ax[1][i].set_xlabel('Endpoint Deviation (°)')
+      ax[1][i].set_xlim([-20, 20])
+      
+      if i>0:
+          ax[1][i].set_ylabel("")
+
+      inset_ax = inset_axes(ax[1][i], width="35%", height="35%", loc='upper right')
+      end = pd.concat((end_list[0], end_list[i+1]))
+      # Plot your inset data
+      sns.lineplot(end, x='syn', y=end['precision'].abs(), marker='o', ax=inset_ax, err_style='bars', ms=6.5, lw=0)
+      inset_ax.set_title(inset_titles[i], fontsize=18)
+      inset_ax.set_xlim([-1, 2])
+      inset_ax.set_ylabel('')
+
+      if i==2:
+          inset_ax.set_ylim([2, 10])
+          inset_ax.set_yticks([2, 10])
+      else:
+          inset_ax.set_ylim([2, 8])
+          inset_ax.set_yticks([2, 8])
+
+      inset_ax.yaxis.tick_right()
+
+      if i==0:
+          inset_ax.set_ylabel('Std (°)')
+          inset_ax.yaxis.set_label_position('right')
+
+      inset_ax.xaxis.set_visible(False)
+      inset_ax.spines['bottom'].set_visible(False)
+      inset_ax.spines['left'].set_visible(False)
+      inset_ax.spines['right'].set_visible(True)
+
+      if i>0:
+          ax[0][i].yaxis.set_visible(False)
+          ax[0][i].spines['left'].set_visible(False)
+
+          ax[1][i].yaxis.set_visible(False)
+          ax[1][i].spines['left'].set_visible(False)
 
   plt.savefig(name + '_neuro.svg', dpi=300)
   plt.show()
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/c5c24c0b28392e889eaeeef908809d23f4ea2646.png]]
+:RESULTS:
+: /tmp/ipykernel_1407531/2581785449.py:88: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+:   plt.savefig(name + '_neuro.svg', dpi=300)
+: /home/leon/mambaforge/envs/dual_data/lib/python3.11/site-packages/IPython/core/pylabtools.py:152: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+:   fig.canvas.print_figure(bytes_io, **kw)
+[[file:./.ob-jupyter/43112e854f8eb77195271d553eec65c7fe4be5de.png]]
+:END:
 
 #+begin_src ipython
-  session = 'odr_off'
-  data = get_data(session)
-  rates_off = data[:32000]
+  end = pd.concat(end_list)
+  # print(end.head())
+#+end_src
 
-  smooth_off = circcvl(rates_off, windowSize=3200, axis=0)
-  m0, m1, phase = decode_bump(smooth_off[:, -1])
-  smooth_off = np.roll(smooth_off[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_off.shape[0]))
-  print(smooth_off.shape)
+#+RESULTS:
 
-  theta = np.linspace(0, 360, rates_off.shape[0])
+#+begin_src ipython
+  fig, ax = plt.subplots(2, 1, figsize=(0.9 * width, 2*height))
 
-  width = 7
-  golden_ratio = (5**.5 - 1) / 2
-  fig, ax = plt.subplots(1, 4, figsize= [2.5*width, width *golden_ratio])
+  sns.lineplot(end, x='syn', y=end['m1']/end['m0'], marker='o', ax=ax[0], err_style='bars', ms=10, lw=0)
+  ax[0].set_xlabel('NB Modulation')
+  ax[0].set_ylabel('Amplitude, $\mathcal{F}_1 / \mathcal{F}_0$')
+  ax[0].set_ylim([0.25, 1.25])  
+  ax[0].set_xticks([0, 1, 2, 3, 4], ['OFF', 'ON', '$J_{AE} \\nearrow$', '$J_{AI} \\searrow$', '$CORR  \\searrow$'], fontsize=16)
 
-  # ax[0][0].plot(theta, smooth_off[:, -1] , 'b')
-  # ax[0][0].plot(theta, smooth_on[:, -1], 'r')
-
-  sessions = ['Jee', 'corr']
-  titles = ['J_{EE} \\nearrow', 'J_{EI} \\searrow', 'J_{IE} \\nearrow', '\sigma_{A0} \\searrow']
-  for i in range(4): 
-      session = 'odr_' + sessions[i] + '_phi_180_ini_0'
-      data = get_data(session)
-      rates_on = data[:32000]
-
-      smooth_on = circcvl(rates_on, windowSize=3200, axis=0)
-      m0, m1, phase = decode_bump(smooth_on[:, -1])
-      smooth_on = np.roll(smooth_on[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_on.shape[0]))
-      
-      ax[i].plot(theta, smooth_off , color=pal[0])
-      ax[i].plot(theta, smooth_on, color=pal[1])
-      ax[i].set_title('$%s$' % titles[i])
-      ax[i].set_xticks([0, 180, 360]);
-      ax[i].set_xlabel('Pref. Location (°)')
-
-  ax[0].set_ylabel('Firing Rate (Hz)')
-  plt.savefig('./neuromodulation.svg', dpi=300)
-
+  sns.lineplot(end, x='syn', y=end['precision'].abs(), marker='o', ax=ax[1], err_style='bars', ms=10, lw=0)
+  ax[1].set_xticks([0, 1, 2, 3, 4], ['OFF', 'ON', '$J_{AE} \\nearrow$', '$J_{AI} \\searrow$', '$CORR  \\searrow$'], fontsize=16)
+  ax[1].set_xlabel('NB Modulation')
+  ax[1].set_ylabel('Response STD (°)')
+  ax[1].set_ylim([2, 10])
+  plt.savefig('apanel.svg', dpi=300)
   plt.show()
 #+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/a8a19629df7a6b6683e7f83278ed3dd42b49e183.png]]
 
 #+begin_src ipython
 
 #+end_src
 
 #+RESULTS:
-

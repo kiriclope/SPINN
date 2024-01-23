@@ -12,7 +12,7 @@
 
 int main(int argc , char** argv) {
   auto start_time = std::chrono::high_resolution_clock::now();
-
+  
   std::cout << "LIF NETWORK SIMULATION" << std::endl;
 
   std::string configname = argv[1] ;
@@ -24,10 +24,10 @@ int main(int argc , char** argv) {
   init_lif();
   runSimul();
   free_lif();
-
+  
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
-
+  
   int hours = duration / 3600;
   int minutes = (duration % 3600) / 60;
   int seconds = duration % 60;

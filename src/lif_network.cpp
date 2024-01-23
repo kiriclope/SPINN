@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <cmath>
 #include <random>
-#include <chrono>
 
 #include "globals.hpp"
 #include "utils.hpp"
@@ -15,7 +14,7 @@ float *rates;
 float *volts;
 float *spikes;
 float *spike_times;
-float *ISI;
+float isi;
 
 float *ff_inputs;
 float **inputs;
@@ -30,9 +29,11 @@ float *Iext_scaled;
 size_t *colptr;
 int *indices;
 
-float **x_stp;
-float **u_stp;
-float **A_stp;
+// float **x_stp;
+// float **u_stp;
+// float **A_stp;                  
+float *x_stp;
+float *u_stp;
 
 float *theta;
 float *thresh;
@@ -40,24 +41,31 @@ float phase;
 
 std::random_device rd;
 std::mt19937 gen(rd());
-
 std::uniform_real_distribution<float> unif_theta(0.0, twoPi);
-std::vector<std::pair<int, float>> spike_pair;
+// std::vector<std::pair<int, float>> spike_pair;
 
 void odr_stimuli(float* &ff_inputs, int FLAG) {
-  if(FLAG==0) 
-    for (int i = 0; i < Na[0]; i++) {
-      ff_inputs[i] += (A_STIM[which_pop[i]]
-                       + STD_STIM[which_pop[i]] * white(gen))
-        * sqrt(Ka[0])
-        * (1.0 + KAPPA_STIM[which_pop[i]] * cos(theta[i] - PHI_STIM[which_pop[i]] * M_PI / 180.0));
-    }
+  if(CHECK_BISTABILITY) {
+    for (int i = 0; i < Na[0]; i++)
+      ff_inputs[i] += A_STIM[which_pop[i]] *
+        (1.0 + white(gen)) * (PHI_STIM[which_pop[i]] > 0.0)
+        * sqrt(Ka[0]) * (1.0 + KAPPA_STIM[which_pop[i]] * cos(theta[i] - PHI_STIM[which_pop[i]]));
+  }
   else {
-    for (int i = 0; i < Na[0]; i++) {
-      ff_inputs[i] += (A_DIST[which_pop[i]]
-                       + STD_DIST[which_pop[i]] * white(gen))
-        * sqrt(Ka[0])
-        * (1.0 + KAPPA_DIST[which_pop[i]] * cos(theta[i] - PHI_DIST[which_pop[i]] * M_PI / 180.0));
+    if(FLAG==0) 
+      for (int i = 0; i < Na[0]; i++) {
+        ff_inputs[i] += (A_STIM[which_pop[i]]
+                       + STD_STIM[which_pop[i]] * white(gen))
+          * sqrt(Ka[0]) * (PHI_STIM[which_pop[i]]>0)
+          * (1.0 + KAPPA_STIM[which_pop[i]] * cos(theta[i] - PHI_STIM[which_pop[i]]));
+      }
+    else {
+      for (int i = 0; i < Na[0]; i++) {
+        ff_inputs[i] += (A_DIST[which_pop[i]]
+                         + STD_DIST[which_pop[i]] * white(gen))
+          * sqrt(Ka[0])
+          * (1.0 + KAPPA_DIST[which_pop[i]] * cos(theta[i] - PHI_DIST[which_pop[i]]));
+      }
     }
   }
 }
@@ -88,16 +96,14 @@ void init_lif() {
   rates = new float[N]();  
   volts = new float[N]();
   spikes = new float[N]();
-  spike_times= new float[N]();
+  spike_times = new float[N]();
   
-  ISI = new float[N]();  
-  for (int i = 0; i < N; i++)
-    ISI[i] = TAU_AREF[which_pop[i]];
-
-  thresh = new float[N]();
-  for (int i = 0; i < N; i++)
-    thresh[i] = V_THRESH;
-      
+  if(IF_THRESH_DYN) {
+    thresh = new float[N]();
+    for (int i = 0; i < N; i++)
+      thresh[i] = V_THRESH;
+  }
+  
   ff_inputs = new float[N]();
   inputs = new float*[N_POP]();
   net_inputs = new float[N]();
@@ -110,21 +116,24 @@ void init_lif() {
   
   for (int i = 0; i < N_POP; i++)
     inputs[i] = new float[N]();
-
+  
   if (IF_NMDA) {
     Jab_NMDA = new float[N_POP]();
     inputs_NMDA = new float[N]();
   }
   
   if(IF_STP) {
-    x_stp = new float*[N_POP]();
-    u_stp = new float*[N_POP]();
-    A_stp = new float*[N_POP]();
-    for (int i = 0; i < N_POP; i++) {
-      x_stp[i] = new float[N] {1.0};
-      u_stp[i] = new float[N] {1.0};
-      A_stp[i] = new float[N] {1.0};
-    }
+    x_stp = new float[N]{1.0};
+    u_stp = new float[N]{USE[0]};
+    
+    // x_stp = new float*[N_POP]();
+    // u_stp = new float*[N_POP]();
+    // // A_stp = new float*[N_POP]();
+    // for (int i = 0; i < N_POP; i++) {
+      // x_stp[i] = new float[N] {1.0};
+      // u_stp[i] = new float[N] {1.0};
+      // A_stp[i] = new float[N] {1.0};
+    //    }
   }
   
   theta = new float[N]();
@@ -134,10 +143,6 @@ void init_lif() {
   ensureDirExists(DATA_PATH);
 }
 
-float cosine(float x) {
-  return 1.0 - x * x / 2.0 + x * x * x * x / 24.0 ;
-  // return 1.0 - x * x / 2.0 + x * x * x * x / 24.0 - x * x * x * x * x * x / 720.0;
-}
 
 // Destructor to free memory
 void free_lif() {
@@ -146,7 +151,6 @@ void free_lif() {
   delete[] spikes;
   delete[] spike_times;
 
-  delete[] ISI;
   delete[] ff_inputs;
   delete[] thresh;
   
@@ -168,11 +172,14 @@ void free_lif() {
   delete[] indices;
 
   if (IF_STP) {
-    for (int i = 0; i < N_POP; i++) {
-      delete[] x_stp[i];
-      delete[] u_stp[i];
-      delete[] A_stp[i];
-    }
+    delete[] x_stp;
+    delete[] u_stp;
+    
+    //    for (int i = 0; i < N_POP; i++) {
+      // delete[] x_stp[i];
+      //delete[] u_stp[i];
+      // delete[] A_stp[i];
+    //    }
   }
   delete[] theta;
 }
@@ -212,7 +219,7 @@ void initNetwork() {
   
   if(IF_FF_CORR==1)
     for(int i=0; i < N_POP; i++) 
-      A_CORR[i] = A_CORR[i] * dum / 1000.0 ;
+      A_CORR[i] = GAIN * A_CORR[i] * dum / 1000.0 ;
   else {
     if(IF_FF_CORR==2)
     for(int i=0; i < N_POP; i++) 
@@ -282,13 +289,13 @@ void updateFFinputs(int step) {
   if (IF_FF_CORR==1) {
     phase = unif_theta(gen);
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += A_CORR[which_pop[i]] * (CORR_FF[which_pop[i]] * std::cos(theta[i] - phase));
+      ff_inputs[i] += A_CORR[which_pop[i]] * (CORR_FF[which_pop[i]] * cos(theta[i] - phase));
   }
   else {
     if (IF_FF_CORR==2)
     phase = unif_theta(gen);
     for (int i = 0; i < N; i++)
-      ff_inputs[i] += CORR_FF[which_pop[i]] * std::cos(theta[i] - phase);
+      ff_inputs[i] += CORR_FF[which_pop[i]] * cos(theta[i] - phase);
   }
 }
 
@@ -323,7 +330,8 @@ void updateRecInputs(){
       for (size_t i = colptr[j]; i < colptr[j + 1]; i++) { // postsynaptic
         post_pop = which_pop[indices[i]];
         if (IF_STP && IS_STP[pres_pop + post_pop * N_POP])
-          inputs[pres_pop][indices[i]] += A_stp[post_pop][j] * Jab_scaled[pres_pop + N_POP * post_pop];
+          inputs[pres_pop][indices[i]] += u_stp[j] * x_stp[j] * Jab_scaled[pres_pop + N_POP * post_pop];
+          // inputs[pres_pop][indices[i]] += u_stp[post_pop][j] * x_stp[post_pop][j] * Jab_scaled[pres_pop + N_POP * post_pop];
         else
           inputs[pres_pop][indices[i]] += Jab_scaled[pres_pop + N_POP * post_pop];
       }
@@ -335,7 +343,8 @@ void updateRecInputs(){
         for (size_t i = colptr[j]; i < colptr[j + 1]; i++) { // postsynaptic
           post_pop = which_pop[indices[i]];
           if (IF_STP && IS_STP[post_pop * N_POP])
-            inputs_NMDA[indices[i]] += A_stp[post_pop][j] * Jab_NMDA[post_pop];
+            inputs_NMDA[indices[i]] += u_stp[j] * x_stp[j] * Jab_NMDA[post_pop];
+          // inputs_NMDA[indices[i]] += u_stp[post_pop][j] * x_stp[post_pop][j] * Jab_NMDA[post_pop];
           else
             inputs_NMDA[indices[i]] += Jab_NMDA[post_pop];
         }
@@ -392,29 +401,29 @@ void updateThresh(){
 
 void updateSpikes(int step){
   for (int i = 0; i < N; i++)
-    if (volts[i] >= thresh[i]) {
+    if (volts[i] >= V_THRESH) {
+    // if (volts[i] >= thresh[i]) {
 
       volts[i] = V_REST;
+      isi = step - spike_times[i];
       
       if (IF_THRESH_DYN)
         thresh[i] += DELTA_THRESH;
       
-      if (abs(ISI[i]) >= IF_THRESH_DYN * TAU_AREF[which_pop[i]]) {
+      if (abs(isi) >= IF_THRESH_DYN * TAU_AREF[which_pop[i]]) {
         
         // update ISI
-        ISI[i] = step - spike_times[i];
         spike_times[i] = step;
-        
         spikes[i] = 1.0;
-        rates[i] += spikes[i];
-
-        if (IF_REC_SPIKE)
-          spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
+        rates[i] += 1.0;
+        
+        // if (IF_REC_SPIKE)
+        //   spike_pair.push_back(std::make_pair(i, step * DT / 1000.0));
         
         if (IF_STP)
           for(int j=0; j<N_POP; j++)
             if (IS_STP[which_pop[i] + j * N_POP])
-              updateStp(i, j, ISI[i] * DT);       
+              updateStp(i, j, isi * DT);
       }
     }
     else {
@@ -425,13 +434,22 @@ void updateSpikes(int step){
 void updateStp(int i, int post_pop, float isi){
   // This is the Mato & Hansel stp model 
   int pre_pop = which_pop[i];
-  if (TAU_FAC[pre_pop + post_pop*N_POP])
-    u_stp[post_pop][i] = u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]) + USE[pre_pop+post_pop*N_POP] * (1.0 - u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]));
-  else
-    u_stp[post_pop][i] = USE[pre_pop + post_pop*N_POP];
   
-  x_stp[post_pop][i] = x_stp[post_pop][i] * (1.0 - u_stp[post_pop][i]) * exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]) + 1.0 - exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]);
-  A_stp[post_pop][i] = u_stp[post_pop][i] * x_stp[post_pop][i];
+  if (TAU_FAC[pre_pop + post_pop*N_POP])
+    u_stp[i] = u_stp[i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]) + USE[pre_pop+post_pop*N_POP] * (1.0 - u_stp[i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]));
+  else 
+    u_stp[i] = USE[pre_pop + post_pop*N_POP];
+  
+  x_stp[i] = x_stp[i] * (1.0 - u_stp[i]) * exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]) + 1.0 - exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]);  
+
+  // if (TAU_FAC[pre_pop + post_pop*N_POP])  
+  // u_stp[post_pop][i] = u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]) + USE[pre_pop+post_pop*N_POP] * (1.0 - u_stp[post_pop][i] * exp(-isi / TAU_FAC[pre_pop+post_pop*N_POP]));
+  // else
+  //   u_stp[post_pop][i] = USE[pre_pop + post_pop*N_POP];
+  
+  // x_stp[post_pop][i] = x_stp[post_pop][i] * (1.0 - u_stp[post_pop][i]) * exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]) + 1.0 - exp(-isi / TAU_REC[pre_pop+post_pop*N_POP]);
+  
+  // A_stp[post_pop][i] = u_stp[post_pop][i] * x_stp[post_pop][i];
   
 }
 
@@ -479,7 +497,9 @@ void printParam(){
 
 void runSimul(){
 
-  const float dum = 1000.0 / T_WINDOW;
+  float dum=1000.0;
+  if (T_WINDOW>0)
+    dum = 1000.0 / T_WINDOW;
   
   initNetwork();
 
@@ -533,11 +553,14 @@ void runSimul(){
   int N_WINDOW = (int) (T_WINDOW / DT);  
   int N_SAVE = (int) (T_SAVE>0) * (DURATION - T_SAVE) / DT + N_STEADY;
   
+  if(N_WINDOW==0)
+    N_WINDOW = 1;
+  
   std::cout << "Running Simulation" << " N_STEPS " << N_STEPS;
   std::cout << " N_STEADY " << N_STEADY;
   std::cout << " N_WINDOW " << N_WINDOW << std::endl;
   
-  for(int step = 0; step < N_STEPS + N_STEADY; step++) {
+  for(int step = 0; step < N_STEPS + N_STEADY + N_WINDOW; step++) {
     
     updateVolts();
     if(IF_THRESH_DYN==1) updateThresh();
@@ -546,11 +569,11 @@ void runSimul(){
     updateRecInputs(); // must come before updateNetInputs in this implementation
     updateNetInputs();
 
-    if(step==N_STEADY)
+    if(step==N_STEADY-N_WINDOW)
       for(int i=0; i<N; i++)
         rates[i] = 0.0 ;
     
-    if(step % N_WINDOW == 0 && step >= N_STEADY+1) {
+    if(step % N_WINDOW == 0 && step >= N_STEADY) {
       
       for(int i=0; i<N; i++)
         rates[i] *= dum;
@@ -595,8 +618,8 @@ void runSimul(){
 
   if (IF_SAVE_DATA) {
 
-    if (IF_REC_SPIKE)
-      saveVectorOfPairsToFile(spikesFile, spike_pair);
+    // if (IF_REC_SPIKE)
+    //   saveVectorOfPairsToFile(spikesFile, spike_pair);
     
     spikesFile.close();
     ratesFile.close();
@@ -608,6 +631,6 @@ void runSimul(){
     // ustpFile.close();
     // AstpFile.close();
   }
-  
+   
   std::cout << "Done" << std::endl;
 }

@@ -1,8 +1,36 @@
-<#+STARTUP: fold
-#+PROPERTY: header-args:ipython :results both :exports both :async yes :session lif_single :kernel dual_data
+#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session odr_single :kernel dual_data
 # #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
 
-* Notebook utils
+* Compilation
+
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make clean
+  make
+#+end_src
+
+#+RESULTS:
+| src/lif_network.cpp:       | In       | function             | ‘void              | odr_stimuli(float*&, | int)’: |                            |                       |         |
+| src/lif_network.cpp:59:36: | error:   | no                   | match              | for                  | call   |                         to | ‘(std::vector<float>) | (int&)’ |
+| 59                         |          |                      | *                  | sqrt(Ka[0])          | *      | (PHI_STIM(which_pop[i])>0) |                       |         |
+|                            |          | ~~~~~~~~^~~~~~~~~~~~~~ |                    |                      |        |                            |                       |         |
+| make:                      | ***        | [Makefile:41:        | obj/lif_network.o] | Error                | 1      |                            |                       |         |
+| [                          | Babel    | evaluation           | exited             | with                 | code   |                          2 | ]                     |         |
+| src/lif_network.cpp:       | In       | function             | ‘void              | odr_stimuli(float*&, | int)’: |                            |                       |         |
+| src/lif_network.cpp:59:36: | error:   | no                   | match              | for                  | call   |                         to | ‘(std::vector<float>) | (int&)’ |
+| 59                         |          |                      | *                  | sqrt(Ka[0])          | *      | (PHI_STIM(which_pop[i])>0) |                       |         |
+|                            |          | ~~~~~~~~^~~~~~~~~~~~~~ |                    |                      |        |                            |                       |         |
+| make:                      | ***        | [Makefile:41:        | obj/lif_network.o] | Error                | 1      |                            |                       |         |
+| [                          | Babel    | evaluation           | exited             | with                 | code   |                          2 | ]                     |         |
+| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
+| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
+| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
+| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
+| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
+| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
+
+* Notebook
 ** Settings
 
 #+begin_src ipython
@@ -24,71 +52,144 @@
 ** Imports
 
 #+begin_src ipython
-  import sys
-  sys.path.insert(0, '/home/leon/models/lif_cpp')  
-  REPO_PATH = "/home/leon/models/lif_cpp"
+    import sys
+    sys.path.insert(0, '/home/leon/models/lif_cpp')  
+    REPO_PATH = "/home/leon/models/lif_cpp"
+    import warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning)
 
-  import subprocess
-  import pandas as pd
-  from time import sleep
-  from yaml import safe_load
-  from scipy.stats import circmean
-  from run_model import run_cpp, update_conf, restore_conf
-  from analysis.decode import decode_bump, circcvl  
-  pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
+    import subprocess
+    import pandas as pd
+    from time import sleep
+    from yaml import safe_load
+    from scipy.stats import circmean
+    from joblib import Parallel, delayed
+
+    from run_model import run_cpp, update_conf, restore_conf
+    from analysis.decode import decode_bump, circcvl  
+    pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
 #+end_src
 
 #+RESULTS:
 
 ** Helpers
+*** Simulation
 
 #+begin_src ipython
-  def run_sim(conf_name, session, X_str=None, axis=0, gain=1, IF_M0=1):
+  def run_ini_phi(repo_path, conf_name, name, ini_list, phi_list, DURATION=10000, T_STEADY=5000, gain=1):
 
-    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
-                 REPO_PATH + '/conf/'+ conf_name +'.yml.bak')
+    conf_path = repo_path + '/conf/' + conf_name
+    config = safe_load(open(conf_path + ".yml", "r"))
+    data_path = repo_path + '/data/simul/'
 
-    config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
-
-    conf_path = REPO_PATH + '/conf/' + conf_name + '.yml'
-    data_path = REPO_PATH + '/data/simul/' + session
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'DATA_PATH', data_path)
-    if X_str is not None:
-      if axis is not None:
-        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)
-      elif axis == -1:
-        for axis in range(np.array(config[X_str]).shape[0]):
-          update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str][axis] * gain), axis=axis)          
-      else:
-        update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(config[X_str]) * gain, axis=None)
-
-    if IF_M0:
-      update_conf(REPO_PATH + '/conf/' + conf_name, 'Iext', float(config['Iext'][0] * 1.1), axis=0)
-
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'T_SAVE', float(0.0), axis=None)
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'DURATION', float(20000.0), axis=None)
-    update_conf(REPO_PATH + '/conf/' + conf_name, 'T_STEADY', float(10000.0), axis=None)
+    restore_conf(conf_path + '.yml',
+                 conf_path +'.yml.bak')
     
-    sleep(.2)
-    run_cpp(session, conf_path=conf_path)
-    sleep(.2)
+    update_conf(conf_path, 'Iext', float(gain), axis=0)
+    update_conf(conf_path, 'T_SAVE', float(0.0), axis=None)
+    update_conf(conf_path, 'DURATION', float(DURATION), axis=None)
+    update_conf(conf_path, 'T_STEADY', float(T_STEADY), axis=None)
 
-    restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
-                 REPO_PATH + '/conf/'+ conf_name +'.yml')
+    for ini in ini_list:
+      for phi in phi_list:
+        session = name + "_ini_%d_phi_%d" % (ini, phi)
+        update_conf(conf_path, 'DATA_PATH', data_path + session)
+        update_conf(conf_path, 'PHI_STIM', float(phi), axis=0)
+
+        sleep(.2)
+        run_cpp(session, conf_path = conf_path + ".yml")
+        sleep(.2)
+
+
+    restore_conf(conf_path + '.yml.bak',
+                 conf_path +'.yml')
+#+end_src
+
+#+RESULTS:
+
+*** data
+
+#+begin_src ipython
+  def get_data(session, repo_path='/home/leon/models/lif_cpp'):
+    # Open the file in binary mode and read the data
+    with open(repo_path + '/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T[:32000]
+ #+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_rate(name, ini, phi):
+       session = "/%s_ini_%d_phi_%d/" % (name, ini, phi)
+       rates = get_data(session)
+       return rates
+
+  def get_rates_ini_phi(name, ini_list, phi_list):
+       rates = Parallel(n_jobs=-1)(delayed(get_rate)(name, ini, phi) for ini in ini_list for phi in phi_list)
+       rates = np.array(rates)
+       rates = rates.reshape(len(ini_list), len(phi_list), rates.shape[1], -1)
+       return rates
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython  
+  def get_df_ini_phi(rates):
+      n_trials, n_phi, n_neurons, n_times = rates.shape
+
+      # Create indices
+      trials_ind, phi_ind, neurons_ind, times_ind = np.indices((n_trials, n_phi, n_neurons, n_times))
+
+      # Construct DataFrame
+      df = pd.DataFrame({
+          'trial': trials_ind.flatten(),
+          'phi': phi_ind.flatten(),
+          'neuron': neurons_ind.flatten(),
+          'time': times_ind.flatten() * .250,
+          'rates': rates.flatten()
+      })
+
+      return df
 #+end_src
 
 #+RESULTS:
 
 #+begin_src ipython
-  def get_data(session='/'):
-    # Open the file in binary mode and read the data
-    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
-      data = np.fromfile(f, dtype=np.float32)
-    # Now 'data' is a numpy array containing your data
-    return data.reshape(-1, 40000).T
- #+end_src
+  def load_data_ini_phi(name, ini_list, phi_list):
+      rates = get_rates_ini_phi(name, ini_list, phi_list)
+      df = get_df_ini_phi(rates)
+      return df
+#+end_src
 
- #+RESULTS:
+#+RESULTS:
+
+#+begin_src ipython
+  def get_code(df):
+      df_code = df.groupby(['time', 'trial', 'phi'])['rates'].apply(decode_bump).reset_index()
+      df_code[['m0', 'm1', 'phase']] = pd.DataFrame(df_code['rates'].tolist(), index=df_code.index)
+      df_code = df_code.drop(columns=['rates']).reset_index()
+      
+      end_point = df_code[df_code.time==df_code.time.iloc[-1]]
+      end_point = end_point.drop(columns=['time'])
+      return df_code, end_point
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_precision(x):
+
+      cmean =  (x - circmean(x, low=-np.pi, high=np.pi)) 
+
+      cmean[cmean > np.pi] -= 2*np.pi
+      cmean[cmean < -np.pi] += 2*np.pi
+
+      return cmean
+#+end_src
+
+#+RESULTS:
 
 #+begin_src ipython
   def get_times(conf_name):
@@ -102,217 +203,139 @@
 #+end_src
 
 #+RESULTS:
-** Compilation
-#+begin_src sh
-  cd $HOME/models/lif_cpp
-  make clean
-  make
-#+end_src
 
-#+RESULTS:
-| rm  | -rf   | ./obj/*.o    | ./bin/LifNet  |                   |               |                  |                  |             |                      |                           |               |                |                     |             |                      |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/globals.cpp     | -o          | obj/globals.o        |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/lif_network.cpp | -o          | obj/lif_network.o    |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/main.cpp        | -o          | obj/main.o           |                           |            |
-| g++ | -Wall | -std=c++17   | -Ofast        | -s                | -march=native | -funroll-loops   | -ftree-vectorize | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp    | -c             | src/sparse_mat.cpp  | -o          | obj/sparse_mat.o     |                           |            |
-| g++ | -o    | ./bin/LifNet | obj/globals.o | obj/lif_network.o | obj/main.o    | obj/sparse_mat.o | -Wall            | -std=c++17  | -Ofast               | -s                        | -march=native | -funroll-loops | -ftree-vectorize    | -ffast-math | -fomit-frame-pointer | -fexpensive-optimizations | -lyaml-cpp |
-
-* Single trial
-** Simulation
+* Simulation
 
 #+begin_src ipython
   conf_name = 'config'
-  config = safe_load(open("/home/leon/models/lif_cpp/conf/"+ conf_name +".yml", "r"))
 
-  N_E = int(config['N'] * 0.8)
-  N_I = int(config['N'] * 0.2)
+  ini_list = np.arange(0, 1)
+  print(ini_list)
 
-  print(N_E)
-  Iext = np.array(config['Iext'])
-  Jab = np.array(config['Jab'])
-
-  BALANCE = ((Iext[0] / Jab[0]) / (Iext[1] / Jab[2])) > ((Jab[1] / Jab[0]) / (Jab[3] / Jab[2]))
-  print('Balance', BALANCE)
-
-  # BALANCE = (Iext[0] / Iext[1]) > (Jab[1] / Jab[3])
-  # print(BALANCE)
-
-  rates = -np.dot(np.linalg.inv(Jab.reshape((2 ,2))), Iext)
-  print('rates', rates)
-
-  J = Jab[1] * Jab[2] / (Jab[0] * Jab[3])
-  Q = (Jab[3] * Jab[1] * Iext[0] - Iext[1]) / Jab[2]
-
-  # print('stp G', J)
-  # print('stp Q', Q)
+  phi_list = np.linspace(0, 360, 9)[1:]
+  print(phi_list)
+  phi_list = [180]
 #+end_src
 
 #+RESULTS:
-: 32000
-: Balance True
-: rates [-0.21346887  1.47395172]
+: [0]
+: [ 45.  90. 135. 180. 225. 270. 315. 360.]
+#+RESULTS:
 
 #+begin_src ipython
-  session = 'odr_off'
-  run_sim(conf_name, session, X_str='Iext', gain=1.0, axis=0)
+  name = 'odr_off'
+  run_ini_phi(REPO_PATH, conf_name, name, ini_list, phi_list, DURATION=5000, T_STEADY=1000, gain=2.0)
+#+end_src
+
+#+RESULTS:
+
+* Analysis
+** data
+
+#+begin_src ipython  
+  df = load_data_ini_phi(name, ini_list, phi_list)
+  # print(df.head())
+  df_code, end_point = get_code(df)
+  df_code['phase'] *= 180 / np.pi
+
+  end_point['precision'] = end_point.groupby(['phi'], group_keys=False)['phase'].apply(get_precision) * 180 / np.pi
+  # end_point['phase'] *= 180 / np.pi
 #+end_src
 
 #+RESULTS:
 
 #+begin_src ipython 
-  session = 'odr_on'
-  run_sim(conf_name, session, X_str='Iext', gain=1.1, axis=0)
+  df_smooth = df.groupby(['time', 'trial', 'phi'])['rates'].apply(circcvl).reset_index()
+
+  smooth=[]
+  point = df_smooth[df_smooth.time==df_smooth.time.iloc[-1]].reset_index()  
+  for i in range(point.rates.shape[0]):
+      m0, m1, phase = decode_bump(point.rates[i])
+      smooth.append(np.roll(point.rates[i], int(( phase / 2.0 / np.pi - 0.5) * point.rates[i].shape[0])))
+
+  smooth = np.array(smooth)
 #+end_src
 
 #+RESULTS:
-
-** Analysis
-*** Rates
 
 #+begin_src ipython
-  session = 'odr_off'
-  data_off = get_data(session)
-  print('data', data_off.shape)
-  rates_off = data_off[:N_E]
-  print('rates', np.mean(data_off[:N_E]), np.mean(data_off[N_E:]))
-#+end_src
+  fig, ax = plt.subplots(1, 1, figsize=(width, height))
+  
+  df_single = df[(df.phi==0) & (df.trial==0)]
+  heatmap_df = df_single[['neuron', 'time', 'rates']]
 
-#+RESULTS:
-: data (40000, 79)
-: rates 6.2022104 11.918247
+  # Pivot the dataframe to get 'neurons' as rows, 'time' as columns, and 'rate' as values
+  heatmap_data = heatmap_df.pivot(index='neuron', columns='time', values='rates')
 
-#+begin_src ipython  
-  session = 'odr_on'
-  data_on = get_data(session)
-  print('data', data_on.shape)
-  rates_on = data_on[:N_E]
-  print('rates', np.mean(data_on[:N_E]), np.mean(data_on[N_E:]))
-#+end_src
+  # Now, use seaborn to plot the heatmap
+  sns.heatmap(heatmap_data, cmap='binary', vmin=0, vmax=10, cbar=None)
+  ax.set_xticks([])  # Set the positions of the x-ticks
+  ax.set_yticks([])  # Set the positions of the x-ticks
 
-#+RESULTS:
-: data (40000, 79)
-: rates 6.210101 11.9302025
-
-#+begin_src ipython
-  width = 7
-  golden_ratio = (5**.5 - 1) / 2
-  fig, ax = plt.subplots(1, 2, figsize= [1.5*width, width * golden_ratio])
-
-  r_min = 0
-  r_max = 1.25 * np.max((np.mean(rates_off), np.mean(rates_on)))
-
-  times = get_times(conf_name)
-  times_off = times[:data_off.shape[1]]
-  times_on = times[:data_on.shape[1]]
-
-  im = ax[0].imshow(rates_off, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times_off[0], times_off[-1], 0, N_E])
-
-  ax[0].set_xlabel('Time (s)')
-  ax[0].set_xticks(np.arange(int(times_off[0]), int(times_off[-1]), 2))
-  ax[0].set_ylabel('Prefered Location (°)')
-  ax[0].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
-  ax[0].set_title('Control')
-
-  im = ax[1].imshow(rates_on, aspect='auto', cmap='jet',vmin=0, vmax=r_max, extent=[times_on[0], times_on[-1], 0, N_E])
-
-  ax[1].set_xlabel('Time (s)')
-  # ax[1].set_xticks([0, 1, 2, 3, 4, 5])
-  ax[1].set_xticks(np.arange(int(times_on[0]), int(times_on[-1]), 2))
-  ax[1].set_yticks([0, N_E/4, N_E/2, 3*N_E/4, N_E], [0, 90, 180, 270, 360])
-  ax[1].set_title('NB Stim')
-
-  # fig.subplots_adjust(right=0.85)  # Create space on the right side of the subplots
-
-  # Define the new axis for the colorbar
-  # cbar_ax = fig.add_axes([1.0, 0.25, 0.02, 0.6])  # This adds a new axes for the colorbar
-  # [left, bottom, width, height] in normalized (0,1) units
-
-  # Create the colorbar in the new axes
-  # cbar = fig.colorbar(im, cax=cbar_ax)
-
-  # cbar = plt.colorbar(im, ax=ax.ravel().tolist(), pad=0.2)
-  # cbar = fig.colorbar(im, ax=ax, orientation='vertical', pad=0.1)
-  # cbar.set_label("Firing Rate (Hz)")
-  # cbar.set_ticks([0, 2, 4, 6, 8])
-  # plt.savefig('./neurons.svg', dpi=300)
+  # Show the plot
   plt.show()
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/1d446cb1d4bdb63a86bd8ea7808ce61fdbd9294f.png]]
-
-*** Fourier vs Time
+[[file:./.ob-jupyter/41e085b2e91a901228e4682c3d50f18cdc88da90.png]]
 
 #+begin_src ipython
-  m0, m1, phi = decode_bump(rates_off, axis=0)
-  m0_on, m1_on, phi_on = decode_bump(rates_on, axis=0)
+  fig, ax = plt.subplots(2, 3, figsize=(3*width, 2*height))
 
-  times = get_times(conf_name)
-  times_off = times[:data_off.shape[1]]
-  times_on = times[:data_on.shape[1]]
-  
-  fig, ax = plt.subplots(1, 3, figsize=(2*width, height))
-  ax[0].plot(times_off, m0)
-  ax[0].plot(times_on, m0_on)
+  sns.lineplot(df_code, x='time', y='m0', legend=False, ax=ax[0][0])
+  ax[0][0].set_xlabel('Time (s)')
+  ax[0][0].set_ylabel('Firing Rate (Hz)')
+  ax[0][0].set_ylim([0, 15])
+  ax[0][0].set_xticks([0, 1, 2, 3, 4, 5])
 
-  ax[0].set_xlabel('Time (s)')
-  ax[0].set_ylabel('$\mathcal{F}^0$ (Hz)')
-  # ax[0].set_xticks([0, 1, 2, 3, 4, 5])
-  ax[0].set_ylim([0, r_max])
+  sns.lineplot(df_code, x='time', y=df_code['m1']/df_code['m0'], legend=False, ax=ax[0][1])
+  ax[0][1].set_xlabel('Time (s)')
+  ax[0][1].set_ylabel('Bump Amplitude, $\mathcal{F}_1$ (Hz)')
+  ax[0][1].set_xticks([0, 1, 2, 3, 4, 5])
 
-  ax[1].plot(times_off, m1 / m0)
-  ax[1].plot(times_on, m1_on / m0_on)
+  f = lambda x: x
 
-  ax[1].set_xlabel('Time (s)')
-  ax[1].set_ylabel('$\mathcal{F}^1 / \mathcal{F}^0$')
-  # ax[1].set_xticks([0, 1, 2, 3, 4, 5])
+  categories = df_code[['trial', 'phi']].drop_duplicates()
+  colors = plt.cm.jet(np.linspace(0, 1, len(categories)))
+  for (trial, phi) in categories.values:
+    # Select the subset of the data corresponding to the current trial and phi
+    subset = df_code[(df_code['trial'] == trial) & (df_code['phi'] == phi)]
 
-  ax[2].plot(times_off, phi * 180 / np.pi)
-  ax[2].plot(times_on, phi_on * 180 / np.pi)
+    # Plot the phase vs time for the current trial and phi
+    ax[0][2].plot(subset['time'], subset['phase'], alpha=.25)
 
-  ax[2].set_xlabel('Time (s)')
-  ax[2].set_ylabel('$\phi$ (°)')
-  ax[2].set_yticks([-180, -90, 0, 90, 180], [0, 90, 180, 270, 360])
-  # ax[2].set_xticks([0, 1, 2, 3, 4, 5])
-  plt.tight_layout()
+  ax[0][2].set_xlabel('Time (s)')
+  ax[0][2].set_ylabel('Bump Center (°)')
+  ax[0][2].set_ylim([-180, 180])
+  ax[0][2].set_yticks([-180, -90, 0, 90, 180], [0, 90, 180, 270, 360])
+  ax[0][2].set_xticks([0, 1, 2, 3, 4, 5])
+  means = smooth.mean(axis=0)
+  ci = smooth.std(axis=0, ddof=1) / np.sqrt(smooth.shape[0])
+
+  # Plot
+  ax[1][0].plot(means)
+  ax[1][0].fill_between(range(smooth.shape[-1]), means - ci, means + ci, alpha=0.25)
+  ax[1][0].set_xlabel('Neuron')
+  ax[1][0].set_ylabel('Firing Rate (Hz)')
+
+  sns.histplot(end_point, x=end_point.phase, ax=ax[1][1], bins='auto')
+  ax[1][1].set_xlabel('Bump Center (°)')
+  ax[1][1].set_xlim([-180, 180])
+
+  sns.histplot(end_point, x=end_point.precision, ax=ax[1][2], bins='auto')
+  ax[1][2].set_xlabel('Deviation (°)')
+  # ax[1][2].set_xlim([-50, 50])
+  plt.savefig('lif_m0.svg', dpi=300)
   plt.show()
-  #+end_src
-
-#+RESULTS:
-[[file:./.ob-jupyter/75311c9606a2f140811ff3c6e7a7e3ae1e6a3dc4.png]]
-
-*** Spatial profile
-
-#+begin_src ipython
-  smooth_off = circcvl(rates_off, windowSize=640, axis=0)
-  smooth_on = circcvl(rates_on, windowSize=640, axis=0)
-
-  m0, m1, phase = decode_bump(smooth_off[:, -1])
-  smooth_off = np.roll(smooth_off[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_off.shape[0]))
-
-  theta = np.linspace(0, 360, rates_off.shape[0])
-  plt.plot(theta, m0 + m1 * np.cos(theta * np.pi / 180- np.pi), 'b')
-  plt.plot(theta, smooth_off, 'b', label='off')
-  
-  m0, m1, phase =decode_bump(smooth_on[:, -1])
-  smooth_on = np.roll(smooth_on[:, -1], int((phase / 2.0 / np.pi - 0.5) * smooth_on.shape[0]))
-
-  plt.plot(theta, smooth_on, 'r', label='on')
-  plt.plot(theta, m0 + m1 * np.cos(theta * np.pi / 180- np.pi), 'r')
-
-  plt.xlabel('Prefered Location (°)')
-  plt.ylabel('Rate (Hz)')
-  plt.legend(frameon=0, fontsize=12)
-  # plt.yticks([5, 10])
-  plt.xticks([0, 90, 180, 270, 360]);
 #+end_src
 
 #+RESULTS:
-[[file:./.ob-jupyter/ca8070e32133e0eb153b466cc075a984fa722ea7.png]]
+[[file:./.ob-jupyter/810ee61d7e2520e3a150e9a766b443ebdedfa3cb.png]]
+
+#+RESULTS:
 
 #+begin_src ipython
 
 #+end_src
 
 #+RESULTS:
-

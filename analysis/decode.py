@@ -26,7 +26,7 @@ def decode_bump(signal, axis=-1):
     dPhi = np.pi / length
 
     dft = np.dot(signal_copy, np.exp(-2.0j * np.arange(length) * dPhi))
-
+    
     if axis != -1 and signal.ndim != 1:
         dft = np.swapaxes(dft, axis, -1)
     

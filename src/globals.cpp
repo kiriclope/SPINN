@@ -231,6 +231,9 @@ void loadConfig(std::string configname){
   A_STIM = config["A_STIM"].as<std::vector<float>>();
   STD_STIM = config["STD_STIM"].as<std::vector<float>>();
   PHI_STIM = config["PHI_STIM"].as<std::vector<float>>();
+  for(int i=0; i<N_POP; ++i)
+    PHI_STIM[i] = PHI_STIM[i] * M_PI / 180.0;
+  
   KAPPA_STIM = config["KAPPA_STIM"].as<std::vector<float>>();
 
   T_DIST = config["T_DIST"].as<std::vector<float>>();
