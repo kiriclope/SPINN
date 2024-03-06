@@ -1098,7 +1098,7 @@
   
 #+begin_src ipython
   run_loop_X(conf_name, name, 'TAU_FAC', TAU_FAC_list, ini_list, phi_list, axis=0)
-n#+end_src
+#+end_src
 
 #+RESULTS:
 #+begin_example
