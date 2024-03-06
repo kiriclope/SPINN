@@ -1,0 +1,230 @@
+#+STARTUP: fold
+#+PROPERTY: header-args:ipython :results both :exports both :async yes :session odr_search :kernel dual_data
+
+* Notebook Settings
+
+#+begin_src ipython
+  %load_ext autoreload
+  %autoreload 2
+  %reload_ext autoreload
+
+  %run /home/leon/models/lif_cpp/notebooks/setup.py
+  %matplotlib inline
+  %config InlineBackend.figure_format = 'png'
+#+end_src
+
+#+RESULTS:
+: The autoreload extension is already loaded. To reload it, use:
+:   %reload_ext autoreload
+: Python exe
+: /home/leon/mambaforge/envs/dual_data/bin/python
+:END:
+
+* Compilation
+#+begin_src sh
+  cd $HOME/models/lif_cpp
+  make clean
+  make 
+#+end_src
+
+* Imports
+
+#+begin_src ipython
+  import warnings
+  # Ignore FutureWarning
+  warnings.simplefilter(action='ignore', category=FutureWarning)
+
+  import sys
+  sys.path.insert(0, '/home/leon/models/lif_cpp')  
+  REPO_PATH = "/home/leon/models/lif_cpp"
+
+  import subprocess
+  import pandas as pd
+  from time import sleep
+  from yaml import safe_load
+  from scipy.stats import circmean
+  from run_model import run_cpp, update_conf, restore_conf
+  from analysis.decode import decode_bump, circcvl
+  
+  pal = [sns.color_palette("tab10")[0], sns.color_palette("tab10")[1]]
+#+end_src
+
+#+RESULTS:
+
+* Helpers
+
+#+begin_src ipython
+  from joblib import Parallel, delayed
+  import numpy as np
+
+  def work(name, X_str, ini, phi, X):
+      try:
+          session = "/%s_%s_%.3f_phi_%d_ini_%d/" % (name, X_str, X, phi, ini)
+          rate = get_data(session)
+          return rate[:32000, -1]
+      except:
+          return None
+
+  def get_rates_X_parallel(name, X_list, ini_list, phi_list, X_str='Jee', n_jobs=-1):
+      # Create a parallel instance using n_jobs
+      parallel = Parallel(n_jobs=n_jobs)
+
+      # Use delayed to set up a list of tasks
+      tasks = (delayed(work)(name, X_str, ini, phi, X) for ini in ini_list for phi in phi_list for X in X_list)
+
+      # Execute the tasks in parallel
+      rates_data = parallel(tasks)
+
+      # Removing None values resulted from exceptions and build the rates array
+      # rates_data = list(filter(None, rates_data))
+      rates = np.array(rates_data)
+      print(rates.shape)
+      rates = rates.reshape(len(ini_list), len(phi_list), len(X_list), 32000, -1)
+      return rates
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_data(session='/'):
+    # Open the file in binary mode and read the data
+    with open('/home/leon/models/lif_cpp/data/simul/'+ session + '/rates.txt', 'rb') as f:
+      data = np.fromfile(f, dtype=np.float32)
+    # Now 'data' is a numpy array containing your data
+    return data.reshape(-1, 40000).T
+ #+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_rates_X(name, X_list, ini_list, phi_list, X_str='Jee'):
+     rates = []
+     for ini in ini_list:
+        for phi in phi_list:
+           for X in X_list:
+              try:
+                 session = "/%s_%s_%.2f_phi_%d_ini_%d/" % (name, X_str, X, phi, ini)
+                 rate = get_data(session)
+                 rates.append(rate[:32000])
+              except:
+                 pass
+              
+     rates = np.array(rates)
+     rates = rates.reshape(len(ini_list), len(phi_list), len(X_list), 32000, -1)
+     return rates
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_df_ini_X(rates, X_list, X_str='Jee'):
+      n_trials, n_phi, n_X, n_neurons, n_times = rates.shape
+
+      # Create indices
+      # trials_ind, phi_ind, X_ind, neurons_ind, times_ind = np.indices((n_trials, n_phi, n_X, n_neurons, n_times))
+
+      trials_ind, phi_ind, X_ind, neurons_ind, times_ind = np.meshgrid(
+          np.arange(n_trials),
+          np.arange(n_phi),
+          np.arange(n_X),
+          np.arange(n_neurons),
+          np.arange(n_times),
+          indexing='ij'
+      )
+      
+      # Construct DataFrame
+      df = pd.DataFrame({
+          'trial': trials_ind.flatten(),
+          'phi': phi_ind.flatten(),
+          X_str : X_ind.flatten() * np.round((X_list[-1] - X_list[0]) / (X_list.shape[0] -1), 5) + X_list[0],
+          'neuron': neurons_ind.flatten(),
+          'time': times_ind.flatten() * 0.1,
+          'rates': rates.flatten()
+      })
+
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def load_data(name, X_list, ini_list, phi_list, X_str='Jee'):
+      rates = get_rates_X_parallel(name, X_list, ini_list, phi_list, X_str)
+      print(rates.shape)
+      df = get_df_ini_X(rates, X_list, X_str)
+      return df
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_df_code(df, X_str='Jee'):
+      df_code = df.groupby(['time', 'trial', 'phi', X_str])['rates'].apply(decode_bump).reset_index()
+      df_code[['m0', 'm1', 'phase']] = pd.DataFrame(df_code['rates'].tolist(), index=df_code.index)
+      df_code = df_code.drop(columns=['rates'])
+      
+      end_point = df_code[df_code.time==df_code.time.iloc[-1]]
+      end_point = end_point.drop(columns=['time'])
+      print(end_point.head())  
+      return df_code, end_point 
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def run_loop_X(conf_name, name, X_str, X_list, ini_list, phi_list, axis=0):
+      restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml',
+                   REPO_PATH + '/conf/' + conf_name + '.yml.bak')
+
+      conf_path = REPO_PATH + '/conf/'+ conf_name + '.yml'
+      
+      for ini in ini_list:
+          for phi in phi_list:
+              for X in X_list:
+                  session = "%s_%s_%.3f_phi_%d_ini_%d" % (name, X_str, X, phi, ini)
+                  data_path = REPO_PATH + '/data/simul/' + session
+                  update_conf(REPO_PATH + '/conf/'+ conf_name, 'DATA_PATH', data_path)
+                  update_conf(REPO_PATH + '/conf/' + conf_name, X_str, float(X), axis=axis)
+                  update_conf(REPO_PATH + '/conf/' + conf_name, 'PHI_STIM', float(phi), axis=0)
+                  update_conf(REPO_PATH + '/conf/' + conf_name, 'IF_REC_SPIKE', 0)
+                  update_conf(REPO_PATH + '/conf/' + conf_name, 'T_SAVE', 1000)
+
+                  sleep(.1)
+                  run_cpp(session, conf_path=conf_path)
+                  sleep(.1)
+
+                  subprocess.run([REPO_PATH + '/src/mem_usage.sh'])
+                  subprocess.run([REPO_PATH + '/src/cpu_usage.sh'])
+
+      restore_conf(REPO_PATH + '/conf/' + conf_name + '.yml.bak',
+                   REPO_PATH + '/conf/' + conf_name + '.yml')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def get_precision(x):
+
+      cmean =  (x - circmean(x, low=-np.pi, high=np.pi)) 
+
+      cmean[cmean > np.pi] -= 2*np.pi
+      cmean[cmean < -np.pi] += 2*np.pi
+
+      return cmean
+#+end_src
+
+#+RESULTS:
+
+#+begin_src ipython
+  def plot_smooth(smooth, ax, color):
+      means = smooth.mean(axis=0)  
+      ci = smooth.std(axis=0, ddof=1) * 1.96
+      
+      # Plot
+      ax.plot(means)
+      ax.fill_between(range(smooth.shape[1]), means - ci, means + ci, alpha=0.25)
+
+#+end_src
+
+#+RESULTS:
+
