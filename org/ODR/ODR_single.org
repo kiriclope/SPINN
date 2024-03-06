@@ -1,6 +1,5 @@
 #+STARTUP: fold
 #+PROPERTY: header-args:ipython :results both :exports both :async yes :session odr_single :kernel dual_data
-# #+PROPERTY: header-args:ipython :results both :exports both :async yes :session /ssh:172.26.20.46:~/.local/share/jupyter/runtime/kernel-343f5c4f-82fe-4da8-aa26-6dafafa92f96.json :kernel dual_data
 
 * Compilation
 
@@ -9,26 +8,6 @@
   make clean
   make
 #+end_src
-
-#+RESULTS:
-| src/lif_network.cpp:       | In       | function             | ‘void              | odr_stimuli(float*&, | int)’: |                            |                       |         |
-| src/lif_network.cpp:59:36: | error:   | no                   | match              | for                  | call   |                         to | ‘(std::vector<float>) | (int&)’ |
-| 59                         |          |                      | *                  | sqrt(Ka[0])          | *      | (PHI_STIM(which_pop[i])>0) |                       |         |
-|                            |          | ~~~~~~~~^~~~~~~~~~~~~~ |                    |                      |        |                            |                       |         |
-| make:                      | ***        | [Makefile:41:        | obj/lif_network.o] | Error                | 1      |                            |                       |         |
-| [                          | Babel    | evaluation           | exited             | with                 | code   |                          2 | ]                     |         |
-| src/lif_network.cpp:       | In       | function             | ‘void              | odr_stimuli(float*&, | int)’: |                            |                       |         |
-| src/lif_network.cpp:59:36: | error:   | no                   | match              | for                  | call   |                         to | ‘(std::vector<float>) | (int&)’ |
-| 59                         |          |                      | *                  | sqrt(Ka[0])          | *      | (PHI_STIM(which_pop[i])>0) |                       |         |
-|                            |          | ~~~~~~~~^~~~~~~~~~~~~~ |                    |                      |        |                            |                       |         |
-| make:                      | ***        | [Makefile:41:        | obj/lif_network.o] | Error                | 1      |                            |                       |         |
-| [                          | Babel    | evaluation           | exited             | with                 | code   |                          2 | ]                     |         |
-| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
-| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
-| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
-| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
-| lto-wrapper:               | warning: | using                | serial             | compilation          | of     |                          2 | LTRANS                | jobs    |
-| [                          | Babel    | evaluation           | exited             | with                 | code   |                          0 | ]                     |         |
 
 * Notebook
 ** Settings
